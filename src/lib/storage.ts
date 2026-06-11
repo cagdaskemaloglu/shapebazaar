@@ -10,10 +10,6 @@ function detectFormat(filename: string): ModelFormat | null {
   return null;
 }
 
-/**
- * Upload a 3D model file to Supabase Storage.
- * Path: model-files/{userId}/{modelId}.{ext}
- */
 export async function uploadModelFile(
   file: File,
   userId: string,
@@ -28,24 +24,16 @@ export async function uploadModelFile(
 
   const { error } = await supabase.storage
     .from("model-files")
-    .upload(path, file, {
-      cacheControl: "3600",
-      upsert: true,
-    });
+    .upload(path, file, { cacheControl: "3600", upsert: true });
 
   if (error) throw error;
   onProgress?.(100);
   return { path, format };
 }
 
-/**
- * Get a short-lived signed URL to serve a private model file.
- */
 export function getModelPublicUrl(path: string): string {
   const supabase = createClient();
-  const { data } = supabase.storage
-    .from("model-files")
-    .getPublicUrl(path);
+  const { data } = supabase.storage.from("model-files").getPublicUrl(path);
   return data.publicUrl;
 }
 
@@ -62,21 +50,27 @@ export async function getModelSignedUrl(
 }
 
 /**
- * Upload a thumbnail image.
- * Path: model-thumbnails/{userId}/{modelId}.webp
+ * Upload a thumbnail image (File or canvas Blob).
+ * Path: model-thumbnails/{userId}/{modelId}.png
  */
 export async function uploadThumbnail(
-  file: File,
+  source: File | Blob,
   userId: string,
   modelId: string
 ): Promise<string> {
   const supabase = createClient();
-  const ext  = file.name.split(".").pop()?.toLowerCase() ?? "jpg";
+  const ext  = source instanceof File
+    ? (source.name.split(".").pop()?.toLowerCase() ?? "png")
+    : "png";
   const path = `${userId}/${modelId}.${ext}`;
 
   const { error } = await supabase.storage
     .from("model-thumbnails")
-    .upload(path, file, { cacheControl: "86400", upsert: true });
+    .upload(path, source, {
+      contentType: source instanceof File ? source.type : "image/png",
+      cacheControl: "86400",
+      upsert: true,
+    });
 
   if (error) throw error;
 
@@ -88,8 +82,36 @@ export async function uploadThumbnail(
 }
 
 /**
- * Upload a user avatar.
+ * Upload a model photo (max 3).
+ * Path: model-images/{userId}/{modelId}/{index}.{ext}
  */
+export async function uploadModelImage(
+  file: File,
+  userId: string,
+  modelId: string,
+  index: number
+): Promise<string> {
+  const supabase = createClient();
+  const ext  = file.name.split(".").pop()?.toLowerCase() ?? "jpg";
+  const path = `${userId}/${modelId}/${index}.${ext}`;
+
+  const { error } = await supabase.storage
+    .from("model-images")
+    .upload(path, file, {
+      contentType: file.type,
+      cacheControl: "86400",
+      upsert: true,
+    });
+
+  if (error) throw error;
+
+  const { data } = supabase.storage
+    .from("model-images")
+    .getPublicUrl(path);
+
+  return data.publicUrl;
+}
+
 export async function uploadAvatar(
   file: File,
   userId: string
@@ -104,16 +126,10 @@ export async function uploadAvatar(
 
   if (error) throw error;
 
-  const { data } = supabase.storage
-    .from("avatars")
-    .getPublicUrl(path);
-
+  const { data } = supabase.storage.from("avatars").getPublicUrl(path);
   return data.publicUrl;
 }
 
-/**
- * Delete a model file and its thumbnail.
- */
 export async function deleteModelFiles(
   userId: string,
   modelId: string,
@@ -122,6 +138,15 @@ export async function deleteModelFiles(
   const supabase = createClient();
   await Promise.allSettled([
     supabase.storage.from("model-files").remove([`${userId}/${modelId}.${format}`]),
-    supabase.storage.from("model-thumbnails").remove([`${userId}/${modelId}.jpg`, `${userId}/${modelId}.webp`]),
+    supabase.storage.from("model-thumbnails").remove([
+      `${userId}/${modelId}.png`,
+      `${userId}/${modelId}.jpg`,
+      `${userId}/${modelId}.webp`,
+    ]),
+    supabase.storage.from("model-images").remove([
+      `${userId}/${modelId}/0.jpg`, `${userId}/${modelId}/0.png`,
+      `${userId}/${modelId}/1.jpg`, `${userId}/${modelId}/1.png`,
+      `${userId}/${modelId}/2.jpg`, `${userId}/${modelId}/2.png`,
+    ]),
   ]);
 }

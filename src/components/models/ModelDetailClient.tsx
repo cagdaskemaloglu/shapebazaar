@@ -3,13 +3,20 @@ import { useState, useEffect } from "react";
 import {
   Star, Printer, Heart, Share2,
   ChevronRight, Shield, Truck, Award,
-  AlertCircle, User
+  AlertCircle, User, Box, Image as ImageIcon
 } from "lucide-react";
 import { formatPrice } from "@/lib/utils";
 import { ModelViewer } from "@/components/viewer/ModelViewer";
 import { createClient } from "@/lib/supabase/client";
 import { RatingSection } from "@/components/models/RatingSection";
 import { getModelPublicUrl } from "@/lib/storage";
+import { usePathname } from "next/navigation";
+import {
+  calcPrintCost,
+  calcTotalPrice,
+  SCALE_FACTOR,
+  INFILL_FACTOR,
+} from "@/lib/printPricing";
 
 const MATERIALS = ["PLA", "PETG", "ABS", "TPU", "Resin"];
 const COLORS = [
@@ -23,17 +30,13 @@ const COLORS = [
 const SCALES  = ["50%", "75%", "100%", "150%", "Özel"];
 const INFILLS = ["15% (Hafif)", "25% (Standart)", "40% (Sağlam)", "80% (Masif)"];
 
-// Malzeme başına baskı maliyeti (tüm baskı maliyeti dahil)
-const MATERIAL_PRINT_COST: Record<string, number> = {
-  PLA:   80,
-  PETG:  110,
-  ABS:   100,
-  TPU:   145,
-  Resin: 180,
-};
-const SCALE_FACTOR: Record<string, number> = { "50%": 0.5, "75%": 0.75, "100%": 1, "150%": 1.5, "Özel": 1 };
-const SHIPPING_COST = 50;
-const PLATFORM_FEE_RATE = 0.10;
+type ViewerTab = "3d" | "photos";
+
+interface ModelImage {
+  id: string;
+  url: string;
+  order_index: number;
+}
 
 interface DBModel {
   id: string;
@@ -53,6 +56,9 @@ interface DBModel {
   dimension_x: number | null;
   dimension_y: number | null;
   dimension_z: number | null;
+  rotation_x: number | null;
+  rotation_y: number | null;
+  rotation_z: number | null;
   designer: {
     id: string;
     full_name: string | null;
@@ -64,19 +70,28 @@ interface DBModel {
 }
 
 export function ModelDetailClient({ modelId }: { modelId: string }) {
-  const [model,     setModel]     = useState<DBModel | null>(null);
-  const [loading,   setLoading]   = useState(true);
-  const [notFound,  setNotFound]  = useState(false);
-  const [modelUrl,  setModelUrl]  = useState<string | undefined>();
-  const [material,  setMaterial]  = useState("PLA");
-  const [colorIdx,  setColorIdx]  = useState(0);
-  const [scale,     setScale]     = useState("100%");
-  const [infill,    setInfill]    = useState("25% (Standart)");
-  const [liked,      setLiked]      = useState(false);
-  const [step,       setStep]       = useState<"config" | "address" | "payment">("config");
-  const [paying,     setPaying]     = useState(false);
-  const [payError,   setPayError]   = useState("");
-  const [address,    setAddress]    = useState({
+  const pathname = usePathname();
+  const locale   = pathname.split("/")[1] || "tr";
+
+  const [model,    setModel]    = useState<DBModel | null>(null);
+  const [loading,  setLoading]  = useState(true);
+  const [notFound, setNotFound] = useState(false);
+  const [modelUrl, setModelUrl] = useState<string | undefined>();
+  const [images,   setImages]   = useState<ModelImage[]>([]);
+
+  // default renk indeksi 1 = Turuncu (#FF6B35)
+  const [material, setMaterial]       = useState("PLA");
+  const [colorIdx, setColorIdx]       = useState(1);
+  const [scale,    setScale]          = useState("100%");
+  const [infill,   setInfill]         = useState("25% (Standart)");
+  const [liked,    setLiked]          = useState(false);
+  const [viewerTab, setViewerTab]     = useState<ViewerTab>("3d");
+  const [lightboxIdx, setLightboxIdx] = useState<number | null>(null);
+
+  const [step,     setStep]     = useState<"config" | "address" | "payment">("config");
+  const [paying,   setPaying]   = useState(false);
+  const [payError, setPayError] = useState("");
+  const [address,  setAddress]  = useState({
     name: "", phone: "", city: "", district: "", line1: "",
   });
 
@@ -92,6 +107,7 @@ export function ModelDetailClient({ modelId }: { modelId: string }) {
           file_url, file_format, avg_rating, rating_count,
           print_count, view_count, license, created_at,
           weight_grams, dimension_x, dimension_y, dimension_z,
+          rotation_x, rotation_y, rotation_z,
           designer:profiles(id, full_name, username, avatar_url, bio),
           category:categories(name_tr, name_en)
         `)
@@ -100,13 +116,16 @@ export function ModelDetailClient({ modelId }: { modelId: string }) {
 
       if (error || !data) { setNotFound(true); setLoading(false); return; }
       setModel(data as unknown as DBModel);
-
-      // Increment view count
       await supabase.rpc("increment_model_views", { model_id: modelId });
+      setModelUrl(getModelPublicUrl(data.file_url));
 
-      // Get public URL for 3D viewer
-      const url = getModelPublicUrl(data.file_url);
-      setModelUrl(url);
+      // Fotoğrafları çek
+      const { data: imgs } = await supabase
+        .from("model_images")
+        .select("id, url, order_index")
+        .eq("model_id", modelId)
+        .order("order_index");
+      setImages((imgs as ModelImage[]) ?? []);
 
       setLoading(false);
     }
@@ -141,24 +160,25 @@ export function ModelDetailClient({ modelId }: { modelId: string }) {
 
   if (!model) return null;
 
-  // Fiyat hesaplama motoru
-    const INFILL_FACTOR: Record<string, number> = {
-    "15% (Hafif)":    0.75,
-    "25% (Standart)": 1.00,
-    "40% (Sağlam)":   1.30,
-    "80% (Masif)":    1.75,
-  };
-  const designPrice = model.is_free ? 0 : model.base_price;  // Tasarımcının belirlediği tasarım ücreti
-  const scaleFactor = SCALE_FACTOR[scale] ?? 1;
-  const infillFactor = INFILL_FACTOR[infill] ?? 1;
-  const printCost = (MATERIAL_PRINT_COST[material] ?? 80) * scaleFactor * infillFactor;
-  const platformFee = (designPrice + printCost) * PLATFORM_FEE_RATE;       // %10 komisyon
-  const totalPrice  = designPrice + printCost + platformFee + SHIPPING_COST; // Model ücretsiz olsa bile baskı + kargo ödenir
+  // ── Fiyat hesaplama ──
+  const designPrice = model.is_free ? 0 : model.base_price;
+  const weightGrams = model.weight_grams ?? 50;
+  const printCost   = calcPrintCost(
+    material, weightGrams,
+    SCALE_FACTOR[scale]   ?? 1,
+    INFILL_FACTOR[infill] ?? 1,
+  );
+  const { platformFee, total: totalPrice } = calcTotalPrice(designPrice, printCost);
 
-  const designer = model.designer;
+  const designer     = model.designer;
   const designerName = designer?.username
     ? `@${designer.username}`
     : designer?.full_name ?? "Tasarımcı";
+
+  const modelRotation =
+    model.rotation_x || model.rotation_y || model.rotation_z
+      ? { x: model.rotation_x ?? 0, y: model.rotation_y ?? 0, z: model.rotation_z ?? 0 }
+      : undefined;
 
   return (
     <div className="max-w-7xl mx-auto px-4 sm:px-6 py-8">
@@ -172,18 +192,99 @@ export function ModelDetailClient({ modelId }: { modelId: string }) {
       </div>
 
       <div className="grid grid-cols-1 lg:grid-cols-2 gap-8">
-        {/* LEFT — 3D Viewer */}
+        {/* LEFT */}
         <div>
-          <div className="h-[380px] bg-[var(--bg-secondary)] border border-[var(--border)] rounded-2xl overflow-hidden">
-            <ModelViewer url={modelUrl} color={COLORS[colorIdx].hex} format={model.file_format as "stl" | "obj" | "3mf"} toolbar />
+          {/* Tab bar */}
+          <div className="flex gap-1 mb-3">
+            <button
+              onClick={() => setViewerTab("3d")}
+              className={`flex items-center gap-1.5 px-3 py-1.5 rounded-lg text-xs font-medium transition-all ${
+                viewerTab === "3d"
+                  ? "bg-[#FF6B35] text-white"
+                  : "text-[var(--text-secondary)] hover:bg-[var(--bg-secondary)]"
+              }`}
+            >
+              <Box size={12} /> 3D Model
+            </button>
+            <button
+              onClick={() => setViewerTab("photos")}
+              disabled={images.length === 0}
+              className={`flex items-center gap-1.5 px-3 py-1.5 rounded-lg text-xs font-medium transition-all disabled:opacity-40 disabled:cursor-not-allowed ${
+                viewerTab === "photos"
+                  ? "bg-[#FF6B35] text-white"
+                  : "text-[var(--text-secondary)] hover:bg-[var(--bg-secondary)]"
+              }`}
+            >
+              <ImageIcon size={12} /> Fotoğraflar
+              {images.length > 0 && (
+                <span className={`text-[10px] px-1.5 py-0.5 rounded-full ${
+                  viewerTab === "photos" ? "bg-white/20" : "bg-[var(--bg-tertiary)]"
+                }`}>
+                  {images.length}
+                </span>
+              )}
+            </button>
           </div>
+
+          {/* 3D Viewer */}
+          {viewerTab === "3d" && (
+            <div className="h-[380px] bg-[var(--bg-secondary)] border border-[var(--border)] rounded-2xl overflow-hidden">
+              <ModelViewer
+                url={modelUrl}
+                color={COLORS[colorIdx].hex}
+                format={model.file_format as "stl" | "obj" | "3mf"}
+                toolbar
+                rotation={modelRotation}
+              />
+            </div>
+          )}
+
+          {/* Photo gallery */}
+          {viewerTab === "photos" && (
+            <div className="h-[380px] bg-[var(--bg-secondary)] border border-[var(--border)] rounded-2xl overflow-hidden">
+              {images.length === 0 ? (
+                <div className="h-full flex flex-col items-center justify-center text-[var(--text-tertiary)]">
+                  <ImageIcon size={32} className="opacity-30 mb-2" />
+                  <p className="text-sm">Fotoğraf yok</p>
+                </div>
+              ) : (
+                <div className="h-full flex flex-col">
+                  {/* Ana fotoğraf */}
+                  <div
+                    className="flex-1 relative cursor-zoom-in overflow-hidden"
+                    onClick={() => setLightboxIdx(0)}
+                  >
+                    <img
+                      src={images[0].url}
+                      alt={model.title}
+                      className="w-full h-full object-contain p-2"
+                    />
+                  </div>
+                  {/* Alt şerit — birden fazla fotoğraf varsa */}
+                  {images.length > 1 && (
+                    <div className="flex gap-2 p-2 border-t border-[var(--border)] overflow-x-auto">
+                      {images.map((img, i) => (
+                        <button
+                          key={img.id}
+                          onClick={() => setLightboxIdx(i)}
+                          className="w-14 h-14 shrink-0 rounded-lg overflow-hidden border-2 border-transparent hover:border-[#FF6B35] transition-all"
+                        >
+                          <img src={img.url} alt="" className="w-full h-full object-cover" />
+                        </button>
+                      ))}
+                    </div>
+                  )}
+                </div>
+              )}
+            </div>
+          )}
 
           {/* Designer strip */}
           <div className="mt-4 flex items-center gap-3">
             {designer?.avatar_url ? (
               <img src={designer.avatar_url} className="w-10 h-10 rounded-full object-cover" alt="" />
             ) : (
-              <div className="w-10 h-10 rounded-full bg-[rgba(255,107,53,0.1)] flex items-center justify-center text-[#FF6B35] text-sm font-semibold">
+              <div className="w-10 h-10 rounded-full bg-[rgba(255,107,53,0.1)] flex items-center justify-center text-[#FF6B35]">
                 <User size={18} />
               </div>
             )}
@@ -326,32 +427,32 @@ export function ModelDetailClient({ modelId }: { modelId: string }) {
                   <span>Tasarım ücreti</span>
                   {model.is_free
                     ? <span className="text-[#10B981]">Ücretsiz</span>
-                    : <span>{formatPrice(designPrice)}</span>
+                    : <span>{formatPrice(designPrice, locale)}</span>
                   }
                 </div>
                 <div className="flex justify-between text-[var(--text-secondary)]">
                   <span>Baskı ({material} · {scale} · {infill.split(" ")[0]})</span>
-                  <span>{formatPrice(printCost)}</span>
+                  <span>{formatPrice(printCost, locale)}</span>
                 </div>
                 <div className="flex justify-between text-[var(--text-secondary)]">
                   <span>Kargo</span>
-                  <span>{formatPrice(SHIPPING_COST)}</span>
+                  <span>{formatPrice(50, locale)}</span>
                 </div>
                 <div className="flex justify-between text-[var(--text-secondary)]">
                   <span>Platform komisyonu (%10)</span>
-                  <span>{formatPrice(platformFee)}</span>
+                  <span>{formatPrice(platformFee, locale)}</span>
                 </div>
                 <div className="border-t border-[var(--border)] pt-1.5 flex justify-between font-semibold text-[var(--text-primary)]">
                   <span>Toplam</span>
-                  <span className="text-[#FF6B35]">{formatPrice(totalPrice)}</span>
+                  <span className="text-[#FF6B35]">{formatPrice(totalPrice, locale)}</span>
                 </div>
               </div>
 
               <div className="flex gap-4">
                 {[
-                  { icon: Shield, text: "Güvenli Ödeme" },
-                  { icon: Truck,  text: "3–5 İş Günü"   },
-                  { icon: Award,  text: "Kalite Garantisi" },
+                  { icon: Shield, text: "Güvenli Ödeme"    },
+                  { icon: Truck,  text: "3–5 İş Günü"      },
+                  { icon: Award,  text: "Kalite Garantisi"  },
                 ].map((b) => (
                   <div key={b.text} className="flex items-center gap-1.5 text-xs text-[var(--text-tertiary)]">
                     <b.icon size={13} className="text-[#10B981]" /> {b.text}
@@ -364,7 +465,7 @@ export function ModelDetailClient({ modelId }: { modelId: string }) {
                 className="w-full h-11 flex items-center justify-center gap-2 bg-[#FF6B35] text-white rounded-xl font-medium text-sm hover:bg-[#e85e2a] transition-colors active:scale-95"
               >
                 <Printer size={16} />
-                {`${formatPrice(totalPrice)} — Yazdır →`}
+                {`${formatPrice(totalPrice, locale)} — Yazdır →`}
               </button>
             </div>
           )}
@@ -394,7 +495,7 @@ export function ModelDetailClient({ modelId }: { modelId: string }) {
               <div className="flex gap-3 pt-2">
                 <button onClick={() => setStep("config")} className="flex-1 h-10 rounded-xl border border-[var(--border)] text-sm text-[var(--text-secondary)] hover:bg-[var(--bg-secondary)] transition-colors">← Geri</button>
                 <button
-                  onClick={async () => {
+                  onClick={() => {
                     if (!address.name || !address.city || !address.line1) {
                       alert("Lütfen zorunlu alanları doldurun (Ad, İl, Adres).");
                       return;
@@ -416,23 +517,23 @@ export function ModelDetailClient({ modelId }: { modelId: string }) {
               <div className="bg-[var(--bg-secondary)] rounded-xl p-4 flex flex-col gap-2 text-sm">
                 <div className="flex justify-between">
                   <span className="text-[var(--text-secondary)]">Tasarım ücreti</span>
-                  <span>{model.is_free ? "Ücretsiz" : formatPrice(designPrice)}</span>
+                  <span>{model.is_free ? "Ücretsiz" : formatPrice(designPrice, locale)}</span>
                 </div>
                 <div className="flex justify-between">
-                  <span className="text-[var(--text-secondary)]">Baskı ({material} · {scale})</span>
-                  <span>{formatPrice(printCost)}</span>
+                  <span className="text-[var(--text-secondary)]">Baskı ({material} · {scale} · {infill.split(" ")[0]})</span>
+                  <span>{formatPrice(printCost, locale)}</span>
                 </div>
                 <div className="flex justify-between">
                   <span className="text-[var(--text-secondary)]">Kargo</span>
-                  <span>{formatPrice(SHIPPING_COST)}</span>
+                  <span>{formatPrice(50, locale)}</span>
                 </div>
                 <div className="flex justify-between">
                   <span className="text-[var(--text-secondary)]">Platform komisyonu</span>
-                  <span>{formatPrice(platformFee)}</span>
+                  <span>{formatPrice(platformFee, locale)}</span>
                 </div>
                 <div className="border-t border-[var(--border)] pt-2 flex justify-between font-semibold">
                   <span>Toplam</span>
-                  <span className="text-[#FF6B35]">{formatPrice(totalPrice)}</span>
+                  <span className="text-[#FF6B35]">{formatPrice(totalPrice, locale)}</span>
                 </div>
               </div>
               <div className="bg-[var(--bg-secondary)] rounded-xl p-4 text-center text-sm text-[var(--text-tertiary)]">
@@ -449,25 +550,21 @@ export function ModelDetailClient({ modelId }: { modelId: string }) {
                 <button
                   onClick={async () => {
                     if (!model) return;
-                    setPaying(true);
-                    setPayError("");
+                    setPaying(true); setPayError("");
                     try {
                       const res = await fetch("/api/payment/init", {
                         method: "POST",
                         headers: { "Content-Type": "application/json" },
                         body: JSON.stringify({
-                          modelId: model.id,
-                          material,
+                          modelId: model.id, material,
                           colorHex: COLORS[colorIdx].hex,
                           colorName: COLORS[colorIdx].name,
                           scalePercent: SCALE_FACTOR[scale] ? SCALE_FACTOR[scale] * 100 : 100,
-                          totalAmount: totalPrice,
-                          address,
+                          totalAmount: totalPrice, address,
                         }),
                       });
                       const data = await res.json();
                       if (data.error) { setPayError(data.error); setPaying(false); return; }
-                      // Inject iyzico form and submit
                       const div = document.createElement("div");
                       div.innerHTML = data.checkoutFormContent;
                       document.body.appendChild(div);
@@ -488,6 +585,45 @@ export function ModelDetailClient({ modelId }: { modelId: string }) {
           )}
         </div>
       </div>
+
+      {/* Lightbox */}
+      {lightboxIdx !== null && (
+        <div
+          className="fixed inset-0 z-50 bg-black/80 backdrop-blur-sm flex items-center justify-center p-4"
+          onClick={() => setLightboxIdx(null)}
+        >
+          <div className="relative max-w-3xl w-full" onClick={(e) => e.stopPropagation()}>
+            <img
+              src={images[lightboxIdx].url}
+              alt=""
+              className="w-full max-h-[80vh] object-contain rounded-2xl"
+            />
+            {/* Önceki / sonraki */}
+            {images.length > 1 && (
+              <div className="absolute inset-y-0 left-0 right-0 flex items-center justify-between px-3 pointer-events-none">
+                <button
+                  onClick={(e) => { e.stopPropagation(); setLightboxIdx((i) => (i! - 1 + images.length) % images.length); }}
+                  className="w-9 h-9 rounded-full bg-black/50 text-white flex items-center justify-center pointer-events-auto hover:bg-black/70 transition-colors"
+                >‹</button>
+                <button
+                  onClick={(e) => { e.stopPropagation(); setLightboxIdx((i) => (i! + 1) % images.length); }}
+                  className="w-9 h-9 rounded-full bg-black/50 text-white flex items-center justify-center pointer-events-auto hover:bg-black/70 transition-colors"
+                >›</button>
+              </div>
+            )}
+            {/* Kapat */}
+            <button
+              onClick={() => setLightboxIdx(null)}
+              className="absolute top-3 right-3 w-8 h-8 rounded-full bg-black/50 text-white flex items-center justify-center hover:bg-black/70 transition-colors"
+            >✕</button>
+            {/* Sayfa göstergesi */}
+            <div className="absolute bottom-3 left-1/2 -translate-x-1/2 text-xs text-white/70 bg-black/40 px-2 py-1 rounded-full">
+              {lightboxIdx + 1} / {images.length}
+            </div>
+          </div>
+        </div>
+      )}
+
       <RatingSection modelId={modelId} />
     </div>
   );
@@ -516,4 +652,3 @@ function OptionBtn({ active, onClick, children }: { active: boolean; onClick: ()
     </button>
   );
 }
-

@@ -13,6 +13,13 @@ export interface ModelInsert {
   license: "standard" | "multi_print" | "open";
   base_price: number;
   is_free: boolean;
+  weight_grams?: number | null;   // ← EKLENDİ
+  dimension_x?: number | null;    // ← EKLENDİ
+  dimension_y?: number | null;    // ← EKLENDİ
+  dimension_z?: number | null;    // ← EKLENDİ
+  rotation_x?: number;
+  rotation_y?: number;
+  rotation_z?: number;
 }
 
 /** Insert a new model record */
