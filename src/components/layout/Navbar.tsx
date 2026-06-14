@@ -2,44 +2,47 @@
 import Link from "next/link";
 import { usePathname, useRouter } from "next/navigation";
 import { useTranslations } from "next-intl";
-import { useEffect, useState } from "react";
-import { Sun, Moon, Globe, Menu, X, User } from "lucide-react";
+import { useEffect, useState, useRef } from "react";
+import {
+  Sun, Moon, Globe, Menu, X, User,
+  ShoppingBag, Box, Wallet, Settings, LogOut, LayoutDashboard
+} from "lucide-react";
 import { createClient } from "@/lib/supabase/client";
 import type { User as SupabaseUser } from "@supabase/supabase-js";
+import { CartButton } from "@/components/cart/CartButton";
 
 interface NavbarProps {
   user?: { email: string; full_name?: string } | null;
 }
 
 export function Navbar({ user: initialUser }: NavbarProps) {
-  const t        = useTranslations("nav");
-  const pathname = usePathname();
-  const router   = useRouter();
+  const t         = useTranslations("nav");
+  const tDash     = useTranslations("dashboard");
+  const pathname  = usePathname();
+  const router    = useRouter();
 
   const locale      = pathname.split("/")[1] || "tr";
   const otherLocale = locale === "tr" ? "en" : "tr";
 
-  const [isDark,     setIsDark]     = useState(false);
-  const [scrolled,   setScrolled]   = useState(false);
-  const [mobileOpen, setMobileOpen] = useState(false);
-  const [user,       setUser]       = useState<SupabaseUser | null>(null);
-  const [authReady,  setAuthReady]  = useState(false);
+  const [isDark,       setIsDark]       = useState(false);
+  const [scrolled,     setScrolled]     = useState(false);
+  const [mobileOpen,   setMobileOpen]   = useState(false);
+  const [user,         setUser]         = useState<SupabaseUser | null>(null);
+  const [authReady,    setAuthReady]    = useState(false);
+  const [dropdownOpen, setDropdownOpen] = useState(false);
+
+  const dropdownRef = useRef<HTMLDivElement>(null);
 
   useEffect(() => {
-    // Tema
     setIsDark(document.documentElement.classList.contains("dark"));
-
-    // Scroll
     const onScroll = () => setScrolled(window.scrollY > 8);
     window.addEventListener("scroll", onScroll);
 
-    // Auth state - Supabase session'ı dinle
     const supabase = createClient();
     supabase.auth.getSession().then(({ data: { session } }) => {
       setUser(session?.user ?? null);
       setAuthReady(true);
     });
-
     const { data: { subscription } } = supabase.auth.onAuthStateChange((_event, session) => {
       setUser(session?.user ?? null);
       setAuthReady(true);
@@ -49,6 +52,16 @@ export function Navbar({ user: initialUser }: NavbarProps) {
       window.removeEventListener("scroll", onScroll);
       subscription.unsubscribe();
     };
+  }, []);
+
+  useEffect(() => {
+    function handleClickOutside(e: MouseEvent) {
+      if (dropdownRef.current && !dropdownRef.current.contains(e.target as Node)) {
+        setDropdownOpen(false);
+      }
+    }
+    document.addEventListener("mousedown", handleClickOutside);
+    return () => document.removeEventListener("mousedown", handleClickOutside);
   }, []);
 
   function toggleTheme() {
@@ -63,11 +76,26 @@ export function Navbar({ user: initialUser }: NavbarProps) {
     router.push(segments.join("/"));
   }
 
+  async function handleSignOut() {
+    const supabase = createClient();
+    await supabase.auth.signOut();
+    setDropdownOpen(false);
+    router.push(`/${locale}`);
+  }
+
   const links = [
     { href: `/${locale}/models`,         label: t("models")        },
     { href: `/${locale}/how-it-works`,   label: t("howItWorks")    },
     { href: `/${locale}/become-partner`, label: t("becomePartner") },
     { href: `/${locale}/designers`,      label: t("designers")     },
+  ];
+
+  const menuItems = [
+    { href: `/${locale}/dashboard`,                  icon: LayoutDashboard, label: tDash("overview")  },
+    { href: `/${locale}/dashboard?tab=orders`,       icon: ShoppingBag,     label: tDash("orders")    },
+    { href: `/${locale}/dashboard?tab=uploads`,      icon: Box,             label: tDash("myModels")  },
+    { href: `/${locale}/dashboard?tab=wallet`,       icon: Wallet,          label: tDash("wallet")    },
+    { href: `/${locale}/dashboard?tab=settings`,     icon: Settings,        label: tDash("settings")  },
   ];
 
   const isLoggedIn = authReady && !!user;
@@ -101,29 +129,68 @@ export function Navbar({ user: initialUser }: NavbarProps) {
 
           {/* Actions */}
           <div className="flex items-center gap-2">
-            {/* Lang toggle */}
             <button onClick={switchLocale}
               className="hidden sm:flex items-center gap-1 text-xs text-[var(--text-tertiary)] hover:text-[var(--text-secondary)] border border-[var(--border)] rounded-full px-2.5 py-1 transition-colors">
-              <Globe size={12} />
-              {otherLocale.toUpperCase()}
+              <Globe size={12} /> {otherLocale.toUpperCase()}
             </button>
 
-            {/* Theme toggle */}
             <button onClick={toggleTheme}
               className="w-8 h-8 flex items-center justify-center rounded-lg text-[var(--text-secondary)] hover:bg-[var(--bg-secondary)] transition-colors"
               aria-label="Toggle theme">
               {isDark ? <Sun size={16} /> : <Moon size={16} />}
             </button>
 
-            {/* Auth state */}
+            <CartButton />
+
             {!authReady ? (
               <div className="w-8 h-8 rounded-full bg-[var(--bg-tertiary)] animate-pulse" />
             ) : isLoggedIn ? (
-              <Link href={`/${locale}/dashboard`}>
-                <button className="w-8 h-8 flex items-center justify-center rounded-full bg-[rgba(255,107,53,0.12)] text-[#FF6B35] transition-colors hover:bg-[rgba(255,107,53,0.2)]">
+              <div className="relative" ref={dropdownRef}>
+                <button
+                  onClick={() => setDropdownOpen((v) => !v)}
+                  className="w-8 h-8 flex items-center justify-center rounded-full bg-[rgba(255,107,53,0.12)] text-[#FF6B35] transition-colors hover:bg-[rgba(255,107,53,0.2)]"
+                  aria-label="Profil menüsü"
+                >
                   <User size={14} />
                 </button>
-              </Link>
+
+                {dropdownOpen && (
+                  <div className="absolute right-0 top-10 w-52 bg-[var(--bg-primary)] border border-[var(--border)] rounded-2xl shadow-lg overflow-hidden z-50">
+                    <div className="px-4 py-3 border-b border-[var(--border)]">
+                      <div className="text-xs font-medium text-[var(--text-primary)] truncate">
+                        {user.email}
+                      </div>
+                    </div>
+
+                    <div className="py-1">
+                      {menuItems.map((item) => {
+                        const Icon = item.icon;
+                        return (
+                          <Link
+                            key={item.href}
+                            href={item.href}
+                            onClick={() => setDropdownOpen(false)}
+                            className="flex items-center gap-3 px-4 py-2.5 text-sm text-[var(--text-secondary)] hover:text-[var(--text-primary)] hover:bg-[var(--bg-secondary)] transition-colors"
+                          >
+                            <Icon size={15} className="shrink-0 text-[var(--text-tertiary)]" />
+                            {item.label}
+                          </Link>
+                        );
+                      })}
+                    </div>
+
+                    <div className="border-t border-[var(--border)] py-1">
+                      <button
+                        onClick={handleSignOut}
+                        className="w-full flex items-center gap-3 px-4 py-2.5 text-sm text-red-500 hover:bg-red-50 dark:hover:bg-red-950/20 transition-colors"
+                      >
+                        <LogOut size={15} className="shrink-0" />
+                        {tDash("signOut")}
+                      </button>
+                    </div>
+                  </div>
+                )}
+              </div>
             ) : (
               <div className="hidden sm:flex items-center gap-2">
                 <Link href={`/${locale}/auth/login`}
@@ -137,7 +204,6 @@ export function Navbar({ user: initialUser }: NavbarProps) {
               </div>
             )}
 
-            {/* Mobile toggle */}
             <button
               className="md:hidden w-8 h-8 flex items-center justify-center rounded-lg text-[var(--text-secondary)] hover:bg-[var(--bg-secondary)]"
               onClick={() => setMobileOpen(!mobileOpen)}>
@@ -159,25 +225,41 @@ export function Navbar({ user: initialUser }: NavbarProps) {
                 {link.label}
               </Link>
             ))}
-            <div className="border-t border-[var(--border)] pt-3 mt-1 flex gap-2">
-              {isLoggedIn ? (
-                <Link href={`/${locale}/dashboard`}
-                  className="flex-1 text-center text-sm px-4 py-2 h-9 rounded-xl bg-[#FF6B35] text-white hover:bg-[#e85e2a] transition-colors font-medium">
-                  Dashboard
+
+            {isLoggedIn && (
+              <div className="border-t border-[var(--border)] pt-2 mt-1 flex flex-col gap-1">
+                {menuItems.map((item) => {
+                  const Icon = item.icon;
+                  return (
+                    <Link key={item.href} href={item.href}
+                      onClick={() => setMobileOpen(false)}
+                      className="flex items-center gap-3 px-3 py-2 rounded-xl text-sm text-[var(--text-secondary)] hover:bg-[var(--bg-secondary)] transition-colors">
+                      <Icon size={15} className="text-[var(--text-tertiary)]" />
+                      {item.label}
+                    </Link>
+                  );
+                })}
+                <button
+                  onClick={() => { setMobileOpen(false); handleSignOut(); }}
+                  className="flex items-center gap-3 px-3 py-2 rounded-xl text-sm text-red-500 hover:bg-red-50 dark:hover:bg-red-950/20 transition-colors">
+                  <LogOut size={15} /> {tDash("signOut")}
+                </button>
+              </div>
+            )}
+
+            {!isLoggedIn && (
+              <div className="border-t border-[var(--border)] pt-3 mt-1 flex gap-2">
+                <Link href={`/${locale}/auth/login`}
+                  className="flex-1 text-center text-sm px-4 py-2 h-9 rounded-xl border border-[var(--border)] text-[var(--text-primary)] hover:bg-[var(--bg-secondary)] transition-colors">
+                  {t("signIn")}
                 </Link>
-              ) : (
-                <>
-                  <Link href={`/${locale}/auth/login`}
-                    className="flex-1 text-center text-sm px-4 py-2 h-9 rounded-xl border border-[var(--border)] text-[var(--text-primary)] hover:bg-[var(--bg-secondary)] transition-colors">
-                    {t("signIn")}
-                  </Link>
-                  <Link href={`/${locale}/auth/register`}
-                    className="flex-1 text-center text-sm px-4 py-2 h-9 rounded-xl bg-[#FF6B35] text-white hover:bg-[#e85e2a] transition-colors font-medium">
-                    {t("signUp")}
-                  </Link>
-                </>
-              )}
-            </div>
+                <Link href={`/${locale}/auth/register`}
+                  className="flex-1 text-center text-sm px-4 py-2 h-9 rounded-xl bg-[#FF6B35] text-white hover:bg-[#e85e2a] transition-colors font-medium">
+                  {t("signUp")}
+                </Link>
+              </div>
+            )}
+
             <button onClick={switchLocale}
               className="flex items-center gap-1.5 text-xs text-[var(--text-tertiary)] border border-[var(--border)] rounded-full px-3 py-1.5 w-fit">
               <Globe size={12} />

@@ -4,6 +4,8 @@ import { NextIntlClientProvider, hasLocale } from "next-intl";
 import { getMessages } from "next-intl/server";
 import { routing } from "@/i18n/routing";
 import { ThemeProvider } from "@/components/providers/ThemeProvider";
+import { CartDrawerProvider } from "@/components/cart/CartDrawerContext";
+import { CartDrawer } from "@/components/cart/CartDrawer";
 import "../globals.css";
 
 export const metadata: Metadata = {
@@ -30,7 +32,12 @@ export default async function LocaleLayout({
     <html lang={locale} suppressHydrationWarning>
       <body className="antialiased">
         <NextIntlClientProvider messages={messages}>
-          <ThemeProvider>{children}</ThemeProvider>
+          <ThemeProvider>
+            <CartDrawerProvider>
+              {children}
+              <CartDrawer />
+            </CartDrawerProvider>
+          </ThemeProvider>
         </NextIntlClientProvider>
       </body>
     </html>

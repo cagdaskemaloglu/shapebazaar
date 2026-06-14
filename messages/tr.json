@@ -294,7 +294,18 @@
     "becomePartnerDesc": "3D yazıcınız var mı? Sipariş havuzundan baskı alın, her baskıdan puan kazanın.",
     "apply": "Başvur →",
     "loading": "Yükleniyor…",
-    "model": "Model"
+    "model": "Model",
+    "profilePhoto": "Profil Fotoğrafı",
+    "changePhoto": "Fotoğraf Değiştir",
+    "bio": "Hakkımda",
+    "bioPlaceholder": "Kendinizi tanıtın…",
+    "shopInfo": "Dükkan Bilgileri",
+    "partnerBadge": "Onaylı Ortak",
+    "shopName": "Dükkan Adı",
+    "shopNamePlaceholder": "örn: TechPrint İstanbul",
+    "shopCity": "Dükkan Şehri",
+    "shopDescription": "Dükkan Açıklaması",
+    "shopDescPlaceholder": "3D baskı hizmetlerinizi tanıtın…"
   },
   "payment": {
     "successTitle": "Ödeme başarılı!",

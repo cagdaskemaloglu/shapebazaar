@@ -294,7 +294,18 @@
     "becomePartnerDesc": "Have a 3D printer? Claim jobs from the order pool and earn points per print.",
     "apply": "Apply →",
     "loading": "Loading…",
-    "model": "Model"
+    "model": "Model",
+    "profilePhoto": "Profile Photo",
+    "changePhoto": "Change Photo",
+    "bio": "About Me",
+    "bioPlaceholder": "Introduce yourself…",
+    "shopInfo": "Shop Information",
+    "partnerBadge": "Verified Partner",
+    "shopName": "Shop Name",
+    "shopNamePlaceholder": "e.g. TechPrint Istanbul",
+    "shopCity": "Shop City",
+    "shopDescription": "Shop Description",
+    "shopDescPlaceholder": "Introduce your 3D printing services…"
   },
   "payment": {
     "successTitle": "Payment successful!",

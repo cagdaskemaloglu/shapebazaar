@@ -2,16 +2,9 @@
  * BASKI FİYATLANDIRMA SABİTLERİ
  * ─────────────────────────────────────────────────────────────
  * Fiyatları güncellemek için SADECE bu dosyayı düzenleyin.
- * Tüm bileşenler (ModelDetailClient, FeaturedViewer vb.) buradan okur.
- *
- * Filament fiyatları: 1 kg için TL cinsinden
- * Dolar kuru       : TL/USD (fiyatları USD'ye çevirmek için kullanılır)
- * İşçilik          : Her baskıya eklenen sabit TL tutarı
- * Kargo            : Sabit kargo ücreti (TL)
- * Platform komisyon: Oransal (0.10 = %10)
  */
 
-export const EXCHANGE_RATE_TL_PER_USD = 45; // 1 USD = 45 TL
+export const EXCHANGE_RATE_TL_PER_USD = 45;
 
 /** 1 kg filament fiyatı (TL) */
 export const FILAMENT_PRICE_PER_KG: Record<string, number> = {
@@ -22,7 +15,7 @@ export const FILAMENT_PRICE_PER_KG: Record<string, number> = {
   Resin: 1400,
 };
 
-/** Gram başına filament maliyeti (TL) — KG fiyatından otomatik türetilir */
+/** Gram başına filament maliyeti — KG fiyatından otomatik türetilir */
 export const FILAMENT_PRICE_PER_GRAM: Record<string, number> = Object.fromEntries(
   Object.entries(FILAMENT_PRICE_PER_KG).map(([mat, kgPrice]) => [mat, kgPrice / 1000])
 );
@@ -30,10 +23,10 @@ export const FILAMENT_PRICE_PER_GRAM: Record<string, number> = Object.fromEntrie
 /** Baskıya eklenen sabit işçilik ücreti (TL) */
 export const LABOR_COST_TL = 50;
 
-/** Sabit kargo ücreti (TL) */
-export const SHIPPING_COST_TL = 50;
+/** Sabit kargo ücreti (TL) — sipariş başına bir kez eklenir */
+export const SHIPPING_COST_TL = 150;
 
-/** Platform komisyon oranı */
+/** Platform komisyon oranı — sadece iç hesap için, kullanıcıya gösterilmez */
 export const PLATFORM_FEE_RATE = 0.10;
 
 /** Ölçek çarpanları */
@@ -54,13 +47,7 @@ export const INFILL_FACTOR: Record<string, number> = {
 };
 
 /**
- * Baskı maliyetini hesaplar.
- *
- * @param material   - Malzeme adı (PLA, PETG …)
- * @param weightGrams - Modelin gram cinsinden ağırlığı
- * @param scaleFactor - Ölçek çarpanı (SCALE_FACTOR'dan)
- * @param infillFactor - Dolgu çarpanı (INFILL_FACTOR'dan)
- * @returns TL cinsinden baskı maliyeti
+ * Baskı maliyetini hesaplar (filament + işçilik).
  */
 export function calcPrintCost(
   material: string,
@@ -69,25 +56,24 @@ export function calcPrintCost(
   infillFactor = 1
 ): number {
   const pricePerGram = FILAMENT_PRICE_PER_GRAM[material] ?? FILAMENT_PRICE_PER_GRAM["PLA"];
-  const filamentCost = pricePerGram * weightGrams * scaleFactor * infillFactor;
-  return filamentCost + LABOR_COST_TL;
+  return pricePerGram * weightGrams * scaleFactor * infillFactor + LABOR_COST_TL;
 }
 
 /**
- * Toplam sipariş fiyatını hesaplar.
+ * Ürün toplamı: tasarım + baskı.
+ * Komisyon iç hesap için döner ama kullanıcıya gösterilmez.
  */
 export function calcTotalPrice(
   designPrice: number,
   printCost: number
 ): { platformFee: number; total: number } {
   const platformFee = (designPrice + printCost) * PLATFORM_FEE_RATE;
-  const total = designPrice + printCost + platformFee + SHIPPING_COST_TL;
+  // total = kullanıcının gördüğü ürün fiyatı (kargo HARİÇ, komisyon DAHİL — iç maliyet)
+  const total = designPrice + printCost + platformFee;
   return { platformFee, total };
 }
 
-/**
- * TL → USD çevirimi
- */
+/** TL → USD */
 export function tlToUsd(tl: number): number {
   return tl / EXCHANGE_RATE_TL_PER_USD;
 }

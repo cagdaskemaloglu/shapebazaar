@@ -1,9 +1,10 @@
 "use client";
 import { useState, useEffect } from "react";
 import {
-  Star, Printer, Heart, Share2,
+  Star, Heart, Share2,
   ChevronRight, Shield, Truck, Award,
-  AlertCircle, User, Box, Image as ImageIcon
+  AlertCircle, User, Box, Image as ImageIcon,
+  ShoppingCart, CheckCircle2
 } from "lucide-react";
 import { formatPrice } from "@/lib/utils";
 import { ModelViewer } from "@/components/viewer/ModelViewer";
@@ -17,6 +18,8 @@ import {
   SCALE_FACTOR,
   INFILL_FACTOR,
 } from "@/lib/printPricing";
+import { useCartStore, buildCartItem } from "@/lib/cart";
+import { useCartDrawer } from "@/components/cart/CartDrawerContext";
 
 const MATERIALS = ["PLA", "PETG", "ABS", "TPU", "Resin"];
 const COLORS = [
@@ -59,6 +62,7 @@ interface DBModel {
   rotation_x: number | null;
   rotation_y: number | null;
   rotation_z: number | null;
+  thumbnail_url: string | null;
   designer: {
     id: string;
     full_name: string | null;
@@ -79,21 +83,17 @@ export function ModelDetailClient({ modelId }: { modelId: string }) {
   const [modelUrl, setModelUrl] = useState<string | undefined>();
   const [images,   setImages]   = useState<ModelImage[]>([]);
 
-  // default renk indeksi 1 = Turuncu (#FF6B35)
-  const [material, setMaterial]       = useState("PLA");
-  const [colorIdx, setColorIdx]       = useState(1);
-  const [scale,    setScale]          = useState("100%");
-  const [infill,   setInfill]         = useState("25% (Standart)");
-  const [liked,    setLiked]          = useState(false);
-  const [viewerTab, setViewerTab]     = useState<ViewerTab>("3d");
+  const [material,    setMaterial]    = useState("PLA");
+  const [colorIdx,    setColorIdx]    = useState(1);
+  const [scale,       setScale]       = useState("100%");
+  const [infill,      setInfill]      = useState("25% (Standart)");
+  const [liked,       setLiked]       = useState(false);
+  const [viewerTab,   setViewerTab]   = useState<ViewerTab>("3d");
   const [lightboxIdx, setLightboxIdx] = useState<number | null>(null);
+  const [addedToCart, setAddedToCart] = useState(false);
 
-  const [step,     setStep]     = useState<"config" | "address" | "payment">("config");
-  const [paying,   setPaying]   = useState(false);
-  const [payError, setPayError] = useState("");
-  const [address,  setAddress]  = useState({
-    name: "", phone: "", city: "", district: "", line1: "",
-  });
+  const addItem        = useCartStore((s) => s.addItem);
+  const { open: openCart } = useCartDrawer();
 
   useEffect(() => {
     async function load() {
@@ -107,7 +107,7 @@ export function ModelDetailClient({ modelId }: { modelId: string }) {
           file_url, file_format, avg_rating, rating_count,
           print_count, view_count, license, created_at,
           weight_grams, dimension_x, dimension_y, dimension_z,
-          rotation_x, rotation_y, rotation_z,
+          rotation_x, rotation_y, rotation_z, thumbnail_url,
           designer:profiles(id, full_name, username, avatar_url, bio),
           category:categories(name_tr, name_en)
         `)
@@ -119,7 +119,6 @@ export function ModelDetailClient({ modelId }: { modelId: string }) {
       await supabase.rpc("increment_model_views", { model_id: modelId });
       setModelUrl(getModelPublicUrl(data.file_url));
 
-      // Fotoğrafları çek
       const { data: imgs } = await supabase
         .from("model_images")
         .select("id, url, order_index")
@@ -179,6 +178,26 @@ export function ModelDetailClient({ modelId }: { modelId: string }) {
     model.rotation_x || model.rotation_y || model.rotation_z
       ? { x: model.rotation_x ?? 0, y: model.rotation_y ?? 0, z: model.rotation_z ?? 0 }
       : undefined;
+
+  function handleAddToCart() {
+    if (!model) return;
+    addItem(buildCartItem({
+      modelId:      model.id,
+      modelTitle:   model.title,
+      thumbnailUrl: model.thumbnail_url ?? undefined,
+      material,
+      colorName:    COLORS[colorIdx].name,
+      colorHex:     COLORS[colorIdx].hex,
+      scale,
+      infill,
+      weightGrams:  model.weight_grams ?? 50,
+      isFree:       model.is_free,
+      basePrice:    model.base_price,
+    }));
+    setAddedToCart(true);
+    setTimeout(() => setAddedToCart(false), 2000);
+    openCart();
+  }
 
   return (
     <div className="max-w-7xl mx-auto px-4 sm:px-6 py-8">
@@ -249,7 +268,6 @@ export function ModelDetailClient({ modelId }: { modelId: string }) {
                 </div>
               ) : (
                 <div className="h-full flex flex-col">
-                  {/* Ana fotoğraf */}
                   <div
                     className="flex-1 relative cursor-zoom-in overflow-hidden"
                     onClick={() => setLightboxIdx(0)}
@@ -260,7 +278,6 @@ export function ModelDetailClient({ modelId }: { modelId: string }) {
                       className="w-full h-full object-contain p-2"
                     />
                   </div>
-                  {/* Alt şerit — birden fazla fotoğraf varsa */}
                   {images.length > 1 && (
                     <div className="flex gap-2 p-2 border-t border-[var(--border)] overflow-x-auto">
                       {images.map((img, i) => (
@@ -369,220 +386,91 @@ export function ModelDetailClient({ modelId }: { modelId: string }) {
             )}
           </div>
 
-          {/* Step tabs */}
-          <div className="flex items-center gap-2 mb-5 text-xs">
-            {(["config", "address", "payment"] as const).map((s, i) => (
-              <div key={s} className="flex items-center gap-2">
-                <div className={`w-5 h-5 rounded-full flex items-center justify-center text-[10px] font-semibold transition-all ${
-                  step === s ? "bg-[#FF6B35] text-white" : "bg-[var(--bg-tertiary)] text-[var(--text-tertiary)]"
-                }`}>{i + 1}</div>
-                <span className={step === s ? "text-[var(--text-primary)] font-medium" : "text-[var(--text-tertiary)]"}>
-                  {["Yapılandır", "Adres", "Ödeme"][i]}
-                </span>
-                {i < 2 && <ChevronRight size={12} className="text-[var(--text-tertiary)]" />}
-              </div>
-            ))}
-          </div>
+          <div className="flex flex-col gap-4">
+            <ConfigRow label="Malzeme">
+              {MATERIALS.map((m) => (
+                <OptionBtn key={m} active={material === m} onClick={() => setMaterial(m)}>{m}</OptionBtn>
+              ))}
+            </ConfigRow>
 
-          {/* STEP: CONFIG */}
-          {step === "config" && (
-            <div className="flex flex-col gap-4">
-              <ConfigRow label="Malzeme">
-                {MATERIALS.map((m) => (
-                  <OptionBtn key={m} active={material === m} onClick={() => setMaterial(m)}>{m}</OptionBtn>
-                ))}
-              </ConfigRow>
-
-              <ConfigRow label={`Renk — ${COLORS[colorIdx].name}`}>
-                <div className="flex gap-2.5">
-                  {COLORS.map((c, i) => (
-                    <button
-                      key={c.hex}
-                      onClick={() => setColorIdx(i)}
-                      title={c.name}
-                      className={`w-7 h-7 rounded-full transition-all ${
-                        colorIdx === i ? "ring-2 ring-[#FF6B35] ring-offset-2 ring-offset-[var(--bg-primary)]" : ""
-                      } ${c.border ? "border border-[var(--border)]" : ""}`}
-                      style={{ background: c.hex }}
-                    />
-                  ))}
-                </div>
-              </ConfigRow>
-
-              <ConfigRow label="Boyut">
-                {SCALES.map((s) => (
-                  <OptionBtn key={s} active={scale === s} onClick={() => setScale(s)}>{s}</OptionBtn>
-                ))}
-              </ConfigRow>
-
-              <ConfigRow label="Dolgu Yoğunluğu">
-                {INFILLS.map((inf) => (
-                  <OptionBtn key={inf} active={infill === inf} onClick={() => setInfill(inf)}>{inf}</OptionBtn>
-                ))}
-              </ConfigRow>
-
-              {/* Price breakdown */}
-              <div className="bg-[var(--bg-secondary)] border border-[var(--border)] rounded-xl p-4 text-sm flex flex-col gap-1.5">
-                <div className="flex justify-between text-[var(--text-secondary)]">
-                  <span>Tasarım ücreti</span>
-                  {model.is_free
-                    ? <span className="text-[#10B981]">Ücretsiz</span>
-                    : <span>{formatPrice(designPrice, locale)}</span>
-                  }
-                </div>
-                <div className="flex justify-between text-[var(--text-secondary)]">
-                  <span>Baskı ({material} · {scale} · {infill.split(" ")[0]})</span>
-                  <span>{formatPrice(printCost, locale)}</span>
-                </div>
-                <div className="flex justify-between text-[var(--text-secondary)]">
-                  <span>Kargo</span>
-                  <span>{formatPrice(50, locale)}</span>
-                </div>
-                <div className="flex justify-between text-[var(--text-secondary)]">
-                  <span>Platform komisyonu (%10)</span>
-                  <span>{formatPrice(platformFee, locale)}</span>
-                </div>
-                <div className="border-t border-[var(--border)] pt-1.5 flex justify-between font-semibold text-[var(--text-primary)]">
-                  <span>Toplam</span>
-                  <span className="text-[#FF6B35]">{formatPrice(totalPrice, locale)}</span>
-                </div>
-              </div>
-
-              <div className="flex gap-4">
-                {[
-                  { icon: Shield, text: "Güvenli Ödeme"    },
-                  { icon: Truck,  text: "3–5 İş Günü"      },
-                  { icon: Award,  text: "Kalite Garantisi"  },
-                ].map((b) => (
-                  <div key={b.text} className="flex items-center gap-1.5 text-xs text-[var(--text-tertiary)]">
-                    <b.icon size={13} className="text-[#10B981]" /> {b.text}
-                  </div>
-                ))}
-              </div>
-
-              <button
-                onClick={() => setStep("address")}
-                className="w-full h-11 flex items-center justify-center gap-2 bg-[#FF6B35] text-white rounded-xl font-medium text-sm hover:bg-[#e85e2a] transition-colors active:scale-95"
-              >
-                <Printer size={16} />
-                {`${formatPrice(totalPrice, locale)} — Yazdır →`}
-              </button>
-            </div>
-          )}
-
-          {/* STEP: ADDRESS */}
-          {step === "address" && (
-            <div className="flex flex-col gap-3">
-              <h2 className="font-medium text-[var(--text-primary)]">Teslimat Adresi</h2>
-              {[
-                { label: "Ad Soyad",  key: "name",     placeholder: "Ahmet Yılmaz",            type: "text" },
-                { label: "Telefon",   key: "phone",    placeholder: "+90 5XX XXX XX XX",        type: "tel"  },
-                { label: "İl",        key: "city",     placeholder: "İstanbul",                 type: "text" },
-                { label: "İlçe",      key: "district", placeholder: "Kadıköy",                  type: "text" },
-                { label: "Adres",     key: "line1",    placeholder: "Mahalle, sokak, bina no…", type: "text" },
-              ].map((f) => (
-                <div key={f.key}>
-                  <label className="text-xs text-[var(--text-tertiary)] block mb-1">{f.label}</label>
-                  <input
-                    type={f.type}
-                    placeholder={f.placeholder}
-                    value={(address as any)[f.key]}
-                    onChange={(e) => setAddress((a) => ({ ...a, [f.key]: e.target.value }))}
-                    className="w-full h-10 px-3 text-sm rounded-xl border border-[var(--border)] bg-[var(--bg-secondary)] text-[var(--text-primary)] outline-none focus:border-[#FF6B35] transition-colors placeholder:text-[var(--text-tertiary)]"
+            <ConfigRow label={`Renk — ${COLORS[colorIdx].name}`}>
+              <div className="flex gap-2.5">
+                {COLORS.map((c, i) => (
+                  <button
+                    key={c.hex}
+                    onClick={() => setColorIdx(i)}
+                    title={c.name}
+                    className={`w-7 h-7 rounded-full transition-all ${
+                      colorIdx === i ? "ring-2 ring-[#FF6B35] ring-offset-2 ring-offset-[var(--bg-primary)]" : ""
+                    } ${c.border ? "border border-[var(--border)]" : ""}`}
+                    style={{ background: c.hex }}
                   />
+                ))}
+              </div>
+            </ConfigRow>
+
+            <ConfigRow label="Boyut">
+              {SCALES.map((s) => (
+                <OptionBtn key={s} active={scale === s} onClick={() => setScale(s)}>{s}</OptionBtn>
+              ))}
+            </ConfigRow>
+
+            <ConfigRow label="Dolgu Yoğunluğu">
+              {INFILLS.map((inf) => (
+                <OptionBtn key={inf} active={infill === inf} onClick={() => setInfill(inf)}>{inf}</OptionBtn>
+              ))}
+            </ConfigRow>
+
+            {/* Price breakdown */}
+            <div className="bg-[var(--bg-secondary)] border border-[var(--border)] rounded-xl p-4 text-sm flex flex-col gap-1.5">
+              <div className="flex justify-between text-[var(--text-secondary)]">
+                <span>Tasarım ücreti</span>
+                {model.is_free
+                  ? <span className="text-[#10B981]">Ücretsiz</span>
+                  : <span>{formatPrice(designPrice, locale)}</span>
+                }
+              </div>
+              <div className="flex justify-between text-[var(--text-secondary)]">
+                <span>Baskı ({material} · {scale} · {infill.split(" ")[0]})</span>
+                <span>{formatPrice(printCost, locale)}</span>
+              </div>
+              <div className="flex justify-between text-[var(--text-secondary)]">
+                <span>Platform komisyonu (%10)</span>
+                <span>{formatPrice(platformFee, locale)}</span>
+              </div>
+              <div className="flex justify-between text-xs text-[var(--text-tertiary)]">
+                <span>Kargo sepette eklenir</span>
+                <span>+{formatPrice(150, locale)}</span>
+              </div>
+              <div className="border-t border-[var(--border)] pt-1.5 flex justify-between font-semibold text-[var(--text-primary)]">
+                <span>Toplam</span>
+                <span className="text-[#FF6B35]">{formatPrice(totalPrice, locale)}</span>
+              </div>
+            </div>
+
+            <div className="flex gap-4">
+              {[
+                { icon: Shield, text: "Güvenli Ödeme"   },
+                { icon: Truck,  text: "Tek Kargo"        },
+                { icon: Award,  text: "Kalite Garantisi" },
+              ].map((b) => (
+                <div key={b.text} className="flex items-center gap-1.5 text-xs text-[var(--text-tertiary)]">
+                  <b.icon size={13} className="text-[#10B981]" /> {b.text}
                 </div>
               ))}
-              <div className="flex gap-3 pt-2">
-                <button onClick={() => setStep("config")} className="flex-1 h-10 rounded-xl border border-[var(--border)] text-sm text-[var(--text-secondary)] hover:bg-[var(--bg-secondary)] transition-colors">← Geri</button>
-                <button
-                  onClick={() => {
-                    if (!address.name || !address.city || !address.line1) {
-                      alert("Lütfen zorunlu alanları doldurun (Ad, İl, Adres).");
-                      return;
-                    }
-                    setStep("payment");
-                  }}
-                  className="flex-1 h-10 rounded-xl bg-[#FF6B35] text-white text-sm font-medium hover:bg-[#e85e2a] transition-colors"
-                >
-                  Ödemeye Geç →
-                </button>
-              </div>
             </div>
-          )}
 
-          {/* STEP: PAYMENT */}
-          {step === "payment" && (
-            <div className="flex flex-col gap-4">
-              <h2 className="font-medium text-[var(--text-primary)]">Ödeme</h2>
-              <div className="bg-[var(--bg-secondary)] rounded-xl p-4 flex flex-col gap-2 text-sm">
-                <div className="flex justify-between">
-                  <span className="text-[var(--text-secondary)]">Tasarım ücreti</span>
-                  <span>{model.is_free ? "Ücretsiz" : formatPrice(designPrice, locale)}</span>
-                </div>
-                <div className="flex justify-between">
-                  <span className="text-[var(--text-secondary)]">Baskı ({material} · {scale} · {infill.split(" ")[0]})</span>
-                  <span>{formatPrice(printCost, locale)}</span>
-                </div>
-                <div className="flex justify-between">
-                  <span className="text-[var(--text-secondary)]">Kargo</span>
-                  <span>{formatPrice(50, locale)}</span>
-                </div>
-                <div className="flex justify-between">
-                  <span className="text-[var(--text-secondary)]">Platform komisyonu</span>
-                  <span>{formatPrice(platformFee, locale)}</span>
-                </div>
-                <div className="border-t border-[var(--border)] pt-2 flex justify-between font-semibold">
-                  <span>Toplam</span>
-                  <span className="text-[#FF6B35]">{formatPrice(totalPrice, locale)}</span>
-                </div>
-              </div>
-              <div className="bg-[var(--bg-secondary)] rounded-xl p-4 text-center text-sm text-[var(--text-tertiary)]">
-                <Shield size={20} className="mx-auto mb-2 text-[#10B981]" />
-                İyzico güvenli ödeme sayfasına yönlendirileceksiniz
-              </div>
-              {payError && (
-                <div className="text-sm text-red-500 bg-red-50 dark:bg-red-950/20 border border-red-200 dark:border-red-900 rounded-xl px-4 py-3">
-                  {payError}
-                </div>
+            <button
+              onClick={handleAddToCart}
+              className="w-full h-11 flex items-center justify-center gap-2 bg-[#FF6B35] text-white rounded-xl font-medium text-sm hover:bg-[#e85e2a] transition-colors active:scale-95"
+            >
+              {addedToCart ? (
+                <><CheckCircle2 size={16} /> Sepete Eklendi!</>
+              ) : (
+                <><ShoppingCart size={16} /> Sepete Ekle — {formatPrice(totalPrice, locale)}</>
               )}
-              <div className="flex gap-3">
-                <button onClick={() => setStep("address")} className="flex-1 h-10 rounded-xl border border-[var(--border)] text-sm text-[var(--text-secondary)] hover:bg-[var(--bg-secondary)] transition-colors">← Geri</button>
-                <button
-                  onClick={async () => {
-                    if (!model) return;
-                    setPaying(true); setPayError("");
-                    try {
-                      const res = await fetch("/api/payment/init", {
-                        method: "POST",
-                        headers: { "Content-Type": "application/json" },
-                        body: JSON.stringify({
-                          modelId: model.id, material,
-                          colorHex: COLORS[colorIdx].hex,
-                          colorName: COLORS[colorIdx].name,
-                          scalePercent: SCALE_FACTOR[scale] ? SCALE_FACTOR[scale] * 100 : 100,
-                          totalAmount: totalPrice, address,
-                        }),
-                      });
-                      const data = await res.json();
-                      if (data.error) { setPayError(data.error); setPaying(false); return; }
-                      const div = document.createElement("div");
-                      div.innerHTML = data.checkoutFormContent;
-                      document.body.appendChild(div);
-                      const form = div.querySelector("form");
-                      if (form) form.submit();
-                    } catch {
-                      setPayError("Bağlantı hatası. Lütfen tekrar deneyin.");
-                      setPaying(false);
-                    }
-                  }}
-                  disabled={paying}
-                  className="flex-1 h-10 rounded-xl bg-[#FF6B35] text-white text-sm font-medium hover:bg-[#e85e2a] disabled:opacity-50 transition-colors"
-                >
-                  {paying ? "Yönlendiriliyor…" : "İyzico ile Öde →"}
-                </button>
-              </div>
-            </div>
-          )}
+            </button>
+          </div>
         </div>
       </div>
 
@@ -598,7 +486,6 @@ export function ModelDetailClient({ modelId }: { modelId: string }) {
               alt=""
               className="w-full max-h-[80vh] object-contain rounded-2xl"
             />
-            {/* Önceki / sonraki */}
             {images.length > 1 && (
               <div className="absolute inset-y-0 left-0 right-0 flex items-center justify-between px-3 pointer-events-none">
                 <button
@@ -611,12 +498,10 @@ export function ModelDetailClient({ modelId }: { modelId: string }) {
                 >›</button>
               </div>
             )}
-            {/* Kapat */}
             <button
               onClick={() => setLightboxIdx(null)}
               className="absolute top-3 right-3 w-8 h-8 rounded-full bg-black/50 text-white flex items-center justify-center hover:bg-black/70 transition-colors"
             >✕</button>
-            {/* Sayfa göstergesi */}
             <div className="absolute bottom-3 left-1/2 -translate-x-1/2 text-xs text-white/70 bg-black/40 px-2 py-1 rounded-full">
               {lightboxIdx + 1} / {images.length}
             </div>
