@@ -20,7 +20,6 @@ export async function POST(req: NextRequest) {
     const token    = formData.get("token") as string;
     if (!token) return NextResponse.redirect(`${process.env.NEXT_PUBLIC_SITE_URL}/payment/failed`);
 
-    // Verify payment with İyzico
     const bodyStr = JSON.stringify({ locale: "tr", token });
     const iyzRes  = await fetch(`${IYZICO_BASE_URL}/payment/iyzipos/checkoutform/auth/ecom/detail`, {
       method:  "POST",
@@ -32,7 +31,7 @@ export async function POST(req: NextRequest) {
     const supabase = await createClient();
 
     if (iyzData.paymentStatus === "SUCCESS") {
-      // Update order status
+      // Siparişi ödenmiş olarak işaretle
       const { data: order } = await supabase
         .from("orders")
         .update({ status: "paid", paid_at: new Date().toISOString() })
@@ -41,49 +40,63 @@ export async function POST(req: NextRequest) {
         .single();
 
       if (order) {
-        // Create print job
+        // Sipariş kalemlerini çek
+        const { data: items } = await supabase
+          .from("order_items")
+          .select("model_id, model_title, model_price, print_cost, item_total")
+          .eq("order_id", order.id);
+
+        // Print job oluştur (tüm sipariş tek job)
         await supabase.from("print_jobs").insert({
           order_id: order.id,
           status:   "available",
         });
 
-        // Send confirmation email
+        // Her tasarımcıya kazanç yaz
+        if (items && items.length > 0) {
+          for (const item of items) {
+            if (!item.model_id) continue;
+
+            const { data: model } = await supabase
+              .from("models")
+              .select("designer_id, base_price")
+              .eq("id", item.model_id)
+              .single();
+
+            if (model?.designer_id && item.model_price > 0) {
+              const designerEarning = item.model_price * 0.9;
+              await supabase.from("wallet_transactions").insert({
+                user_id:      model.designer_id,
+                type:         "earn",
+                amount:       designerEarning,
+                description:  `Satış kazancı — ${item.model_title} (Sipariş #${order.id.slice(0, 8)})`,
+                ref_order_id: order.id,
+              });
+              await supabase.rpc("increment_wallet", {
+                uid:    model.designer_id,
+                amount: designerEarning,
+              });
+            }
+          }
+        }
+
+        // Onay emaili gönder
         const { data: buyer } = await supabase.auth.admin.getUserById(order.buyer_id);
-        const { data: modelForEmail } = await supabase.from("models").select("title").eq("id", order.model_id).single();
+        const modelTitles = items?.map((i) => i.model_title).join(", ") ?? "Model";
         if (buyer?.user?.email) {
           await sendOrderConfirmation({
             to:          buyer.user.email,
             buyerName:   order.recipient_name ?? "Müşteri",
-            modelTitle:  modelForEmail?.title ?? "Model",
+            modelTitle:  modelTitles,
             orderId:     order.id,
             totalAmount: order.total_amount,
           }).catch(() => {});
         }
-
-        // Add wallet points to designer (90% of model price)
-        const { data: model } = await supabase
-          .from("models")
-          .select("designer_id, base_price")
-          .eq("id", order.model_id)
-          .single();
-
-        if (model?.designer_id) {
-          const designerEarning = model.base_price * 0.9;
-          await supabase.from("wallet_transactions").insert({
-            user_id:     model.designer_id,
-            type:        "earn",
-            amount:      designerEarning,
-            description: `Satış kazancı — Sipariş #${order.id.slice(0, 8)}`,
-            ref_order_id: order.id,
-          });
-          await supabase
-            .from("profiles")
-            .update({ wallet_balance: supabase.rpc("increment_wallet", { uid: model.designer_id, amount: designerEarning }) })
-            .eq("id", model.designer_id);
-        }
       }
 
-      return NextResponse.redirect(`${process.env.NEXT_PUBLIC_SITE_URL}/payment/success?orderId=${order?.id}`);
+      return NextResponse.redirect(
+        `${process.env.NEXT_PUBLIC_SITE_URL}/payment/success?orderId=${order?.id}`
+      );
     } else {
       await supabase
         .from("orders")

@@ -1,5 +1,6 @@
-{
-  "nav": {
+
+  {
+    "nav": {
     "models": "Models",
     "howItWorks": "How It Works",
     "becomePartner": "Become a Partner",
@@ -38,16 +39,18 @@
     "free": "Free"
   },
   "howItWorks": {
+    "pageTitle": "How It Works",
+    "pageSubtitle": "From design to product in ShapeBazaar takes just 4 steps.",
     "title": "How it works",
-    "subtitle": "From idea to product in 4 steps",
-    "step1Title": "Choose a model",
-    "step1Desc": "Filter through thousands of 3D models or upload your own STL/OBJ/3MF file.",
+    "subtitle": "4 steps from idea to product",
+    "step1Title": "Pick a model",
+    "step1Desc": "Browse from thousands of 3D models or upload your own STL/OBJ/3MF file.",
     "step2Title": "Configure",
-    "step2Desc": "Choose size, color and material (PLA/PETG/ABS/TPU). See instant pricing.",
-    "step3Title": "Pay & ship",
-    "step3Desc": "Secure İyzico payment. The nearest print partner picks up your order immediately.",
+    "step2Desc": "Choose size, color, and material. See the price instantly.",
+    "step3Title": "Pay & send",
+    "step3Desc": "Secure Iyzico payment. Your nearest print partner gets the order immediately.",
     "step4Title": "Receive",
-    "step4Desc": "Delivered to your door in 3–5 business days. Track your order status in real time."
+    "step4Desc": "Delivered to your door in 3–5 business days. Track your order in real-time."
   },
   "roles": {
     "title": "Everyone wins",
@@ -404,5 +407,188 @@
     "success": "Your review has been saved. Thank you!",
     "noRatings": "No reviews yet. Be the first to review!",
     "user": "User"
+  },
+  "about": {
+    "title": "About Us",
+    "hero": "The ShapeBazaar Story",
+    "intro": "ShapeBazaar is a platform where digital designs become real products. Founded in 2024, our project brings together designers, manufacturers, and users under one roof to revolutionize the 3D printing industry.",
+    "vision_title": "Our Vision",
+    "vision_desc": "To democratize design and enable every idea to find physical form in the real world.",
+    "team_title": "Our Team",
+    "team_desc": "Built by Turkey's finest software developers, designers, and entrepreneurs."
+  },
+  "mission": {
+    "title": "Mission & Vision",
+    "missionTitle": "Our Mission",
+    "missionDesc": "To provide the tools needed for every designer to monetize their talent, every manufacturer to utilize their capacity, and every customer to realize their dreams.",
+    "visionTitle": "Our Vision",
+    "visionDesc": "To build a global 3D printing network starting from Turkey. To create an ecosystem operated openly and fairly, without central control, where design, production, and consumption are all decentralized.",
+    "valuesTitle": "Our Values",
+    "value1": "Fairness",
+    "value1Desc": "Equal opportunities and transparent pricing for all parties.",
+    "value2": "Community",
+    "value2Desc": "We grow together. We aim for a network, not a single player.",
+    "value3": "Quality",
+    "value3Desc": "High standards at every stage of design, production, and delivery.",
+    "value4": "Innovation",
+    "value4Desc": "Making 3D printing technology accessible and economical."
+  },
+  "blog": {
+    "title": "Blog",
+    "subtitle": "Latest news, guides, and success stories",
+    "noContent": "Articles coming soon. Don't forget to follow us!",
+    "readMore": "Read More"
+  },
+  "contact": {
+    "title": "Contact",
+    "subtitle": "Get in Touch",
+    "description": "Have questions? Don't hesitate to reach out to us. Our team will respond within 24 hours.",
+    "formName": "Your Name",
+    "formEmail": "Your Email",
+    "formSubject": "Subject",
+    "formMessage": "Your Message",
+    "formPhone": "Your Phone (optional)",
+    "formSend": "Send Message",
+    "formSending": "Sending...",
+    "formSuccess": "Message sent successfully! Thank you.",
+    "formError": "An error occurred. Please try again.",
+    "infoTitle": "Contact Information",
+    "email": "Email",
+    "phone": "Phone",
+    "address": "Address"
+  },
+  "privacy": {
+    "title": "Privacy Policy",
+    "lastUpdated": "Last Updated: June 2024",
+    "intro": "At ShapeBazaar (\"we\", \"us\", or \"Company\"), we respect your privacy.",
+    "section1": "Information We Collect",
+    "section1Content": "When you register and use our services, we collect: name, email address, phone number, payment information, 3D design files, and order history.",
+    "section2": "Use of Information",
+    "section2Content": "We use collected data to provide, improve, and analyze our services, and to comply with legal obligations.",
+    "section3": "Data Security",
+    "section3Content": "Your data is protected through encrypted connections and secure servers. However, no system is 100% secure.",
+    "section4": "Cookies",
+    "section4Content": "Our platform uses cookies to improve user experience.",
+    "section5": "Your Rights",
+    "section5Content": "Under GDPR regulations, you have the right to access, correct, and delete your personal data."
+  },
+  "terms": {
+    "title": "Terms of Service",
+    "lastUpdated": "Last Updated: June 2024",
+    "intro": "By using ShapeBazaar, you accept these terms and conditions.",
+    "section1": "Service Description",
+    "section1Content": "ShapeBazaar is a platform that converts 3D designs into printed products. Designers, manufacturers, and customers can conduct transactions within this ecosystem.",
+    "section2": "User Responsibilities",
+    "section2Content": "Users are responsible for ensuring that uploaded designs do not infringe copyrights and that they do not use the platform for illegal purposes.",
+    "section3": "Payment and Orders",
+    "section3Content": "All payments are made through secure payment methods. Orders cannot be cancelled once confirmed.",
+    "section4": "Return Policy",
+    "section4Content": "If there is a defect in the product within 30 days, replacement or refund is available.",
+    "section5": "Limitation of Liability",
+    "section5Content": "ShapeBazaar cannot be held responsible for direct or indirect damages arising from its services."
+  },
+  "cookies": {
+    "title": "Cookie Policy",
+    "lastUpdated": "Last Updated: June 2024",
+    "intro": "ShapeBazaar uses cookies to improve our platform and enhance user experience.",
+    "section1": "What is a Cookie?",
+    "section1Content": "Cookies are small text files stored by your browser. They are used to remember preferences and user choices.",
+    "section2": "Types of Cookies We Use",
+    "section2Content": "Essential cookies: For proper functionality. Analytics cookies: To understand traffic. Marketing cookies: To optimize ad delivery.",
+    "section3": "Managing Cookies",
+    "section3Content": "You can control cookies through your browser settings. However, this may affect platform functionality.",
+    "section4": "Third-Party Cookies",
+    "section4Content": "Services like Google Analytics and Stripe may also use cookies."
+  },
+  "cart": {
+    "title": "Shopping Cart",
+    "items": "items",
+    "empty": "Your cart is empty",
+    "emptyDesc": "You can add products from the models page.",
+    "browseModels": "Browse models →",
+    "clear": "Clear",
+    "deliveryAddress": "Delivery Address",
+    "nameRequired": "Full Name *",
+    "namePlaceholder": "John Doe",
+    "phoneOptional": "Phone",
+    "phonePlaceholder": "+90 5XX XXX XX XX",
+    "cityRequired": "City *",
+    "cityPlaceholder": "Istanbul",
+    "districtOptional": "District",
+    "districtPlaceholder": "Kadıköy",
+    "addressRequired": "Address *",
+    "addressPlaceholder": "Neighborhood, street, building no…",
+    "fillRequired": "Please fill in required fields.",
+    "cart": "Cart",
+    "address": "Address",
+    "payment": "Payment",
+    "placeOrder": "Place Order →",
+    "continuePayment": "Continue Payment →",
+    "orderSummary": "Order Summary",
+    "shipping": "Shipping",
+    "total": "Total",
+    "securePayment": "Secure Payment",
+    "securePaymentDesc": "You will be redirected to Iyzico secure payment page",
+    "payWith": "Pay with Iyzico →",
+    "redirecting": "Redirecting…",
+    "back": "← Back",
+    "safeShipping": "Safe Shipping",
+    "singleShipping": "Single Shipping"
+  },
+  "designers": {
+    "title": "Designers",
+    "subtitle": "Explore talented designers and their creations",
+    "all": "All Designers",
+    "viewProfile": "View Profile",
+    "designs": "Designs",
+    "followers": "Followers",
+    "joinDesigners": "Become a Designer"
+  },
+  "becomePartner": {
+    "title": "Become a Partner",
+    "subtitle": "Join ShapeBazaar and grow your business",
+    "description": "Add your 3D printers to the ShapeBazaar ecosystem. Get jobs from the order pool, earn from every print.",
+    "benefits": [
+      {
+        "title": "Earn from every print",
+        "desc": "Get points in your wallet for every completed order."
+      },
+      {
+        "title": "Flexible work",
+        "desc": "Take the orders you want, work whenever you want."
+      },
+      {
+        "title": "Secure payment",
+        "desc": "Payments are protected through the platform."
+      },
+      {
+        "title": "Monetize your capacity",
+        "desc": "Turn your idle printers into a revenue source."
+      }
+    ],
+    "howItWorks": "How it works?",
+    "steps": [
+      "Apply",
+      "Get approved",
+      "See orders",
+      "Earn"
+    ],
+    "applyButton": "Apply →",
+    "printerType": "Printer Type * (multiple selectable)",
+    "supportedMaterials": "Supported Materials *",
+    "printVolume": "Print Volume (mm)",
+    "dailyCapacity": "Daily Capacity",
+    "city": "City *",
+    "district": "District",
+    "experience": "Experience & Notes",
+    "experiencePlaceholder": "Your 3D printing experience, special skills...",
+    "backButton": "← Back",
+    "formTitle": "Printer Partner Application",
+    "formDescription": "Fill in your information completely, we will respond within 2-3 business days.",
+    "submitButton": "Submit Application →",
+    "submittingButton": "Submitting…",
+    "doneTitle": "Your application received!",
+    "doneDescription": "Our team will review your application and contact you via email within 2-3 business days. After approval, you will have access to the order pool.",
+    "dashboardButton": "Go to Dashboard"
   }
 }
