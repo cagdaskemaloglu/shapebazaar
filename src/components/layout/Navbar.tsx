@@ -134,7 +134,12 @@ export function Navbar({ user: initialUser }: NavbarProps) {
       }`}>
         <div className="max-w-7xl mx-auto px-4 sm:px-6 h-14 flex items-center justify-between gap-4">
 
-          <Link href={`/${locale}`} className="flex items-center gap-1 shrink-0">
+          <Link href={`/${locale}`} className="flex items-center gap-2 shrink-0">
+            <img
+              src="/logo.png"
+              alt="ShapeBazaar"
+              className="w-7 h-7 object-contain"
+            />
             <span className="text-lg font-semibold tracking-tight">
               <span className="text-[#FF6B35]">Shape</span>
               <span className="text-[var(--text-primary)]">Bazaar</span>

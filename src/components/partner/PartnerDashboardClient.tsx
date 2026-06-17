@@ -1,5 +1,7 @@
 "use client";
 import { useState, useEffect, useCallback } from "react";
+import { useTranslations } from "next-intl";
+import { usePathname } from "next/navigation";
 import { createClient } from "@/lib/supabase/client";
 import { formatPrice } from "@/lib/utils";
 import {
@@ -45,28 +47,21 @@ interface PrintJob {
 
 const PRINTER_EARNING_RATE = 0.15;
 
-const JOB_STATUS: Record<string, { label: string; color: string }> = {
-  available: { label: "Müsait",     color: "bg-[rgba(16,185,129,0.1)] text-[#10B981]"                              },
-  claimed:   { label: "Üstlenildi", color: "bg-[rgba(255,107,53,0.1)] text-[#FF6B35]"                              },
-  printing:  { label: "Baskıda",    color: "bg-purple-100 text-purple-700 dark:bg-purple-900/30 dark:text-purple-400" },
-  done:      { label: "Tamamlandı", color: "bg-green-100 text-green-700 dark:bg-green-900/30 dark:text-green-400"   },
-  failed:    { label: "Başarısız",  color: "bg-red-100 text-red-600 dark:bg-red-900/30 dark:text-red-400"           },
-};
-
-function getTimeLeft(deadline: string | null): { text: string; urgent: boolean } | null {
+function getTimeLeft(deadline: string | null, t: ReturnType<typeof useTranslations>): { text: string; urgent: boolean } | null {
   if (!deadline) return null;
   const diff = new Date(deadline).getTime() - Date.now();
-  if (diff <= 0) return { text: "Süresi doldu", urgent: true };
+  if (diff <= 0) return { text: t("expired"), urgent: true };
   const hours = Math.floor(diff / 3600000);
-  if (hours < 24) return { text: `${hours} saat kaldı`, urgent: hours < 6 };
+  if (hours < 24) return { text: t("hoursLeft", { hours }), urgent: hours < 6 };
   const days = Math.floor(hours / 24);
-  return { text: `${days} gün ${hours % 24} saat kaldı`, urgent: days < 1 };
+  return { text: t("daysLeft", { days, hours: hours % 24 }), urgent: days < 1 };
 }
 
-function ShippingModal({ onSubmit, onClose, loading }: {
+function ShippingModal({ onSubmit, onClose, loading, t }: {
   onSubmit: (trackingNumber: string, cargoCompany: string) => void;
   onClose: () => void;
   loading: boolean;
+  t: ReturnType<typeof useTranslations>;
 }) {
   const [trackingNumber, setTrackingNumber] = useState("");
   const [cargoCompany,   setCargoCompany]   = useState("");
@@ -74,17 +69,17 @@ function ShippingModal({ onSubmit, onClose, loading }: {
     <div className="fixed inset-0 z-50 bg-black/50 backdrop-blur-sm flex items-center justify-center p-4">
       <div className="bg-[var(--bg-primary)] border border-[var(--border)] rounded-2xl p-6 w-full max-w-sm flex flex-col gap-4">
         <div>
-          <h2 className="font-semibold text-[var(--text-primary)] mb-1">Kargo Bilgisi Gir</h2>
-          <p className="text-xs text-[var(--text-tertiary)]">Siparişi tamamlamak için kargo bilgilerini girin.</p>
+          <h2 className="font-semibold text-[var(--text-primary)] mb-1">{t("cargoTitle")}</h2>
+          <p className="text-xs text-[var(--text-tertiary)]">{t("cargoSub")}</p>
         </div>
         <div>
-          <label className="text-xs text-[var(--text-tertiary)] block mb-1">Kargo Firması</label>
-          <input type="text" placeholder="Yurtiçi Kargo, Aras Kargo…" value={cargoCompany}
+          <label className="text-xs text-[var(--text-tertiary)] block mb-1">{t("cargoCompany")}</label>
+          <input type="text" placeholder={t("cargoCompanyPlaceholder")} value={cargoCompany}
             onChange={(e) => setCargoCompany(e.target.value)}
             className="w-full h-10 px-3 text-sm rounded-xl border border-[var(--border)] bg-[var(--bg-secondary)] text-[var(--text-primary)] outline-none focus:border-[#FF6B35] transition-colors placeholder:text-[var(--text-tertiary)]" />
         </div>
         <div>
-          <label className="text-xs text-[var(--text-tertiary)] block mb-1">Takip Numarası *</label>
+          <label className="text-xs text-[var(--text-tertiary)] block mb-1">{t("trackingNumber")} *</label>
           <input type="text" placeholder="1234567890" value={trackingNumber}
             onChange={(e) => setTrackingNumber(e.target.value)}
             className="w-full h-10 px-3 text-sm rounded-xl border border-[var(--border)] bg-[var(--bg-secondary)] text-[var(--text-primary)] outline-none focus:border-[#FF6B35] transition-colors placeholder:text-[var(--text-tertiary)]" />
@@ -92,14 +87,14 @@ function ShippingModal({ onSubmit, onClose, loading }: {
         <div className="flex gap-2 pt-1">
           <button onClick={onClose}
             className="flex-1 h-10 rounded-xl border border-[var(--border)] text-sm text-[var(--text-secondary)] hover:bg-[var(--bg-secondary)] transition-colors">
-            İptal
+            {t("cancel")}
           </button>
           <button onClick={() => onSubmit(trackingNumber, cargoCompany)}
             disabled={!trackingNumber || loading}
             className="flex-1 h-10 rounded-xl bg-[#FF6B35] text-white text-sm font-medium hover:bg-[#e85e2a] disabled:opacity-40 transition-colors flex items-center justify-center gap-2">
             {loading
-              ? <><div className="w-4 h-4 border-2 border-white/40 border-t-white rounded-full animate-spin" />Kaydediliyor…</>
-              : <><Truck size={14} />Kargoya Verildi</>}
+              ? <><div className="w-4 h-4 border-2 border-white/40 border-t-white rounded-full animate-spin" />{t("saving")}</>
+              : <><Truck size={14} />{t("shipped")}</>}
           </button>
         </div>
       </div>
@@ -108,6 +103,18 @@ function ShippingModal({ onSubmit, onClose, loading }: {
 }
 
 export function PartnerDashboardClient({ userId }: { userId: string }) {
+  const t        = useTranslations("partner");
+  const pathname = usePathname();
+  const locale   = pathname.split("/")[1] || "tr";
+
+  const JOB_STATUS: Record<string, { label: string; color: string }> = {
+    available: { label: t("available"),  color: "bg-[rgba(16,185,129,0.1)] text-[#10B981]"                              },
+    claimed:   { label: t("claimed"),    color: "bg-[rgba(255,107,53,0.1)] text-[#FF6B35]"                              },
+    printing:  { label: t("startPrint"), color: "bg-purple-100 text-purple-700 dark:bg-purple-900/30 dark:text-purple-400" },
+    done:      { label: t("completed"),  color: "bg-green-100 text-green-700 dark:bg-green-900/30 dark:text-green-400"   },
+    failed:    { label: "—",             color: "bg-red-100 text-red-600 dark:bg-red-900/30 dark:text-red-400"           },
+  };
+
   const [tab,             setTab]             = useState<"pool" | "mine" | "history">("pool");
   const [poolJobs,        setPoolJobs]        = useState<PrintJob[]>([]);
   const [myJobs,          setMyJobs]          = useState<PrintJob[]>([]);
@@ -129,8 +136,7 @@ export function PartnerDashboardClient({ userId }: { userId: string }) {
       .eq("status", "claimed")
       .lt("deadline", new Date().toISOString());
 
-    // Havuz — foreign key join olmadan, printer bilgisini ayrı çekeceğiz
-    const { data: pool, error: poolError } = await supabase
+    const { data: pool, error: poolErr } = await supabase
       .from("print_jobs")
       .select(`
         id, status, claimed_at, printed_at, deadline, created_at, printer_id, printer_notes,
@@ -140,10 +146,9 @@ export function PartnerDashboardClient({ userId }: { userId: string }) {
       .order("created_at", { ascending: false })
       .limit(50);
 
-    if (poolError) console.error("Pool fetch error:", poolError);
+    if (poolErr) console.error("Pool fetch error:", poolErr);
 
-    // Kendi işlerim
-    const { data: mine, error: mineError } = await supabase
+    const { data: mine, error: mineErr } = await supabase
       .from("print_jobs")
       .select(`
         id, status, claimed_at, printed_at, deadline, created_at, printer_id, printer_notes,
@@ -152,9 +157,8 @@ export function PartnerDashboardClient({ userId }: { userId: string }) {
       .eq("printer_id", userId)
       .order("created_at", { ascending: false });
 
-    if (mineError) console.error("Mine fetch error:", mineError);
+    if (mineErr) console.error("Mine fetch error:", mineErr);
 
-    // Cüzdan
     const { data: wallet } = await supabase
       .from("profiles")
       .select("wallet_balance")
@@ -162,7 +166,7 @@ export function PartnerDashboardClient({ userId }: { userId: string }) {
       .single();
 
     // Printer bilgilerini ayrı çek
-    const allJobs   = [...(pool ?? []), ...(mine ?? [])];
+    const allJobs    = [...(pool ?? []), ...(mine ?? [])];
     const printerIds = [...new Set(allJobs.map((j: any) => j.printer_id).filter(Boolean))];
     let printerMap: Record<string, { full_name: string | null; username: string | null }> = {};
     if (printerIds.length > 0) {
@@ -211,12 +215,10 @@ export function PartnerDashboardClient({ userId }: { userId: string }) {
     setClaiming(jobId);
     const supabase = createClient();
     const deadline = new Date(Date.now() + 2 * 24 * 3600 * 1000).toISOString();
-    const { error } = await supabase
+    await supabase
       .from("print_jobs")
       .update({ status: "claimed", printer_id: userId, claimed_at: new Date().toISOString(), deadline })
-      .eq("id", jobId)
-      .eq("status", "available");
-    if (error) console.error("Claim error:", error);
+      .eq("id", jobId).eq("status", "available");
     await fetchAll();
     setClaiming(null);
     setTab("mine");
@@ -232,18 +234,15 @@ export function PartnerDashboardClient({ userId }: { userId: string }) {
     setShippingLoading(true);
     const supabase = createClient();
     const job = myJobs.find((j) => j.id === jobId);
-
     await supabase.from("print_jobs").update({ status: "done", printed_at: new Date().toISOString() }).eq("id", jobId);
-
     if (job?.order?.id) {
       await supabase.from("orders").update({
         status: "shipped", tracking_number: trackingNumber, cargo_company: cargoCompany,
       }).eq("id", job.order.id);
-
       const earning = (job.order.total_amount ?? 0) * PRINTER_EARNING_RATE;
       await supabase.from("wallet_transactions").insert({
         user_id: userId, type: "earn", amount: earning,
-        description: `Baskı kazancı — Sipariş #${job.order.id.slice(0, 8)}`,
+        description: `${t("earning")} — #${job.order.id.slice(0, 8)}`,
         ref_order_id: job.order.id,
       });
       await supabase.rpc("increment_wallet", { uid: userId, amount: earning });
@@ -252,7 +251,6 @@ export function PartnerDashboardClient({ userId }: { userId: string }) {
         body: JSON.stringify({ orderId: job.order.id, trackingNumber, cargoCompany }),
       }).catch(() => {});
     }
-
     setShippingLoading(false);
     setShippingJobId(null);
     await fetchAll();
@@ -275,22 +273,24 @@ export function PartnerDashboardClient({ userId }: { userId: string }) {
 
   return (
     <div className="flex flex-col gap-6">
+      {/* Header */}
       <div className="flex items-center justify-between">
         <div>
-          <h1 className="text-2xl font-semibold text-[var(--text-primary)]">Sipariş Paneli</h1>
-          <p className="text-sm text-[var(--text-tertiary)] mt-0.5">Sipariş havuzunu yönet</p>
+          <h1 className="text-2xl font-semibold text-[var(--text-primary)]">{t("orderPanel")}</h1>
+          <p className="text-sm text-[var(--text-tertiary)] mt-0.5">{t("orderPanelSub")}</p>
         </div>
         <div className="bg-[var(--bg-secondary)] border border-[var(--border)] rounded-2xl px-5 py-3 text-center">
-          <div className="text-xs text-[var(--text-tertiary)] mb-0.5">Toplam Kazanç</div>
+          <div className="text-xs text-[var(--text-tertiary)] mb-0.5">{t("totalEarning")}</div>
           <div className="text-lg font-semibold text-[#10B981]">{formatPrice(earnings)}</div>
         </div>
       </div>
 
+      {/* Stats */}
       <div className="grid grid-cols-3 gap-3">
         {[
-          { label: "Havuzdaki sipariş", value: poolJobs.filter(j => j.status === "available").length, icon: Package,     color: "orange" },
-          { label: "Aktif baskı",       value: activeJobs.length,                                      icon: Printer,     color: "purple" },
-          { label: "Tamamlanan",        value: completedJobs.length,                                    icon: CheckCircle, color: "green"  },
+          { label: t("availableOrders"), value: poolJobs.filter(j => j.status === "available").length, icon: Package,     color: "orange" },
+          { label: t("activePrints"),    value: activeJobs.length,                                      icon: Printer,     color: "purple" },
+          { label: t("completed"),       value: completedJobs.length,                                    icon: CheckCircle, color: "green"  },
         ].map((s) => {
           const Icon = s.icon;
           return (
@@ -309,30 +309,32 @@ export function PartnerDashboardClient({ userId }: { userId: string }) {
         })}
       </div>
 
+      {/* Tabs */}
       <div className="flex gap-1 border border-[var(--border)] rounded-xl p-1 w-fit">
         {[
-          { id: "pool",    label: `Sipariş Havuzu (${poolJobs.length})`     },
-          { id: "mine",    label: `Aktif Baskılarım (${activeJobs.length})` },
-          { id: "history", label: `Geçmiş (${completedJobs.length})`        },
-        ].map((t) => (
-          <button key={t.id} onClick={() => setTab(t.id as any)}
+          { id: "pool",    label: `${t("orderPool")} (${poolJobs.length})`     },
+          { id: "mine",    label: `${t("activeJobs")} (${activeJobs.length})`  },
+          { id: "history", label: `${t("history")} (${completedJobs.length})`  },
+        ].map((tb) => (
+          <button key={tb.id} onClick={() => setTab(tb.id as any)}
             className={`px-4 py-2 rounded-lg text-sm transition-all ${
-              tab === t.id
+              tab === tb.id
                 ? "bg-[rgba(255,107,53,0.1)] text-[#FF6B35] font-medium"
                 : "text-[var(--text-secondary)] hover:bg-[var(--bg-secondary)]"
             }`}>
-            {t.label}
+            {tb.label}
           </button>
         ))}
       </div>
 
+      {/* Liste */}
       {loading ? (
-        <div className="text-center py-16 text-sm text-[var(--text-tertiary)]">Yükleniyor…</div>
+        <div className="text-center py-16 text-sm text-[var(--text-tertiary)]">{t("loading")}</div>
       ) : displayJobs.length === 0 ? (
         <div className="text-center py-16">
           <Package size={36} className="mx-auto mb-3 text-[var(--text-tertiary)] opacity-20" />
           <p className="text-sm text-[var(--text-tertiary)]">
-            {tab === "pool" ? "Şu an müsait sipariş bulunmuyor." : "Kayıt bulunamadı."}
+            {tab === "pool" ? t("noJobs") : t("noRecords")}
           </p>
         </div>
       ) : (
@@ -346,7 +348,7 @@ export function PartnerDashboardClient({ userId }: { userId: string }) {
             const isMine         = job.printer_id === userId;
             const isClaimed      = job.status === "claimed";
             const claimedByOther = isClaimed && !isMine;
-            const timeLeft       = getTimeLeft(job.deadline);
+            const timeLeft       = getTimeLeft(job.deadline, t);
 
             return (
               <div key={job.id} className={`bg-[var(--bg-primary)] border rounded-2xl overflow-hidden transition-all ${
@@ -359,7 +361,7 @@ export function PartnerDashboardClient({ userId }: { userId: string }) {
                     <div className="font-medium text-sm text-[var(--text-primary)] truncate">
                       {items.length > 0
                         ? items.map((i) => i.model_title).join(", ")
-                        : `Sipariş #${order?.id?.slice(0, 8) ?? "—"}`}
+                        : `#${order?.id?.slice(0, 8) ?? "—"}`}
                     </div>
                     <div className="flex items-center gap-3 mt-0.5 flex-wrap">
                       {order?.city && (
@@ -368,10 +370,10 @@ export function PartnerDashboardClient({ userId }: { userId: string }) {
                         </span>
                       )}
                       <span className="flex items-center gap-1 text-xs text-[var(--text-tertiary)]">
-                        <Box size={10} /> {items.length} ürün
+                        <Box size={10} /> {items.length} {t("products2")}
                       </span>
                       <span className="text-xs text-[var(--text-tertiary)]">
-                        {new Date(job.created_at).toLocaleDateString("tr-TR")}
+                        {new Date(job.created_at).toLocaleDateString(locale === "tr" ? "tr-TR" : "en-US")}
                       </span>
                     </div>
                     {isClaimed && (
@@ -379,12 +381,14 @@ export function PartnerDashboardClient({ userId }: { userId: string }) {
                         {claimedByOther && (
                           <span className="flex items-center gap-1 text-xs text-[var(--text-tertiary)]">
                             <User size={10} />
-                            {job.printer_username
-                              ? `@${job.printer_username}`
-                              : job.printer_full_name ?? "Ortak"} üzerinde
+                            {t("onPartner", {
+                              name: job.printer_username
+                                ? `@${job.printer_username}`
+                                : job.printer_full_name ?? "—"
+                            })}
                           </span>
                         )}
-                        {isMine && <span className="text-xs text-[#FF6B35] font-medium">Senin üzerinde</span>}
+                        {isMine && <span className="text-xs text-[#FF6B35] font-medium">{t("onMe")}</span>}
                         {timeLeft && (
                           <span className={`flex items-center gap-1 text-xs font-medium ${timeLeft.urgent ? "text-red-500" : "text-amber-500"}`}>
                             {timeLeft.urgent && <AlertTriangle size={10} />}
@@ -398,26 +402,26 @@ export function PartnerDashboardClient({ userId }: { userId: string }) {
                   <div className="flex items-center gap-2 shrink-0">
                     <div className="text-right">
                       <div className="text-sm font-semibold text-[#10B981]">+{formatPrice(earning)}</div>
-                      <div className="text-[10px] text-[var(--text-tertiary)]">kazanç</div>
+                      <div className="text-[10px] text-[var(--text-tertiary)]">{t("earning")}</div>
                     </div>
                     <span className={`text-[11px] font-medium px-2.5 py-1 rounded-full ${st.color}`}>{st.label}</span>
 
                     {job.status === "available" && (
                       <button onClick={() => claimJob(job.id)} disabled={claiming === job.id}
                         className="text-xs px-3 py-1.5 bg-[#10B981] text-white rounded-lg hover:bg-[#0da572] disabled:opacity-50 transition-colors">
-                        {claiming === job.id ? "…" : "Üstlen"}
+                        {claiming === job.id ? "…" : t("claim")}
                       </button>
                     )}
                     {isMine && job.status === "claimed" && (
                       <button onClick={() => startPrinting(job.id)}
                         className="text-xs px-3 py-1.5 bg-purple-500 text-white rounded-lg hover:bg-purple-600 transition-colors">
-                        Baskıya Al
+                        {t("startPrint")}
                       </button>
                     )}
                     {isMine && job.status === "printing" && (
                       <button onClick={() => setShippingJobId(job.id)}
                         className="text-xs px-3 py-1.5 bg-[#FF6B35] text-white rounded-lg hover:bg-[#e85e2a] transition-colors flex items-center gap-1">
-                        <Truck size={12} /> Tamamlandı
+                        <Truck size={12} /> {t("completeBtn")}
                       </button>
                     )}
                     <button onClick={() => toggleExpand(job.id)}
@@ -431,7 +435,7 @@ export function PartnerDashboardClient({ userId }: { userId: string }) {
                   <div className="border-t border-[var(--border)] px-4 pb-4 pt-3 flex flex-col gap-3">
                     {items.length > 0 && (
                       <div>
-                        <div className="text-xs font-semibold uppercase tracking-wider text-[var(--text-tertiary)] mb-2">Ürünler</div>
+                        <div className="text-xs font-semibold uppercase tracking-wider text-[var(--text-tertiary)] mb-2">{t("products")}</div>
                         <div className="flex flex-col gap-2">
                           {items.map((item) => (
                             <div key={item.id} className="flex items-center gap-3 bg-[var(--bg-secondary)] rounded-xl px-3 py-2.5">
@@ -454,7 +458,7 @@ export function PartnerDashboardClient({ userId }: { userId: string }) {
 
                     {isMine && order && (
                       <div>
-                        <div className="text-xs font-semibold uppercase tracking-wider text-[var(--text-tertiary)] mb-2">Teslimat Adresi</div>
+                        <div className="text-xs font-semibold uppercase tracking-wider text-[var(--text-tertiary)] mb-2">{t("deliveryAddress")}</div>
                         <div className="bg-[var(--bg-secondary)] rounded-xl px-3 py-2.5">
                           <div className="text-sm font-medium text-[var(--text-primary)]">{order.recipient_name ?? "—"}</div>
                           <div className="text-xs text-[var(--text-tertiary)] mt-0.5">
@@ -467,11 +471,11 @@ export function PartnerDashboardClient({ userId }: { userId: string }) {
 
                     <div className="flex flex-col gap-1 pt-1 border-t border-[var(--border)]">
                       <div className="flex justify-between text-sm">
-                        <span className="text-[var(--text-tertiary)]">Sipariş toplamı</span>
+                        <span className="text-[var(--text-tertiary)]">{t("orderTotal")}</span>
                         <span className="font-medium text-[var(--text-primary)]">{formatPrice(order?.total_amount ?? 0)}</span>
                       </div>
                       <div className="flex justify-between text-sm">
-                        <span className="text-[var(--text-tertiary)]">Kazancın (%{PRINTER_EARNING_RATE * 100})</span>
+                        <span className="text-[var(--text-tertiary)]">{t("myEarning", { rate: PRINTER_EARNING_RATE * 100 })}</span>
                         <span className="font-semibold text-[#10B981]">+{formatPrice(earning)}</span>
                       </div>
                     </div>
@@ -479,7 +483,7 @@ export function PartnerDashboardClient({ userId }: { userId: string }) {
                     {isMine && isClaimed && timeLeft?.urgent && (
                       <div className="flex items-center gap-2 text-xs text-red-500 bg-red-50 dark:bg-red-950/20 border border-red-200 dark:border-red-900 rounded-xl px-3 py-2.5">
                         <AlertTriangle size={13} className="shrink-0" />
-                        Dikkat: Son teslim süreniz dolmak üzere! Süre dolduğunda sipariş otomatik havuza döner.
+                        {t("deadlineWarning")}
                       </div>
                     )}
                   </div>
@@ -495,6 +499,7 @@ export function PartnerDashboardClient({ userId }: { userId: string }) {
           loading={shippingLoading}
           onClose={() => setShippingJobId(null)}
           onSubmit={(trackingNumber, cargoCompany) => completeJob(shippingJobId, trackingNumber, cargoCompany)}
+          t={t}
         />
       )}
     </div>

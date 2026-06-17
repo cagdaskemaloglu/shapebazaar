@@ -71,6 +71,22 @@
       "cta": "Modellere göz at"
     }
   },
+  "designers": {
+    "title": "Tasarımcılar",
+    "subtitle": "ShapeBazaar topluluğunun yaratıcı üyeleri",
+    "topTrending": "En Trend Tasarımcılar",
+    "allTitle": "En Başarılı Tasarımcılar",
+    "designerCount": "tasarımcı",
+    "modelCount": "model",
+    "printCount": "baskı",
+    "defaultName": "Tasarımcı",
+    "noDesigners": "Henüz yayınlanmış model sahibi tasarımcı yok.",
+    "all": "Tüm Tasarımcılar",
+    "viewProfile": "Profili Gör",
+    "designs": "Tasarımlar",
+    "followers": "Takipçiler",
+    "joinDesigners": "Tasarımcı Ol"
+  },
   "values": {
     "title": "Şirket değerlerimiz",
     "subtitle": "ShapeBazaar'ı bir araya getiren ilkeler",
@@ -149,7 +165,9 @@
       "priceAsc": "Fiyat: Düşük → Yüksek",
       "priceDesc": "Fiyat: Yüksek → Düşük",
       "rating": "En Yüksek Puan"
-    }
+    },
+    "trend": "Trend",
+    "new": "Yeni"
   },
   "modelDetail": {
     "home": "Ana Sayfa",
@@ -370,10 +388,39 @@
     "history": "Geçmiş",
     "noJobs": "Şu an müsait sipariş bulunmuyor.",
     "noRecords": "Kayıt bulunamadı.",
-    "claim": "Üstlen",
+    "claimed": "Üstlen",
     "startPrint": "Baskıya Al",
     "markDone": "Tamamlandı ✓",
-    "earning": "kazanç"
+    "earning": "kazanç",
+    "orderPanel": "Sipariş Paneli",
+    "orderPanelSub": "Sipariş havuzunu yönet",
+    "totalEarning": "Toplam Kazanç",
+    "availableOrders": "Havuzdaki sipariş",
+    "activePrints": "Aktif baskı",
+    "orderPool": "Sipariş Havuzu",
+    "activeJobs": "Aktif Baskılarım",
+    "noOrders": "Şu an müsait sipariş bulunmuyor.",
+    "products": "Ürünler",
+    "deliveryAddress": "Teslimat Adresi",
+    "orderTotal": "Sipariş toplamı",
+    "myEarning": "Kazancın (%{rate})",
+    "deadlineWarning": "Dikkat: Son teslim süreniz dolmak üzere! Süre dolduğunda sipariş otomatik havuza döner.",
+    "onMe": "Senin üzerinde",
+    "onPartner": "{name} üzerinde",
+    "expired": "Süresi doldu",
+    "hoursLeft": "{hours} saat kaldı",
+    "daysLeft": "{days} gün {hours} saat kaldı",
+    "claimBtn": "Üstlen",
+    "completeBtn": "Tamamlandı",
+    "products2": "ürün",
+    "cargoTitle": "Kargo Bilgisi Gir",
+    "cargoSub": "Siparişi tamamlamak için kargo bilgilerini girin.",
+    "cargoCompany": "Kargo Firması",
+    "cargoCompanyPlaceholder": "Yurtiçi Kargo, Aras Kargo…",
+    "trackingNumber": "Takip Numarası",
+    "saving": "Kaydediliyor…",
+    "shipped": "Kargoya Verildi",
+    "cancel": "İptal"
   },
   "admin": {
     "title": "Admin Paneli",

@@ -1,6 +1,6 @@
 "use client";
 import { useState, useEffect } from "react";
-import { usePathname } from "next/navigation";
+import { useTranslations, useLocale } from "next-intl";
 import Link from "next/link";
 import { createClient } from "@/lib/supabase/client";
 import { Star, TrendingUp, Package } from "lucide-react";
@@ -27,8 +27,8 @@ interface Designer {
 }
 
 export function DesignersPageClient() {
-  const pathname = usePathname();
-  const locale   = pathname.split("/")[1] || "tr";
+  const t      = useTranslations("designers");
+  const locale = useLocale();
 
   const [designers, setDesigners] = useState<Designer[]>([]);
   const [loading,   setLoading]   = useState(true);
@@ -91,8 +91,8 @@ export function DesignersPageClient() {
     <div className="max-w-7xl mx-auto px-4 sm:px-6 py-10">
       {/* Header */}
       <div className="mb-10">
-        <h1 className="text-2xl font-semibold text-[var(--text-primary)]">Tasarımcılar</h1>
-        <p className="text-sm text-[var(--text-tertiary)] mt-1">ShapeBazaar topluluğunun yaratıcı üyeleri</p>
+        <h1 className="text-2xl font-semibold text-[var(--text-primary)]">{t("title")}</h1>
+        <p className="text-sm text-[var(--text-tertiary)] mt-1">{t("subtitle")}</p>
       </div>
 
       {loading ? (
@@ -115,7 +115,7 @@ export function DesignersPageClient() {
       ) : designers.length === 0 ? (
         <div className="text-center py-20 text-[var(--text-tertiary)]">
           <Package size={36} className="mx-auto mb-3 opacity-30" />
-          <p className="text-sm">Henüz yayınlanmış model sahibi tasarımcı yok.</p>
+          <p className="text-sm">{t("noDesigners")}</p>
         </div>
       ) : (
         <>
@@ -124,7 +124,7 @@ export function DesignersPageClient() {
             <div className="mb-12">
               <div className="flex items-center gap-2 mb-5">
                 <TrendingUp size={16} className="text-[#FF6B35]" />
-                <h2 className="text-base font-semibold text-[var(--text-primary)]">En Trend Tasarımcılar</h2>
+                <h2 className="text-base font-semibold text-[var(--text-primary)]">{t("topTrending")}</h2>
               </div>
               <div className="grid grid-cols-1 md:grid-cols-3 gap-5">
                 {topDesigners.map((d, rank) => (
@@ -137,8 +137,8 @@ export function DesignersPageClient() {
           {/* Tüm tasarımcılar */}
           <div>
             <h2 className="text-base font-semibold text-[var(--text-primary)] mb-5">
-              En Başarılı Tasarımcılar
-              <span className="text-[var(--text-tertiary)] font-normal text-sm ml-2">({allDesigners.length} tasarımcı)</span>
+              {t("allTitle")}
+              <span className="text-[var(--text-tertiary)] font-normal text-sm ml-2">({allDesigners.length} {t("designerCount")})</span>
             </h2>
             <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-3 xl:grid-cols-4 gap-4">
               {allDesigners.map((d) => (
@@ -152,9 +152,10 @@ export function DesignersPageClient() {
   );
 }
 
-/* ── Featured designer card (top 3) ─────────────── */
 function FeaturedDesignerCard({ designer: d, rank, locale }: { designer: Designer; rank: number; locale: string }) {
-  const name = d.username ? `@${d.username}` : d.full_name ?? "Tasarımcı";
+  const t    = useTranslations("designers");
+  const tMod = useTranslations("modelsPage");
+  const name = d.username ? `@${d.username}` : d.full_name ?? t("defaultName");
   return (
     <Link href={`/${locale}/designers/${d.id}`} className="group block">
       <div className="bg-[var(--bg-primary)] border border-[var(--border)] rounded-2xl p-5 hover:border-[#FF6B35]/40 hover:shadow-sm transition-all">
@@ -180,8 +181,8 @@ function FeaturedDesignerCard({ designer: d, rank, locale }: { designer: Designe
 
         {/* Stats */}
         <div className="flex gap-3 mb-4 text-xs text-[var(--text-tertiary)]">
-          <span><strong className="text-[var(--text-primary)]">{d.model_count}</strong> model</span>
-          <span><strong className="text-[var(--text-primary)]">{d.total_prints}</strong> baskı</span>
+          <span><strong className="text-[var(--text-primary)]">{d.model_count}</strong> {t("modelCount")}</span>
+          <span><strong className="text-[var(--text-primary)]">{d.total_prints}</strong> {t("printCount")}</span>
           {d.avg_rating > 0 && (
             <span className="flex items-center gap-0.5">
               <Star size={10} fill="#FBBF24" className="text-amber-400" />
@@ -196,7 +197,7 @@ function FeaturedDesignerCard({ designer: d, rank, locale }: { designer: Designe
             {d.top_models.slice(0, 4).map((m) => (
               <div key={m.id} className="bg-[var(--bg-tertiary)] rounded-xl p-2.5 text-center">
                 <div className="text-xs font-medium text-[var(--text-primary)] truncate mb-1">{m.title}</div>
-                <div className="text-xs text-[#FF6B35] font-semibold">{m.is_free ? "Ücretsiz" : formatPrice(m.base_price)}</div>
+                <div className="text-xs text-[#FF6B35] font-semibold">{m.is_free ? tMod("free") : formatPrice(m.base_price, locale)}</div>
               </div>
             ))}
           </div>
@@ -208,7 +209,8 @@ function FeaturedDesignerCard({ designer: d, rank, locale }: { designer: Designe
 
 /* ── Regular designer card ───────────────────────── */
 function DesignerCard({ designer: d, locale }: { designer: Designer; locale: string }) {
-  const name = d.username ? `@${d.username}` : d.full_name ?? "Tasarımcı";
+  const t    = useTranslations("designers");
+  const name = d.username ? `@${d.username}` : d.full_name ?? t("defaultName");
   return (
     <Link href={`/${locale}/designers/${d.id}`} className="group block">
       <div className="bg-[var(--bg-primary)] border border-[var(--border)] rounded-2xl p-4 hover:border-[var(--border-strong)] hover:shadow-sm transition-all">
@@ -226,8 +228,8 @@ function DesignerCard({ designer: d, locale }: { designer: Designer; locale: str
           </div>
         </div>
         <div className="flex gap-3 text-xs text-[var(--text-tertiary)]">
-          <span><strong className="text-[var(--text-primary)]">{d.model_count}</strong> model</span>
-          <span><strong className="text-[var(--text-primary)]">{d.total_prints}</strong> baskı</span>
+          <span><strong className="text-[var(--text-primary)]">{d.model_count}</strong> {t("modelCount")}</span>
+          <span><strong className="text-[var(--text-primary)]">{d.total_prints}</strong> {t("printCount")}</span>
           {d.avg_rating > 0 && (
             <span className="flex items-center gap-0.5">
               <Star size={10} fill="#FBBF24" className="text-amber-400" />

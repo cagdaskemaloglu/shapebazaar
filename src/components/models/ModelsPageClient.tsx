@@ -1,27 +1,17 @@
 "use client";
 import { useState, useEffect, useCallback } from "react";
 import { Search, SlidersHorizontal, Star, TrendingUp, Sparkles, Grid3X3, List } from "lucide-react";
+import { useTranslations, useLocale } from "next-intl";
 import { createClient } from "@/lib/supabase/client";
 import { formatPrice } from "@/lib/utils";
 
-const CATEGORIES = [
-  { slug: "all",         label: "Tümü"         },
-  { slug: "Ev & Ofis",  label: "Ev & Ofis"    },
-  { slug: "Aksesuar",   label: "Aksesuar"      },
-  { slug: "Teknoloji",  label: "Teknoloji"     },
-  { slug: "Sanat & Dekor", label: "Sanat & Dekor" },
-  { slug: "Bahçe",      label: "Bahçe"         },
-  { slug: "Araç & Gereç", label: "Araç & Gereç" },
-  { slug: "Oyuncak",    label: "Oyuncak"       },
-];
+const SORT_VALUES = ["popular", "newest", "price_asc", "price_desc", "rating"];
 
-const SORT_OPTIONS = [
-  { value: "popular",    label: "En Popüler"             },
-  { value: "newest",     label: "En Yeni"                },
-  { value: "price_asc",  label: "Fiyat: Düşük → Yüksek" },
-  { value: "price_desc", label: "Fiyat: Yüksek → Düşük" },
-  { value: "rating",     label: "En Yüksek Puan"         },
-];
+interface Category {
+  id: number;
+  name_tr: string;
+  name_en: string | null;
+}
 
 interface Model {
   id: string;
@@ -35,17 +25,32 @@ interface Model {
   created_at: string;
   file_format: string;
   designer: { full_name: string | null; username: string | null } | null;
-  category: { name_tr: string } | null;
+  category: { name_tr: string; name_en: string } | null;
 }
 
 export function ModelsPageClient() {
-  const [search,   setSearch]   = useState("");
-  const [category, setCategory] = useState("all");
-  const [sort,     setSort]     = useState("popular");
-  const [view,     setView]     = useState<"grid" | "list">("grid");
-  const [models,   setModels]   = useState<Model[]>([]);
-  const [loading,  setLoading]  = useState(true);
-  const [total,    setTotal]    = useState(0);
+  const t      = useTranslations("modelsPage");
+  const locale = useLocale();
+  const [search,     setSearch]     = useState("");
+  const [categoryId, setCategoryId] = useState<number | null>(null);
+  const [sort,       setSort]       = useState("popular");
+  const [view,       setView]       = useState<"grid" | "list">("grid");
+  const [models,     setModels]     = useState<Model[]>([]);
+  const [loading,    setLoading]    = useState(true);
+  const [total,      setTotal]      = useState(0);
+  const [categories, setCategories] = useState<Category[]>([]);
+
+  // Kategorileri bir kez çek
+  useEffect(() => {
+    const supabase = createClient();
+    supabase
+      .from("categories")
+      .select("id, name_tr, name_en")
+      .order("name_tr")
+      .then(({ data }) => {
+        if (data) setCategories(data as Category[]);
+      });
+  }, []);
 
   const fetchModels = useCallback(async () => {
     setLoading(true);
@@ -57,15 +62,15 @@ export function ModelsPageClient() {
         id, title, base_price, is_free, thumbnail_url,
         avg_rating, rating_count, print_count, created_at, file_format,
         designer:profiles(full_name, username),
-        category:categories(name_tr)
+        category:categories(name_tr, name_en)
       `, { count: "exact" })
       .eq("is_published", true);
 
     if (search.trim()) {
       query = query.ilike("title", `%${search.trim()}%`);
     }
-    if (category !== "all") {
-      query = query.eq("categories.name_tr", category);
+    if (categoryId !== null) {
+      query = query.eq("category_id", categoryId);
     }
 
     if (sort === "popular")    query = query.order("print_count", { ascending: false });
@@ -81,7 +86,7 @@ export function ModelsPageClient() {
       setTotal(count ?? 0);
     }
     setLoading(false);
-  }, [search, category, sort]);
+  }, [search, categoryId, sort]);
 
   useEffect(() => {
     const t = setTimeout(fetchModels, 300);
@@ -91,9 +96,9 @@ export function ModelsPageClient() {
   return (
     <div className="max-w-7xl mx-auto px-4 sm:px-6 py-8">
       <div className="mb-6">
-        <h1 className="text-2xl font-semibold text-[var(--text-primary)]">3D Modeller</h1>
+        <h1 className="text-2xl font-semibold text-[var(--text-primary)]">{t("title")}</h1>
         <p className="text-sm text-[var(--text-tertiary)] mt-1">
-          {loading ? "Yükleniyor…" : `${total} model bulundu`}
+          {loading ? t("loading") : t("found", { count: total })}
         </p>
       </div>
 
@@ -103,7 +108,7 @@ export function ModelsPageClient() {
           <Search size={15} className="absolute left-3 top-1/2 -translate-y-1/2 text-[var(--text-tertiary)]" />
           <input
             type="text"
-            placeholder="Model ara…"
+            placeholder={t("search")}
             value={search}
             onChange={(e) => setSearch(e.target.value)}
             className="w-full h-10 pl-9 pr-3 text-sm rounded-xl border border-[var(--border)] bg-[var(--bg-secondary)] text-[var(--text-primary)] outline-none focus:border-[#FF6B35] transition-colors placeholder:text-[var(--text-tertiary)]"
@@ -114,8 +119,8 @@ export function ModelsPageClient() {
           onChange={(e) => setSort(e.target.value)}
           className="h-10 px-3 text-sm rounded-xl border border-[var(--border)] bg-[var(--bg-secondary)] text-[var(--text-primary)] outline-none focus:border-[#FF6B35] transition-colors cursor-pointer"
         >
-          {SORT_OPTIONS.map((o) => (
-            <option key={o.value} value={o.value}>{o.label}</option>
+          {SORT_VALUES.map((v) => (
+            <option key={v} value={v}>{t(`sort.${v === "price_asc" ? "priceAsc" : v === "price_desc" ? "priceDesc" : v}`)}</option>
           ))}
         </select>
         <div className="flex gap-1 border border-[var(--border)] rounded-xl p-1">
@@ -134,26 +139,38 @@ export function ModelsPageClient() {
         {/* Sidebar */}
         <aside className="hidden md:block w-48 shrink-0">
           <div className="bg-[var(--bg-primary)] border border-[var(--border)] rounded-2xl p-4">
-            <div className="text-xs font-semibold uppercase tracking-wider text-[var(--text-tertiary)] mb-3">Kategori</div>
+            <div className="text-xs font-semibold uppercase tracking-wider text-[var(--text-tertiary)] mb-3">{t("category")}</div>
             <div className="flex flex-col gap-0.5">
-              {CATEGORIES.map((c) => (
+              {/* Tümü butonu */}
+              <button
+                onClick={() => setCategoryId(null)}
+                className={`text-left text-sm px-2.5 py-1.5 rounded-lg transition-colors ${
+                  categoryId === null
+                    ? "bg-[rgba(255,107,53,0.1)] text-[#FF6B35] font-medium"
+                    : "text-[var(--text-secondary)] hover:bg-[var(--bg-secondary)]"
+                }`}
+              >
+                {t("all")}
+              </button>
+              {/* Veritabanından gelen kategoriler */}
+              {categories.map((cat) => (
                 <button
-                  key={c.slug}
-                  onClick={() => setCategory(c.slug)}
+                  key={cat.id}
+                  onClick={() => setCategoryId(cat.id)}
                   className={`text-left text-sm px-2.5 py-1.5 rounded-lg transition-colors ${
-                    category === c.slug
+                    categoryId === cat.id
                       ? "bg-[rgba(255,107,53,0.1)] text-[#FF6B35] font-medium"
                       : "text-[var(--text-secondary)] hover:bg-[var(--bg-secondary)]"
                   }`}
                 >
-                  {c.label}
+                  {locale === "en" && cat.name_en ? cat.name_en : cat.name_tr}
                 </button>
               ))}
             </div>
             <div className="border-t border-[var(--border)] mt-4 pt-4">
-              <div className="text-xs font-semibold uppercase tracking-wider text-[var(--text-tertiary)] mb-3">Fiyat</div>
+              <div className="text-xs font-semibold uppercase tracking-wider text-[var(--text-tertiary)] mb-3">{t("price")}</div>
               <div className="flex flex-col gap-2">
-                {["Ücretsiz", "₺0–₺100", "₺100–₺250", "₺250+"].map((p) => (
+                {[t("free"), "₺0–₺100", "₺100–₺250", "₺250+"].map((p) => (
                   <label key={p} className="flex items-center gap-2 text-sm text-[var(--text-secondary)] cursor-pointer">
                     <input type="checkbox" className="accent-[#FF6B35]" />
                     {p}
@@ -181,9 +198,9 @@ export function ModelsPageClient() {
           ) : models.length === 0 ? (
             <div className="text-center py-20 text-[var(--text-tertiary)]">
               <Search size={36} className="mx-auto mb-3 opacity-30" />
-              <p className="text-sm">Arama kriterlerinize uygun model bulunamadı.</p>
-              <button onClick={() => { setSearch(""); setCategory("all"); }} className="text-sm text-[#FF6B35] hover:underline mt-2">
-                Filtreleri temizle
+              <p className="text-sm">{t("noResults")}</p>
+              <button onClick={() => { setSearch(""); setCategoryId(null); }} className="text-sm text-[#FF6B35] hover:underline mt-2">
+                {t("clearFilters")}
               </button>
             </div>
           ) : view === "grid" ? (
@@ -202,12 +219,14 @@ export function ModelsPageClient() {
 }
 
 function GridCard({ model }: { model: Model }) {
+  const t      = useTranslations("modelsPage");
+  const locale = useLocale();
   const designer = model.designer?.username
     ? `@${model.designer.username}`
-    : model.designer?.full_name ?? "Tasarımcı";
+    : model.designer?.full_name ?? t("designer");
 
   return (
-    <a href={`/models/${model.id}`} className="group block">
+    <a href={`/${locale}/models/${model.id}`} className="group block">
       <div className="bg-[var(--bg-primary)] border border-[var(--border)] rounded-2xl overflow-hidden hover:border-[var(--border-strong)] hover:shadow-sm transition-all duration-200">
         <div className="h-36 bg-[var(--bg-tertiary)] flex items-center justify-center relative overflow-hidden">
           {model.thumbnail_url ? (
@@ -218,20 +237,20 @@ function GridCard({ model }: { model: Model }) {
           {model.print_count > 50 && (
             <div className="absolute top-2 left-2">
               <span className="text-[10px] font-medium bg-[rgba(255,107,53,0.12)] text-[#FF6B35] px-2 py-0.5 rounded-full flex items-center gap-1">
-                <TrendingUp size={9} /> Trend
+                <TrendingUp size={9} /> {t("trend")}
               </span>
             </div>
           )}
           {isNew(model.created_at) && (
             <div className="absolute top-2 left-2">
               <span className="text-[10px] font-medium bg-[rgba(16,185,129,0.12)] text-[#10B981] px-2 py-0.5 rounded-full flex items-center gap-1">
-                <Sparkles size={9} /> Yeni
+                <Sparkles size={9} /> {t("new")}
               </span>
             </div>
           )}
           {model.is_free && (
             <div className="absolute top-2 right-2">
-              <span className="text-[10px] font-medium bg-[rgba(16,185,129,0.12)] text-[#10B981] px-2 py-0.5 rounded-full">Ücretsiz</span>
+              <span className="text-[10px] font-medium bg-[rgba(16,185,129,0.12)] text-[#10B981] px-2 py-0.5 rounded-full">{t("free")}</span>
             </div>
           )}
         </div>
@@ -240,7 +259,7 @@ function GridCard({ model }: { model: Model }) {
           <div className="font-medium text-sm text-[var(--text-primary)] truncate mb-2">{model.title}</div>
           <div className="flex items-center justify-between">
             <span className="text-sm font-semibold text-[#FF6B35]">
-              {model.is_free ? "Ücretsiz" : formatPrice(model.base_price)}
+              {model.is_free ? t("free") : formatPrice(model.base_price, locale)}
             </span>
             {model.rating_count > 0 && (
               <span className="flex items-center gap-1 text-xs text-[var(--text-tertiary)]">
@@ -256,12 +275,14 @@ function GridCard({ model }: { model: Model }) {
 }
 
 function ListCard({ model }: { model: Model }) {
+  const t      = useTranslations("modelsPage");
+  const locale = useLocale();
   const designer = model.designer?.username
     ? `@${model.designer.username}`
-    : model.designer?.full_name ?? "Tasarımcı";
+    : model.designer?.full_name ?? t("designer");
 
   return (
-    <a href={`/models/${model.id}`} className="group block">
+    <a href={`/${locale}/models/${model.id}`} className="group block">
       <div className="bg-[var(--bg-primary)] border border-[var(--border)] rounded-2xl p-4 flex items-center gap-4 hover:border-[var(--border-strong)] transition-all">
         <div className="w-16 h-16 rounded-xl bg-[var(--bg-tertiary)] flex items-center justify-center shrink-0 overflow-hidden">
           {model.thumbnail_url
@@ -271,7 +292,7 @@ function ListCard({ model }: { model: Model }) {
         </div>
         <div className="flex-1 min-w-0">
           <div className="font-medium text-sm text-[var(--text-primary)] truncate">{model.title}</div>
-          <div className="text-xs text-[var(--text-tertiary)] mt-0.5">{designer} · {model.category?.name_tr}</div>
+          <div className="text-xs text-[var(--text-tertiary)] mt-0.5">{designer} · {locale === "en" ? model.category?.name_en : model.category?.name_tr}</div>
           {model.rating_count > 0 && (
             <div className="flex items-center gap-1 mt-1">
               <Star size={10} fill="currentColor" className="text-amber-400" />
@@ -280,8 +301,8 @@ function ListCard({ model }: { model: Model }) {
           )}
         </div>
         <div className="text-right shrink-0">
-          <div className="font-semibold text-[#FF6B35]">{model.is_free ? "Ücretsiz" : formatPrice(model.base_price)}</div>
-          <div className="text-xs text-[var(--text-tertiary)] mt-0.5">{model.print_count} baskı</div>
+          <div className="font-semibold text-[#FF6B35]">{model.is_free ? t("free") : formatPrice(model.base_price, locale)}</div>
+          <div className="text-xs text-[var(--text-tertiary)] mt-0.5">{model.print_count} {t("prints")}</div>
         </div>
       </div>
     </a>
