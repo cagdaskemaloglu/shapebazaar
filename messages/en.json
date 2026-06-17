@@ -503,7 +503,6 @@
   "cart": {
     "title": "Shopping Cart",
     "items": "items",
-    "empty": "Your cart is empty",
     "emptyDesc": "You can add products from the models page.",
     "browseModels": "Browse models →",
     "clear": "Clear",
@@ -520,8 +519,6 @@
     "addressPlaceholder": "Neighborhood, street, building no…",
     "fillRequired": "Please fill in required fields.",
     "cart": "Cart",
-    "address": "Address",
-    "payment": "Payment",
     "placeOrder": "Place Order →",
     "continuePayment": "Continue Payment →",
     "orderSummary": "Order Summary",
@@ -533,7 +530,62 @@
     "redirecting": "Redirecting…",
     "back": "← Back",
     "safeShipping": "Safe Shipping",
-    "singleShipping": "Single Shipping"
+    "singleShipping": "Single Shipping",
+    "header": {
+      "title": "My Cart",
+      "items": "{count} items",
+      "clear": "Clear"
+    },
+    "steps": {
+      "cart": "Cart",
+      "address": "Address",
+      "payment": "Payment"
+    },
+    "empty": {
+      "title": "Your cart is empty",
+      "subtitle": "Browse models to add items.",
+      "browse": "Browse models →"
+    },
+    "itemDetail": {
+      "material": "Material",
+      "scale": "Size",
+      "infill": "Infill"
+    },
+    "address": {
+      "title": "Delivery Address",
+      "fullName": "Full Name *",
+      "fullNamePlaceholder": "John Doe",
+      "phone": "Phone",
+      "phonePlaceholder": "+1 (555) 123-4567",
+      "city": "City *",
+      "cityPlaceholder": "Istanbul",
+      "district": "District",
+      "districtPlaceholder": "Kadikoy",
+      "line": "Address *",
+      "linePlaceholder": "Street, building number…",
+      "requiredFields": "Please fill required fields (Name, City, Address)."
+    },
+    "payment": {
+      "title": "Order Summary",
+      "shipping": "Shipping",
+      "total": "Total",
+      "security": "You will be redirected to İyzico secure payment page"
+    },
+    "buttons": {
+      "order": "Place Order →",
+      "toPayment": "Proceed to Payment →",
+      "pay": "Pay with İyzico →",
+      "back": "← Back",
+      "paying": "Redirecting…"
+    },
+    "errors": {
+      "required": "Please fill all required fields.",
+      "connection": "Connection error. Please try again."
+    },
+    "footer": {
+      "safe": "Secure Payment",
+      "single": "Single Shipping"
+    }
   },
   "designers": {
     "title": "Designers",

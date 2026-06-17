@@ -5,7 +5,7 @@ import { useTranslations } from "next-intl";
 import { useEffect, useState, useRef } from "react";
 import {
   Sun, Moon, Globe, Menu, X, User,
-  ShoppingBag, Box, Wallet, Settings, LogOut, LayoutDashboard
+  ShoppingBag, Box, Wallet, Settings, LogOut, LayoutDashboard, Printer
 } from "lucide-react";
 import { createClient } from "@/lib/supabase/client";
 import type { User as SupabaseUser } from "@supabase/supabase-js";
@@ -16,10 +16,10 @@ interface NavbarProps {
 }
 
 export function Navbar({ user: initialUser }: NavbarProps) {
-  const t         = useTranslations("nav");
-  const tDash     = useTranslations("dashboard");
-  const pathname  = usePathname();
-  const router    = useRouter();
+  const t     = useTranslations("nav");
+  const tDash = useTranslations("dashboard");
+  const pathname = usePathname();
+  const router   = useRouter();
 
   const locale      = pathname.split("/")[1] || "tr";
   const otherLocale = locale === "tr" ? "en" : "tr";
@@ -30,8 +30,19 @@ export function Navbar({ user: initialUser }: NavbarProps) {
   const [user,         setUser]         = useState<SupabaseUser | null>(null);
   const [authReady,    setAuthReady]    = useState(false);
   const [dropdownOpen, setDropdownOpen] = useState(false);
+  const [isPartner,    setIsPartner]    = useState(false);
 
   const dropdownRef = useRef<HTMLDivElement>(null);
+
+  async function loadPartnerStatus(userId: string) {
+    const supabase = createClient();
+    const { data } = await supabase
+      .from("profiles")
+      .select("is_partner_approved")
+      .eq("id", userId)
+      .single();
+    setIsPartner(data?.is_partner_approved === true);
+  }
 
   useEffect(() => {
     setIsDark(document.documentElement.classList.contains("dark"));
@@ -42,10 +53,14 @@ export function Navbar({ user: initialUser }: NavbarProps) {
     supabase.auth.getSession().then(({ data: { session } }) => {
       setUser(session?.user ?? null);
       setAuthReady(true);
+      if (session?.user) loadPartnerStatus(session.user.id);
     });
+
     const { data: { subscription } } = supabase.auth.onAuthStateChange((_event, session) => {
       setUser(session?.user ?? null);
       setAuthReady(true);
+      if (session?.user) loadPartnerStatus(session.user.id);
+      else setIsPartner(false);
     });
 
     return () => {
@@ -80,22 +95,32 @@ export function Navbar({ user: initialUser }: NavbarProps) {
     const supabase = createClient();
     await supabase.auth.signOut();
     setDropdownOpen(false);
+    setIsPartner(false);
     router.push(`/${locale}`);
   }
 
+  const partnerLabel = isPartner
+    ? (locale === "tr" ? "Sipariş Paneli" : "Order Panel")
+    : t("becomePartner");
+
   const links = [
-    { href: `/${locale}/models`,         label: t("models")        },
-    { href: `/${locale}/how-it-works`,   label: t("howItWorks")    },
-    { href: `/${locale}/become-partner`, label: t("becomePartner") },
-    { href: `/${locale}/designers`,      label: t("designers")     },
+    { href: `/${locale}/models`,         label: t("models")      },
+    { href: `/${locale}/how-it-works`,   label: t("howItWorks")  },
+    { href: `/${locale}/become-partner`, label: partnerLabel,     partner: isPartner },
+    { href: `/${locale}/designers`,      label: t("designers")   },
   ];
 
   const menuItems = [
-    { href: `/${locale}/dashboard`,                  icon: LayoutDashboard, label: tDash("overview")  },
-    { href: `/${locale}/dashboard?tab=orders`,       icon: ShoppingBag,     label: tDash("orders")    },
-    { href: `/${locale}/dashboard?tab=uploads`,      icon: Box,             label: tDash("myModels")  },
-    { href: `/${locale}/dashboard?tab=wallet`,       icon: Wallet,          label: tDash("wallet")    },
-    { href: `/${locale}/dashboard?tab=settings`,     icon: Settings,        label: tDash("settings")  },
+    { href: `/${locale}/dashboard`,              icon: LayoutDashboard, label: tDash("overview")  },
+    { href: `/${locale}/dashboard?tab=orders`,   icon: ShoppingBag,     label: tDash("orders")    },
+    { href: `/${locale}/dashboard?tab=uploads`,  icon: Box,             label: tDash("myModels")  },
+    { href: `/${locale}/dashboard?tab=wallet`,   icon: Wallet,          label: tDash("wallet")    },
+    { href: `/${locale}/dashboard?tab=settings`, icon: Settings,        label: tDash("settings")  },
+    ...(isPartner ? [{
+      href:  `/${locale}/become-partner`,
+      icon:  Printer,
+      label: locale === "tr" ? "Sipariş Paneli" : "Order Panel",
+    }] : []),
   ];
 
   const isLoggedIn = authReady && !!user;
@@ -109,7 +134,6 @@ export function Navbar({ user: initialUser }: NavbarProps) {
       }`}>
         <div className="max-w-7xl mx-auto px-4 sm:px-6 h-14 flex items-center justify-between gap-4">
 
-          {/* Logo */}
           <Link href={`/${locale}`} className="flex items-center gap-1 shrink-0">
             <span className="text-lg font-semibold tracking-tight">
               <span className="text-[#FF6B35]">Shape</span>
@@ -117,17 +141,19 @@ export function Navbar({ user: initialUser }: NavbarProps) {
             </span>
           </Link>
 
-          {/* Desktop nav */}
           <nav className="hidden md:flex items-center gap-1">
             {links.map((link) => (
               <Link key={link.href} href={link.href}
-                className="text-sm text-[var(--text-secondary)] hover:text-[var(--text-primary)] px-3 py-1.5 rounded-lg hover:bg-[var(--bg-secondary)] transition-colors">
+                className={`text-sm px-3 py-1.5 rounded-lg transition-colors ${
+                  (link as any).partner
+                    ? "text-[#10B981] hover:bg-[rgba(16,185,129,0.08)] font-medium"
+                    : "text-[var(--text-secondary)] hover:text-[var(--text-primary)] hover:bg-[var(--bg-secondary)]"
+                }`}>
                 {link.label}
               </Link>
             ))}
           </nav>
 
-          {/* Actions */}
           <div className="flex items-center gap-2">
             <button onClick={switchLocale}
               className="hidden sm:flex items-center gap-1 text-xs text-[var(--text-tertiary)] hover:text-[var(--text-secondary)] border border-[var(--border)] rounded-full px-2.5 py-1 transition-colors">
@@ -155,23 +181,27 @@ export function Navbar({ user: initialUser }: NavbarProps) {
                 </button>
 
                 {dropdownOpen && (
-                  <div className="absolute right-0 top-10 w-52 bg-[var(--bg-primary)] border border-[var(--border)] rounded-2xl shadow-lg overflow-hidden z-50">
+                  <div className="absolute right-0 top-10 w-56 bg-[var(--bg-primary)] border border-[var(--border)] rounded-2xl shadow-lg overflow-hidden z-50">
                     <div className="px-4 py-3 border-b border-[var(--border)]">
-                      <div className="text-xs font-medium text-[var(--text-primary)] truncate">
-                        {user.email}
-                      </div>
+                      <div className="text-xs font-medium text-[var(--text-primary)] truncate">{user.email}</div>
+                      {isPartner && (
+                        <div className="text-[10px] text-[#10B981] mt-0.5 flex items-center gap-1">
+                          <Printer size={10} /> {locale === "tr" ? "Onaylı Yazıcı Ortağı" : "Approved Print Partner"}
+                        </div>
+                      )}
                     </div>
 
                     <div className="py-1">
                       {menuItems.map((item) => {
                         const Icon = item.icon;
                         return (
-                          <Link
-                            key={item.href}
-                            href={item.href}
+                          <Link key={item.href + item.label} href={item.href}
                             onClick={() => setDropdownOpen(false)}
-                            className="flex items-center gap-3 px-4 py-2.5 text-sm text-[var(--text-secondary)] hover:text-[var(--text-primary)] hover:bg-[var(--bg-secondary)] transition-colors"
-                          >
+                            className={`flex items-center gap-3 px-4 py-2.5 text-sm transition-colors ${
+                              item.icon === Printer
+                                ? "text-[#10B981] hover:bg-[rgba(16,185,129,0.08)]"
+                                : "text-[var(--text-secondary)] hover:text-[var(--text-primary)] hover:bg-[var(--bg-secondary)]"
+                            }`}>
                             <Icon size={15} className="shrink-0 text-[var(--text-tertiary)]" />
                             {item.label}
                           </Link>
@@ -180,10 +210,8 @@ export function Navbar({ user: initialUser }: NavbarProps) {
                     </div>
 
                     <div className="border-t border-[var(--border)] py-1">
-                      <button
-                        onClick={handleSignOut}
-                        className="w-full flex items-center gap-3 px-4 py-2.5 text-sm text-red-500 hover:bg-red-50 dark:hover:bg-red-950/20 transition-colors"
-                      >
+                      <button onClick={handleSignOut}
+                        className="w-full flex items-center gap-3 px-4 py-2.5 text-sm text-red-500 hover:bg-red-50 dark:hover:bg-red-950/20 transition-colors">
                         <LogOut size={15} className="shrink-0" />
                         {tDash("signOut")}
                       </button>
@@ -213,14 +241,17 @@ export function Navbar({ user: initialUser }: NavbarProps) {
         </div>
       </header>
 
-      {/* Mobile menu */}
       {mobileOpen && (
         <div className="fixed inset-0 z-40 md:hidden pt-14">
           <div className="absolute inset-0 bg-black/20" onClick={() => setMobileOpen(false)} />
           <div className="absolute top-14 left-0 right-0 bg-[var(--bg-primary)] border-b border-[var(--border)] p-4 flex flex-col gap-2">
             {links.map((link) => (
               <Link key={link.href} href={link.href}
-                className="text-sm text-[var(--text-secondary)] hover:text-[var(--text-primary)] px-3 py-2 rounded-xl hover:bg-[var(--bg-secondary)] transition-colors"
+                className={`text-sm px-3 py-2 rounded-xl transition-colors ${
+                  (link as any).partner
+                    ? "text-[#10B981] hover:bg-[rgba(16,185,129,0.08)] font-medium"
+                    : "text-[var(--text-secondary)] hover:text-[var(--text-primary)] hover:bg-[var(--bg-secondary)]"
+                }`}
                 onClick={() => setMobileOpen(false)}>
                 {link.label}
               </Link>
@@ -231,9 +262,13 @@ export function Navbar({ user: initialUser }: NavbarProps) {
                 {menuItems.map((item) => {
                   const Icon = item.icon;
                   return (
-                    <Link key={item.href} href={item.href}
+                    <Link key={item.href + item.label} href={item.href}
                       onClick={() => setMobileOpen(false)}
-                      className="flex items-center gap-3 px-3 py-2 rounded-xl text-sm text-[var(--text-secondary)] hover:bg-[var(--bg-secondary)] transition-colors">
+                      className={`flex items-center gap-3 px-3 py-2 rounded-xl text-sm transition-colors ${
+                        item.icon === Printer
+                          ? "text-[#10B981] hover:bg-[rgba(16,185,129,0.08)]"
+                          : "text-[var(--text-secondary)] hover:bg-[var(--bg-secondary)]"
+                      }`}>
                       <Icon size={15} className="text-[var(--text-tertiary)]" />
                       {item.label}
                     </Link>

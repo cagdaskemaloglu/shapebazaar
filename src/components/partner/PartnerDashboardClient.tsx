@@ -28,7 +28,8 @@ interface PrintJob {
   created_at: string;
   printer_id: string | null;
   printer_notes: string | null;
-  printer?: { full_name: string | null; username: string | null } | null;
+  printer_full_name: string | null;
+  printer_username: string | null;
   order: {
     id: string;
     total_amount: number;
@@ -62,22 +63,19 @@ function getTimeLeft(deadline: string | null): { text: string; urgent: boolean }
   return { text: `${days} gün ${hours % 24} saat kaldı`, urgent: days < 1 };
 }
 
-function ShippingModal({
-  onSubmit, onClose, loading,
-}: {
+function ShippingModal({ onSubmit, onClose, loading }: {
   onSubmit: (trackingNumber: string, cargoCompany: string) => void;
   onClose: () => void;
   loading: boolean;
 }) {
   const [trackingNumber, setTrackingNumber] = useState("");
   const [cargoCompany,   setCargoCompany]   = useState("");
-
   return (
     <div className="fixed inset-0 z-50 bg-black/50 backdrop-blur-sm flex items-center justify-center p-4">
       <div className="bg-[var(--bg-primary)] border border-[var(--border)] rounded-2xl p-6 w-full max-w-sm flex flex-col gap-4">
         <div>
           <h2 className="font-semibold text-[var(--text-primary)] mb-1">Kargo Bilgisi Gir</h2>
-          <p className="text-xs text-[var(--text-tertiary)]">Siparişi tamamlamak için kargo bilgilerini girin. Alıcıya bildirim gönderilecek.</p>
+          <p className="text-xs text-[var(--text-tertiary)]">Siparişi tamamlamak için kargo bilgilerini girin.</p>
         </div>
         <div>
           <label className="text-xs text-[var(--text-tertiary)] block mb-1">Kargo Firması</label>
@@ -109,7 +107,6 @@ function ShippingModal({
   );
 }
 
-// Navbar ve Footer YOK — BecomePartnerClient içinde sarmalanıyor
 export function PartnerDashboardClient({ userId }: { userId: string }) {
   const [tab,             setTab]             = useState<"pool" | "mine" | "history">("pool");
   const [poolJobs,        setPoolJobs]        = useState<PrintJob[]>([]);
@@ -132,37 +129,55 @@ export function PartnerDashboardClient({ userId }: { userId: string }) {
       .eq("status", "claimed")
       .lt("deadline", new Date().toISOString());
 
-    const { data: pool } = await supabase
+    // Havuz — foreign key join olmadan, printer bilgisini ayrı çekeceğiz
+    const { data: pool, error: poolError } = await supabase
       .from("print_jobs")
       .select(`
         id, status, claimed_at, printed_at, deadline, created_at, printer_id, printer_notes,
-        printer:profiles!print_jobs_printer_id_fkey(full_name, username),
         order:orders(id, total_amount, shipping_cost, city, district, recipient_name, address_line1, phone)
       `)
       .in("status", ["available", "claimed"])
       .order("created_at", { ascending: false })
       .limit(50);
 
-    const { data: mine } = await supabase
+    if (poolError) console.error("Pool fetch error:", poolError);
+
+    // Kendi işlerim
+    const { data: mine, error: mineError } = await supabase
       .from("print_jobs")
       .select(`
         id, status, claimed_at, printed_at, deadline, created_at, printer_id, printer_notes,
-        printer:profiles!print_jobs_printer_id_fkey(full_name, username),
         order:orders(id, total_amount, shipping_cost, city, district, recipient_name, address_line1, phone)
       `)
       .eq("printer_id", userId)
       .order("created_at", { ascending: false });
 
+    if (mineError) console.error("Mine fetch error:", mineError);
+
+    // Cüzdan
     const { data: wallet } = await supabase
       .from("profiles")
       .select("wallet_balance")
       .eq("id", userId)
       .single();
 
-    const allJobs  = [...(pool ?? []), ...(mine ?? [])];
+    // Printer bilgilerini ayrı çek
+    const allJobs   = [...(pool ?? []), ...(mine ?? [])];
+    const printerIds = [...new Set(allJobs.map((j: any) => j.printer_id).filter(Boolean))];
+    let printerMap: Record<string, { full_name: string | null; username: string | null }> = {};
+    if (printerIds.length > 0) {
+      const { data: printers } = await supabase
+        .from("profiles")
+        .select("id, full_name, username")
+        .in("id", printerIds);
+      for (const p of printers ?? []) {
+        printerMap[p.id] = { full_name: p.full_name, username: p.username };
+      }
+    }
+
+    // Order items
     const orderIds = [...new Set(allJobs.map((j: any) => j.order?.id).filter(Boolean))];
     let itemsMap: Record<string, OrderItem[]> = {};
-
     if (orderIds.length > 0) {
       const { data: items } = await supabase
         .from("order_items")
@@ -176,7 +191,12 @@ export function PartnerDashboardClient({ userId }: { userId: string }) {
     }
 
     function enrich(jobs: any[]): PrintJob[] {
-      return jobs.map((j) => ({ ...j, items: itemsMap[j.order?.id ?? ""] ?? [] }));
+      return jobs.map((j) => ({
+        ...j,
+        printer_full_name: j.printer_id ? printerMap[j.printer_id]?.full_name ?? null : null,
+        printer_username:  j.printer_id ? printerMap[j.printer_id]?.username  ?? null : null,
+        items: itemsMap[j.order?.id ?? ""] ?? [],
+      }));
     }
 
     setPoolJobs(enrich(pool ?? []));
@@ -191,9 +211,12 @@ export function PartnerDashboardClient({ userId }: { userId: string }) {
     setClaiming(jobId);
     const supabase = createClient();
     const deadline = new Date(Date.now() + 2 * 24 * 3600 * 1000).toISOString();
-    await supabase.from("print_jobs")
+    const { error } = await supabase
+      .from("print_jobs")
       .update({ status: "claimed", printer_id: userId, claimed_at: new Date().toISOString(), deadline })
-      .eq("id", jobId).eq("status", "available");
+      .eq("id", jobId)
+      .eq("status", "available");
+    if (error) console.error("Claim error:", error);
     await fetchAll();
     setClaiming(null);
     setTab("mine");
@@ -252,7 +275,6 @@ export function PartnerDashboardClient({ userId }: { userId: string }) {
 
   return (
     <div className="flex flex-col gap-6">
-      {/* Header */}
       <div className="flex items-center justify-between">
         <div>
           <h1 className="text-2xl font-semibold text-[var(--text-primary)]">Sipariş Paneli</h1>
@@ -264,7 +286,6 @@ export function PartnerDashboardClient({ userId }: { userId: string }) {
         </div>
       </div>
 
-      {/* Stats */}
       <div className="grid grid-cols-3 gap-3">
         {[
           { label: "Havuzdaki sipariş", value: poolJobs.filter(j => j.status === "available").length, icon: Package,     color: "orange" },
@@ -288,7 +309,6 @@ export function PartnerDashboardClient({ userId }: { userId: string }) {
         })}
       </div>
 
-      {/* Tabs */}
       <div className="flex gap-1 border border-[var(--border)] rounded-xl p-1 w-fit">
         {[
           { id: "pool",    label: `Sipariş Havuzu (${poolJobs.length})`     },
@@ -306,7 +326,6 @@ export function PartnerDashboardClient({ userId }: { userId: string }) {
         ))}
       </div>
 
-      {/* Liste */}
       {loading ? (
         <div className="text-center py-16 text-sm text-[var(--text-tertiary)]">Yükleniyor…</div>
       ) : displayJobs.length === 0 ? (
@@ -357,10 +376,12 @@ export function PartnerDashboardClient({ userId }: { userId: string }) {
                     </div>
                     {isClaimed && (
                       <div className="mt-1.5 flex items-center gap-3 flex-wrap">
-                        {claimedByOther && job.printer && (
+                        {claimedByOther && (
                           <span className="flex items-center gap-1 text-xs text-[var(--text-tertiary)]">
                             <User size={10} />
-                            {job.printer.username ? `@${job.printer.username}` : job.printer.full_name ?? "Ortak"} üzerinde
+                            {job.printer_username
+                              ? `@${job.printer_username}`
+                              : job.printer_full_name ?? "Ortak"} üzerinde
                           </span>
                         )}
                         {isMine && <span className="text-xs text-[#FF6B35] font-medium">Senin üzerinde</span>}

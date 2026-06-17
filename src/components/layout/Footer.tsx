@@ -34,7 +34,7 @@ export function Footer() {
             <div className="text-xs font-semibold text-[var(--text-primary)] uppercase tracking-wider mb-3">{t("company")}</div>
             <ul className="space-y-2 text-sm text-[var(--text-secondary)]">
               <li><Link href={`/${locale}/about`}   className="hover:text-[#FF6B35] transition-colors">{t("about")}</Link></li>
-              <li><Link href={`/${locale}/mission`} className="hover:text-[#FF6B35] transition-colors">{t("mission")}</Link></li>
+              <li><Link href={`/${locale}/mission-vision`} className="hover:text-[#FF6B35] transition-colors">{t("mission")}</Link></li>
               <li><Link href={`/${locale}/blog`}    className="hover:text-[#FF6B35] transition-colors">{t("blog")}</Link></li>
               <li><Link href={`/${locale}/contact`} className="hover:text-[#FF6B35] transition-colors">{t("contact")}</Link></li>
             </ul>

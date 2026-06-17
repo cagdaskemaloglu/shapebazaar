@@ -38,8 +38,6 @@
     "free": "Ücretsiz"
   },
   "howItWorks": {
-    "pageTitle": "Nasıl Çalışır?",
-    "pageSubtitle": "ShapeBazaar'da tasarımdan ürüne giden yol 4 adımda başlar.",
     "title": "Nasıl çalışır?",
     "subtitle": "4 adımda fikrinden ürüne",
     "step1Title": "Model seç",
@@ -407,187 +405,61 @@
     "noRatings": "Henüz değerlendirme yok. İlk değerlendirmeyi siz yapın!",
     "user": "Kullanıcı"
   },
-  "about": {
-    "title": "Hakkımızda",
-    "hero": "ShapeBazaar'ın hikayesi",
-    "intro": "ShapeBazaar, dijital tasarımların gerçek ürünlere dönüştüğü bir platformdur. 2024 yılında kurulmuş olan projemiz, tasarımcılar, üreticiler ve kullanıcıları tek çatı altında bir araya getirmeyi amaçlamaktadır.",
-    "vision_title": "Vizyonumuz",
-    "vision_desc": "Tasarımları demokratikleştirmek ve her fikrin fiziksel dünyada hayat bulmasını sağlamak.",
-    "team_title": "Ekibimiz",
-    "team_desc": "Türkiye'nin en iyi yazılım geliştirici, tasarımcı ve girişimcileri tarafından kurulmuştur."
-  },
-  "mission": {
-    "title": "Misyon & Vizyon",
-    "missionTitle": "Misyonumuz",
-    "missionDesc": "Her tasarımcının yeteneklerini para etmesi, her üreticinin kapasitesini kullanması ve her müşterinin hayallerini gerçekleştirmesi için gerekli araçları sağlamak.",
-    "visionTitle": "Vizyonumuz",
-    "visionDesc": "Türkiye'den başlayan, küresel bir 3D baskı ağı kurmak. Tasarım, üretim ve tüketimi merkezi olmadan, açık ve adil bir şekilde işletilen bir ekosistem oluşturmak.",
-    "valuesTitle": "Değerlerimiz",
-    "value1": "Adillik",
-    "value1Desc": "Tüm taraflar için eşit fırsatlar ve şeffaf fiyatlandırma.",
-    "value2": "Topluluk",
-    "value2Desc": "Birlikte büyüyoruz. Tek bir oyuncu değil, bir ağ hedefliyoruz.",
-    "value3": "Kalite",
-    "value3Desc": "Tasarım, üretim ve teslimat her aşamada yüksek standartlar.",
-    "value4": "İnovasyon",
-    "value4Desc": "3D baskı teknolojisini erişilebilir ve ekonomik hale getirmek."
-  },
-  "blog": {
-    "title": "Blog",
-    "subtitle": "Son haberler, rehberler ve başarı hikayeleri",
-    "noContent": "Yakında yazılar başlayacak. Bize takip etmeyi unutmayın!",
-    "readMore": "Devamını Oku"
-  },
-  "contact": {
-    "title": "İletişim",
-    "subtitle": "Bize ulaşın",
-    "description": "Sorularınız mı var? Bize yazmaktan çekinmeyin. Ekibimiz 24 saat içinde cevap verecektir.",
-    "formName": "Adınız",
-    "formEmail": "E-posta adresiniz",
-    "formSubject": "Konu",
-    "formMessage": "Mesajınız",
-    "formPhone": "Telefon numaranız (isteğe bağlı)",
-    "formSend": "Gönder",
-    "formSending": "Gönderiliyor...",
-    "formSuccess": "Mesajınız başarıyla gönderildi! Teşekkürler.",
-    "formError": "Bir hata oluştu. Lütfen tekrar deneyin.",
-    "infoTitle": "İletişim Bilgileri",
-    "email": "E-posta",
-    "phone": "Telefon",
-    "address": "Adres"
-  },
-  "privacy": {
-    "title": "Gizlilik Politikası",
-    "lastUpdated": "Son güncelleme: Haziran 2024",
-    "intro": "ShapeBazaar (\"Biz\", \"Bizim\" veya \"Şirket\") olarak, gizliliğinize saygı duymaktayız.",
-    "section1": "Topladığımız Veriler",
-    "section1Content": "Platformda kayıt olduğunuzda ve hizmetlerimizi kullandığınızda şu bilgileri toplarız: İsim, e-posta adresi, telefon numarası, ödeme bilgileri, 3D tasarım dosyaları ve sipariş geçmişi.",
-    "section2": "Verilerin Kullanımı",
-    "section2Content": "Toplanan veriler, hizmetlerimizi sunmak, iyileştirmek, istatistik yapmak ve yasal yükümlülükleri karşılamak için kullanılır.",
-    "section3": "Veri Güvenliği",
-    "section3Content": "Verileriniz şifreli bağlantılar ve güvenli sunucuların kullanılması ile korunmaktadır. Ancak hiçbir sistem %100 güvenli değildir.",
-    "section4": "Çerezler",
-    "section4Content": "Platformumuz, kullanıcı deneyimini iyileştirmek için çerezler kullanır.",
-    "section5": "Haklarınız",
-    "section5Content": "İtalya Genel Veri Koruma Yönetmeliğine (GDPR) uygun olarak, verilerinize erişim, düzeltme ve silme haklarına sahipsiniz."
-  },
-  "terms": {
-    "title": "Kullanım Koşulları",
-    "lastUpdated": "Son güncelleme: Haziran 2024",
-    "intro": "ShapeBazaar platformunu kullanarak, bu koşulları kabul etmiş olursunuz.",
-    "section1": "Hizmetin Tanımı",
-    "section1Content": "ShapeBazaar, 3D tasarımları yazdırarak ürüne dönüştüren bir platformdur. Tasarımcılar, üreticiler ve müşteriler bu ekosistemde işlem yapabilir.",
-    "section2": "Kullanıcı Sorumlulukları",
-    "section2Content": "Kullanıcılar, yüklenen tasarımların telif hakkı ihlali yapmadığından, platformu yasa dışı amaçlarla kullanmadığından sorumludur.",
-    "section3": "Ödeme ve Siparişler",
-    "section3Content": "Tüm ödemeler güvenli ödeme yoluyla yapılır. Siparişler onaylandığında iptal edilemez.",
-    "section4": "İade Politikası",
-    "section4Content": "30 gün içinde üründe kusur varsa, takas veya iade yapılabilir.",
-    "section5": "Sorumluluk Sınırlaması",
-    "section5Content": "ShapeBazaar, hizmetinden kaynaklanan doğrudan veya dolaylı zararlardan sorumlu tutulamaz."
-  },
-  "cookies": {
-    "title": "Çerez Politikası",
-    "lastUpdated": "Son güncelleme: Haziran 2024",
-    "intro": "ShapeBazaar, platformu iyileştirmek ve kullanıcı deneyimini artırmak amacıyla çerezleri kullanır.",
-    "section1": "Çerez Nedir?",
-    "section1Content": "Çerezler, tarayıcınız tarafından depolanan küçük metin dosyalarıdır. Web sitesini hatırlama, kullanıcı tercihlerini kaydetme gibi amaçlarla kullanılır.",
-    "section2": "Kullanılan Çerez Türleri",
-    "section2Content": "Gerekli çerezler: İçeriğin düzgün çalışması için. Analitik çerezler: Trafiği anlamak için. Pazarlama çerezleri: Reklam gösterimini optimize etmek için.",
-    "section3": "Çerezleri Kontrol Etme",
-    "section3Content": "Tarayıcı ayarlarından çerezleri kontrol edebilirsiniz. Ancak bu, platformun işlevselliğini etkileyebilir.",
-    "section4": "Üçüncü Taraf Çerezleri",
-    "section4Content": "Google Analytics, Stripe gibi hizmetler de çerezler kullanabilir."
-  },
   "cart": {
-    "title": "Shopping Cart",
-    "items": "items",
-    "empty": "Your cart is empty",
-    "emptyDesc": "You can add products from the models page.",
-    "browseModels": "Browse models →",
-    "clear": "Clear",
-    "deliveryAddress": "Delivery Address",
-    "nameRequired": "Full Name *",
-    "namePlaceholder": "John Doe",
-    "phoneOptional": "Phone",
-    "phonePlaceholder": "+90 5XX XXX XX XX",
-    "cityRequired": "City *",
-    "cityPlaceholder": "Istanbul",
-    "districtOptional": "District",
-    "districtPlaceholder": "Kadıköy",
-    "addressRequired": "Address *",
-    "addressPlaceholder": "Neighborhood, street, building no…",
-    "fillRequired": "Please fill in required fields.",
-    "cart": "Cart",
-    "address": "Address",
-    "payment": "Payment",
-    "placeOrder": "Place Order →",
-    "continuePayment": "Continue Payment →",
-    "orderSummary": "Order Summary",
-    "shipping": "Shipping",
-    "total": "Total",
-    "securePayment": "Secure Payment",
-    "securePaymentDesc": "You will be redirected to Iyzico secure payment page",
-    "payWith": "Pay with Iyzico →",
-    "redirecting": "Redirecting…",
-    "back": "← Back",
-    "safeShipping": "Safe Shipping",
-    "singleShipping": "Single Shipping"
-  },
-  "designers": {
-    "title": "Designers",
-    "subtitle": "Explore talented designers and their creations",
-    "all": "All Designers",
-    "viewProfile": "View Profile",
-    "designs": "Designs",
-    "followers": "Followers",
-    "joinDesigners": "Become a Designer"
-  },
-  "becomePartner": {
-    "title": "Become a Partner",
-    "subtitle": "Join ShapeBazaar and grow your business",
-    "description": "Add your 3D printers to the ShapeBazaar ecosystem. Get jobs from the order pool, earn from every print.",
-    "benefits": [
-      {
-        "title": "Earn from every print",
-        "desc": "Get points in your wallet for every completed order."
-      },
-      {
-        "title": "Flexible work",
-        "desc": "Take the orders you want, work whenever you want."
-      },
-      {
-        "title": "Secure payment",
-        "desc": "Payments are protected through the platform."
-      },
-      {
-        "title": "Monetize your capacity",
-        "desc": "Turn your idle printers into a revenue source."
-      }
-    ],
-    "howItWorks": "How it works?",
-    "steps": [
-      "Apply",
-      "Get approved",
-      "See orders",
-      "Earn"
-    ],
-    "applyButton": "Apply →",
-    "printerType": "Printer Type * (multiple selectable)",
-    "supportedMaterials": "Supported Materials *",
-    "printVolume": "Print Volume (mm)",
-    "dailyCapacity": "Daily Capacity",
-    "city": "City *",
-    "district": "District",
-    "experience": "Experience & Notes",
-    "experiencePlaceholder": "Your 3D printing experience, special skills...",
-    "backButton": "← Back",
-    "formTitle": "Printer Partner Application",
-    "formDescription": "Fill in your information completely, we will respond within 2-3 business days.",
-    "submitButton": "Submit Application →",
-    "submittingButton": "Submitting…",
-    "doneTitle": "Your application received!",
-    "doneDescription": "Our team will review your application and contact you via email within 2-3 business days. After approval, you will have access to the order pool.",
-    "dashboardButton": "Go to Dashboard"
+    "header": {
+      "title": "Sepetim",
+      "items": "{count} ürün",
+      "clear": "Temizle"
+    },
+    "steps": {
+      "cart": "Sepet",
+      "address": "Adres",
+      "payment": "Ödeme"
+    },
+    "empty": {
+      "title": "Sepetiniz boş",
+      "subtitle": "Model sayfasından ürün ekleyebilirsiniz.",
+      "browse": "Modellere göz at →"
+    },
+    "itemDetail": {
+      "material": "Malzeme",
+      "scale": "Boyut",
+      "infill": "Dolgu"
+    },
+    "address": {
+      "title": "Teslimat Adresi",
+      "fullName": "Ad Soyad *",
+      "fullNamePlaceholder": "Ahmet Yılmaz",
+      "phone": "Telefon",
+      "phonePlaceholder": "+90 5XX XXX XX XX",
+      "city": "İl *",
+      "cityPlaceholder": "İstanbul",
+      "district": "İlçe",
+      "districtPlaceholder": "Kadıköy",
+      "line": "Adres *",
+      "linePlaceholder": "Mahalle, sokak, bina no…",
+      "requiredFields": "Lütfen zorunlu alanları doldurun (Ad, İl, Adres)."
+    },
+    "payment": {
+      "title": "Sipariş Özeti",
+      "shipping": "Kargo",
+      "total": "Toplam",
+      "security": "İyzico güvenli ödeme sayfasına yönlendirileceksiniz"
+    },
+    "buttons": {
+      "order": "Sipariş Ver →",
+      "toPayment": "Ödemeye Geç →",
+      "pay": "İyzico ile Öde →",
+      "back": "← Geri",
+      "paying": "Yönlendiriliyor…"
+    },
+    "errors": {
+      "required": "Lütfen zorunlu alanları doldurun.",
+      "connection": "Bağlantı hatası. Lütfen tekrar deneyin."
+    },
+    "footer": {
+      "safe": "Güvenli Ödeme",
+      "single": "Tek Kargo"
+    }
   }
 }

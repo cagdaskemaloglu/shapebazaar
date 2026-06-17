@@ -1,6 +1,7 @@
 "use client";
 import { useState } from "react";
 import { X, Trash2, ShoppingCart, ChevronRight, Shield, Truck } from "lucide-react";
+import { useTranslations } from "next-intl";
 import { useCartStore } from "@/lib/cart";
 import { useCartDrawer } from "@/components/cart/CartDrawerContext";
 import { formatPrice } from "@/lib/utils";
@@ -10,6 +11,7 @@ import { SHIPPING_COST_TL } from "@/lib/printPricing";
 type DrawerStep = "cart" | "address" | "payment";
 
 export function CartDrawer() {
+  const t = useTranslations("cart");
   const { isOpen, close } = useCartDrawer();
   const {
     items, removeItem, clearCart,
@@ -28,7 +30,7 @@ export function CartDrawer() {
 
   async function handlePayment() {
     if (!address.name || !address.city || !address.line1) {
-      setPayError("Lütfen zorunlu alanları doldurun (Ad, İl, Adres).");
+      setPayError(t("address.requiredFields"));
       return;
     }
     setPaying(true);
@@ -64,7 +66,7 @@ export function CartDrawer() {
       const form = div.querySelector("form");
       if (form) form.submit();
     } catch {
-      setPayError("Bağlantı hatası. Lütfen tekrar deneyin.");
+      setPayError(t("errors.connection"));
       setPaying(false);
     }
   }
@@ -79,17 +81,17 @@ export function CartDrawer() {
         <div className="flex items-center justify-between px-5 py-4 border-b border-[var(--border)]">
           <div className="flex items-center gap-2">
             <ShoppingCart size={18} className="text-[#FF6B35]" />
-            <span className="font-semibold text-[var(--text-primary)]">Sepetim</span>
+            <span className="font-semibold text-[var(--text-primary)]">{t("header.title")}</span>
             {items.length > 0 && (
               <span className="text-xs text-[var(--text-tertiary)] bg-[var(--bg-secondary)] px-2 py-0.5 rounded-full">
-                {items.length} ürün
+                {t("header.items", { count: items.length })}
               </span>
             )}
           </div>
           <div className="flex items-center gap-2">
             {items.length > 0 && step === "cart" && (
               <button onClick={clearCart} className="text-xs text-[var(--text-tertiary)] hover:text-red-400 transition-colors">
-                Temizle
+                {t("header.clear")}
               </button>
             )}
             <button onClick={close} className="w-8 h-8 flex items-center justify-center rounded-lg hover:bg-[var(--bg-secondary)] text-[var(--text-tertiary)] transition-colors">
@@ -111,7 +113,7 @@ export function CartDrawer() {
                       : "bg-[var(--bg-tertiary)] text-[var(--text-tertiary)]"
                   }`}>{i + 1}</div>
                   <span className={step === s ? "text-[var(--text-primary)] font-medium" : "text-[var(--text-tertiary)]"}>
-                    {["Sepet", "Adres", "Ödeme"][i]}
+                    {[t("steps.cart"), t("steps.address"), t("steps.payment")][i]}
                   </span>
                   {i < 2 && <ChevronRight size={11} className="text-[var(--text-tertiary)]" />}
                 </div>
@@ -127,10 +129,10 @@ export function CartDrawer() {
           {items.length === 0 && (
             <div className="flex flex-col items-center justify-center h-full text-[var(--text-tertiary)] px-6 text-center">
               <ShoppingCart size={40} className="opacity-20 mb-4" />
-              <p className="text-sm font-medium mb-1">Sepetiniz boş</p>
-              <p className="text-xs opacity-70">Model sayfasından ürün ekleyebilirsiniz.</p>
+              <p className="text-sm font-medium mb-1">{t("empty.title")}</p>
+              <p className="text-xs opacity-70">{t("empty.subtitle")}</p>
               <button onClick={close} className="mt-6 text-sm text-[#FF6B35] hover:underline">
-                Modellere göz at →
+                {t("empty.browse")}
               </button>
             </div>
           )}
@@ -174,13 +176,13 @@ export function CartDrawer() {
           {/* STEP: ADDRESS */}
           {step === "address" && (
             <div className="flex flex-col gap-3 px-5 py-5">
-              <h3 className="font-medium text-[var(--text-primary)]">Teslimat Adresi</h3>
+              <h3 className="font-medium text-[var(--text-primary)]">{t("address.title")}</h3>
               {[
-                { label: "Ad Soyad *", key: "name",     placeholder: "Ahmet Yılmaz",            type: "text" },
-                { label: "Telefon",    key: "phone",    placeholder: "+90 5XX XXX XX XX",        type: "tel"  },
-                { label: "İl *",       key: "city",     placeholder: "İstanbul",                 type: "text" },
-                { label: "İlçe",       key: "district", placeholder: "Kadıköy",                  type: "text" },
-                { label: "Adres *",    key: "line1",    placeholder: "Mahalle, sokak, bina no…", type: "text" },
+                { label: t("address.fullName"),  key: "name",     placeholder: t("address.fullNamePlaceholder"), type: "text" },
+                { label: t("address.phone"),     key: "phone",    placeholder: t("address.phonePlaceholder"),    type: "tel"  },
+                { label: t("address.city"),      key: "city",     placeholder: t("address.cityPlaceholder"),     type: "text" },
+                { label: t("address.district"),  key: "district", placeholder: t("address.districtPlaceholder"), type: "text" },
+                { label: t("address.line"),      key: "line1",    placeholder: t("address.linePlaceholder"),     type: "text" },
               ].map((f) => (
                 <div key={f.key}>
                   <label className="text-xs text-[var(--text-tertiary)] block mb-1">{f.label}</label>
@@ -204,7 +206,7 @@ export function CartDrawer() {
           {/* STEP: PAYMENT */}
           {step === "payment" && (
             <div className="flex flex-col gap-4 px-5 py-5">
-              <h3 className="font-medium text-[var(--text-primary)]">Sipariş Özeti</h3>
+              <h3 className="font-medium text-[var(--text-primary)]">{t("payment.title")}</h3>
               <div className="bg-[var(--bg-secondary)] rounded-xl p-4 flex flex-col gap-2 text-sm">
                 {items.map((item) => (
                   <div key={item.cartItemId} className="flex justify-between text-[var(--text-secondary)]">
@@ -214,11 +216,11 @@ export function CartDrawer() {
                 ))}
                 <div className="border-t border-[var(--border)] pt-2 mt-1 flex flex-col gap-1.5">
                   <div className="flex justify-between text-[var(--text-secondary)]">
-                    <span>Kargo</span>
+                    <span>{t("payment.shipping")}</span>
                     <span>{formatPrice(shipping(), locale)}</span>
                   </div>
                   <div className="flex justify-between font-semibold text-[var(--text-primary)] pt-1 border-t border-[var(--border)]">
-                    <span>Toplam</span>
+                    <span>{t("payment.total")}</span>
                     <span className="text-[#FF6B35]">{formatPrice(grandTotal(), locale)}</span>
                   </div>
                 </div>
@@ -226,7 +228,7 @@ export function CartDrawer() {
 
               <div className="bg-[var(--bg-secondary)] rounded-xl p-3 flex items-center gap-2 text-xs text-[var(--text-tertiary)]">
                 <Shield size={14} className="text-[#10B981] shrink-0" />
-                İyzico güvenli ödeme sayfasına yönlendirileceksiniz
+                {t("payment.security")}
               </div>
 
               {payError && (
@@ -251,19 +253,19 @@ export function CartDrawer() {
                 </div>
               ))}
               <div className="flex justify-between text-[var(--text-secondary)] pt-1 border-t border-[var(--border)]">
-                <span>Kargo</span>
+                <span>{t("payment.shipping")}</span>
                 <span>{formatPrice(SHIPPING_COST_TL, locale)}</span>
               </div>
               <div className="flex justify-between font-semibold text-[var(--text-primary)] pt-1 border-t border-[var(--border)]">
-                <span>Toplam</span>
+                <span>{t("payment.total")}</span>
                 <span className="text-[#FF6B35]">{formatPrice(grandTotal(), locale)}</span>
               </div>
             </div>
 
             <div className="flex gap-3">
               {[
-                { icon: Shield, text: "Güvenli Ödeme" },
-                { icon: Truck,  text: "Tek Kargo"     },
+                { icon: Shield, text: t("footer.safe") },
+                { icon: Truck,  text: t("footer.single") },
               ].map((b) => (
                 <div key={b.text} className="flex items-center gap-1 text-xs text-[var(--text-tertiary)]">
                   <b.icon size={11} className="text-[#10B981]" /> {b.text}
@@ -277,7 +279,7 @@ export function CartDrawer() {
                   onClick={() => { setPayError(""); setStep(step === "payment" ? "address" : "cart"); }}
                   className="flex-1 h-10 rounded-xl border border-[var(--border)] text-sm text-[var(--text-secondary)] hover:bg-[var(--bg-secondary)] transition-colors"
                 >
-                  ← Geri
+                  {t("buttons.back")}
                 </button>
               )}
               {step === "cart" && (
@@ -285,14 +287,14 @@ export function CartDrawer() {
                   onClick={() => setStep("address")}
                   className="flex-1 h-10 rounded-xl bg-[#FF6B35] text-white text-sm font-medium hover:bg-[#e85e2a] transition-colors"
                 >
-                  Sipariş Ver →
+                  {t("buttons.order")}
                 </button>
               )}
               {step === "address" && (
                 <button
                   onClick={() => {
                     if (!address.name || !address.city || !address.line1) {
-                      setPayError("Lütfen zorunlu alanları doldurun.");
+                      setPayError(t("address.requiredFields"));
                       return;
                     }
                     setPayError("");
@@ -300,7 +302,7 @@ export function CartDrawer() {
                   }}
                   className="flex-1 h-10 rounded-xl bg-[#FF6B35] text-white text-sm font-medium hover:bg-[#e85e2a] transition-colors"
                 >
-                  Ödemeye Geç →
+                  {t("buttons.toPayment")}
                 </button>
               )}
               {step === "payment" && (
@@ -310,8 +312,8 @@ export function CartDrawer() {
                   className="flex-1 h-10 rounded-xl bg-[#FF6B35] text-white text-sm font-medium hover:bg-[#e85e2a] disabled:opacity-50 transition-colors flex items-center justify-center gap-2"
                 >
                   {paying ? (
-                    <><div className="w-4 h-4 border-2 border-white/40 border-t-white rounded-full animate-spin" /> Yönlendiriliyor…</>
-                  ) : "İyzico ile Öde →"}
+                    <><div className="w-4 h-4 border-2 border-white/40 border-t-white rounded-full animate-spin" /> {t("buttons.paying")}</>
+                  ) : t("buttons.pay")}
                 </button>
               )}
             </div>
