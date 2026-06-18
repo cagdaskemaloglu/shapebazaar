@@ -16,7 +16,7 @@ import { cn } from "@/lib/utils";
 /* ── Types ── */
 type Step = "file" | "details" | "pricing" | "review";
 interface ModelMeta {
-  title: string; description: string; category: string; tags: string;
+  title: string; description: string; category: number | ""; tags: string;
   license: "standard" | "multi_print" | "open";
   basePrice: string; isFree: boolean;
   weightGrams: string; dimensionX: string; dimensionY: string; dimensionZ: string;
@@ -27,8 +27,14 @@ const HALF_PI = Math.PI / 2;
 const MAX_PHOTOS = 3;
 
 const CATEGORIES = [
-  "Ev & Ofis", "Aksesuar", "Teknoloji", "Sanat & Dekor",
-  "Bahçe", "Oyuncak & Oyun", "Araç & Gereç", "Takı",
+  { id: 1, name_tr: "Ev & Ofis",      name_en: "Home & Office"   },
+  { id: 2, name_tr: "Aksesuar",       name_en: "Accessories"     },
+  { id: 3, name_tr: "Teknoloji",      name_en: "Technology"      },
+  { id: 4, name_tr: "Sanat & Dekor",  name_en: "Art & Decor"     },
+  { id: 5, name_tr: "Bahçe",          name_en: "Garden"          },
+  { id: 6, name_tr: "Oyuncak & Oyun", name_en: "Toys & Games"    },
+  { id: 7, name_tr: "Araç & Gereç",   name_en: "Tools & Hardware"},
+  { id: 8, name_tr: "Takı & Aksesuar",name_en: "Jewelry"         },
 ];
 const LICENSES = [
   { value: "standard",    label: "Standart",    desc: "Alıcı yalnızca 1 baskı alabilir.",    icon: Lock   },
@@ -63,7 +69,7 @@ export function UploadPageClient() {
   const thumbnailDataUrlRef = useRef<string | null>(null);
 
   const [meta, setMeta] = useState<ModelMeta>({
-    title: "", description: "", category: "", tags: "",
+    title: "", description: "", category: "" as number | "", tags: "",
     license: "standard", basePrice: "", isFree: false,
     weightGrams: "", dimensionX: "", dimensionY: "", dimensionZ: "",
   });
@@ -116,7 +122,7 @@ export function UploadPageClient() {
   }
 
   /* ── Helpers ── */
-  function updateMeta(key: keyof ModelMeta, value: string | boolean) {
+  function updateMeta(key: keyof ModelMeta, value: string | boolean | number) {
     setMeta((m) => ({ ...m, [key]: value }));
   }
   function canAdvance() {
@@ -179,6 +185,7 @@ export function UploadPageClient() {
         designer_id:  user.id,
         title:        meta.title,
         description:  meta.description,
+        ...(meta.category !== "" ? { category_id: meta.category } : {}),
         tags,
         file_url:     path,
         file_format:  format,
@@ -245,7 +252,7 @@ export function UploadPageClient() {
                 setUploadDone(false); setFile(null); setStep("file");
                 setRotation({ x:0,y:0,z:0 }); setPhotos([]);
                 thumbnailDataUrlRef.current = null;
-                setMeta({ title:"",description:"",category:"",tags:"",license:"standard",basePrice:"",isFree:false,weightGrams:"",dimensionX:"",dimensionY:"",dimensionZ:"" });
+                setMeta({ title:"",description:"",category:"" as number|"",tags:"",license:"standard",basePrice:"",isFree:false,weightGrams:"",dimensionX:"",dimensionY:"",dimensionZ:"" });
               }}
               className="px-5 py-2.5 rounded-xl bg-[#FF6B35] text-white text-sm font-medium hover:bg-[#e85e2a] transition-colors"
             >
@@ -458,10 +465,10 @@ export function UploadPageClient() {
               </div>
               <div>
                 <label className="text-xs text-[var(--text-tertiary)] block mb-1.5">Kategori *</label>
-                <select value={meta.category} onChange={(e) => updateMeta("category", e.target.value)}
+                <select value={meta.category} onChange={(e) => updateMeta("category", e.target.value ? Number(e.target.value) : "")}
                   className="w-full h-10 px-3 text-sm rounded-xl border border-[var(--border)] bg-[var(--bg-secondary)] text-[var(--text-primary)] outline-none focus:border-[#FF6B35] transition-colors cursor-pointer">
                   <option value="">Kategori seç...</option>
-                  {CATEGORIES.map((c) => <option key={c} value={c}>{c}</option>)}
+                  {CATEGORIES.map((c) => <option key={c.id} value={c.id}>{c.name_tr}</option>)}
                 </select>
               </div>
               <div>
@@ -573,7 +580,7 @@ export function UploadPageClient() {
                 {[
                   { label: "Dosya",     value: file?.name ?? "—" },
                   { label: "Model Adı", value: meta.title },
-                  { label: "Kategori",  value: meta.category },
+                  { label: "Kategori",  value: CATEGORIES.find(c => c.id === meta.category)?.name_tr ?? "—" },
                   { label: "Lisans",    value: LICENSES.find(l => l.value === meta.license)?.label ?? "—" },
                   { label: "Fiyat",     value: meta.isFree ? "Ücretsiz" : `₺ ${meta.basePrice}` },
                   { label: "Ağırlık",   value: meta.weightGrams ? `${meta.weightGrams} gram` : "—" },

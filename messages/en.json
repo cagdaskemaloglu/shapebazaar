@@ -673,6 +673,7 @@
       "myJobs": "My Active Jobs",
       "noJobs": "No available orders right now.",
       "claimed": "Claim",
+      "claim": "Claim",
       "markDone": "Mark Done ✓",
       "earning": "earnings"
   }
