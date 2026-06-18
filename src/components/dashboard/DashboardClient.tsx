@@ -24,6 +24,7 @@ interface Profile {
   wallet_balance: number;
   is_partner_approved: boolean;
   city?: string;
+  region?: string;
   shop_name?: string;
   shop_description?: string;
   shop_city?: string;
@@ -438,6 +439,7 @@ function SettingsTab({ user, profile, t, locale, onProfileUpdate }: {
   const [fullName,       setFullName]       = useState(profile?.full_name ?? "");
   const [username,       setUsername]       = useState(profile?.username ?? "");
   const [city,           setCity]           = useState(profile?.city ?? "");
+  const [region,         setRegion]         = useState(profile?.region ?? "TR");
   const [bio,            setBio]            = useState(profile?.bio ?? "");
   const [shopName,       setShopName]       = useState(profile?.shop_name ?? "");
   const [shopDesc,       setShopDesc]       = useState(profile?.shop_description ?? "");
@@ -473,6 +475,7 @@ function SettingsTab({ user, profile, t, locale, onProfileUpdate }: {
       full_name: fullName,
       username,
       city,
+      region,
       bio,
     };
     if (isPartner) {
@@ -561,6 +564,33 @@ function SettingsTab({ user, profile, t, locale, onProfileUpdate }: {
             <input value={user.email ?? ""} disabled
               className="w-full h-10 px-3 text-sm rounded-xl border border-[var(--border)] bg-[var(--bg-tertiary)] text-[var(--text-tertiary)] outline-none cursor-not-allowed" />
           </div>
+        </div>
+
+        {/* Region seçimi */}
+        <div>
+          <label className="text-xs text-[var(--text-tertiary)] block mb-1">🌍 Bölge / Region</label>
+          <select
+            value={region}
+            onChange={(e) => setRegion(e.target.value)}
+            className="w-full h-10 px-3 text-sm rounded-xl border border-[var(--border)] bg-[var(--bg-secondary)] text-[var(--text-primary)] outline-none focus:border-[#FF6B35] transition-colors cursor-pointer"
+          >
+            {[
+              { code: "TR",    label: "🇹🇷 Türkiye"        },
+              { code: "US",    label: "🇺🇸 United States"  },
+              { code: "GB",    label: "🇬🇧 United Kingdom" },
+              { code: "DE",    label: "🇩🇪 Germany"        },
+              { code: "FR",    label: "🇫🇷 France"         },
+              { code: "NL",    label: "🇳🇱 Netherlands"    },
+              { code: "AE",    label: "🇦🇪 UAE"            },
+              { code: "SA",    label: "🇸🇦 Saudi Arabia"   },
+              { code: "OTHER", label: "🌍 Other"           },
+            ].map((r) => (
+              <option key={r.code} value={r.code}>{r.label}</option>
+            ))}
+          </select>
+          <p className="text-[10px] text-[var(--text-tertiary)] mt-1">
+            Siparişlerin bu bölgedeki yazıcı ortaklarına gider.
+          </p>
         </div>
 
         {/* Bio */}
