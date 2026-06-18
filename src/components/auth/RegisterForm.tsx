@@ -1,19 +1,32 @@
 "use client";
 import { useState } from "react";
 import { useRouter } from "next/navigation";
-import { Mail, Lock, User } from "lucide-react";
+import { Mail, Lock, User, Globe } from "lucide-react";
 import { createClient } from "@/lib/supabase/client";
 import { Button } from "@/components/ui/Button";
 import { Input } from "@/components/ui/Input";
 
+const REGIONS = [
+  { code: "TR", label: "🇹🇷 Türkiye" },
+  { code: "US", label: "🇺🇸 United States" },
+  { code: "GB", label: "🇬🇧 United Kingdom" },
+  { code: "DE", label: "🇩🇪 Germany" },
+  { code: "FR", label: "🇫🇷 France" },
+  { code: "NL", label: "🇳🇱 Netherlands" },
+  { code: "AE", label: "🇦🇪 UAE" },
+  { code: "SA", label: "🇸🇦 Saudi Arabia" },
+  { code: "OTHER", label: "🌍 Other" },
+];
+
 export function RegisterForm() {
   const router = useRouter();
   const [fullName, setFullName] = useState("");
-  const [email, setEmail] = useState("");
+  const [email,    setEmail]    = useState("");
   const [password, setPassword] = useState("");
-  const [loading, setLoading] = useState(false);
+  const [region,   setRegion]   = useState("TR");
+  const [loading,       setLoading]       = useState(false);
   const [googleLoading, setGoogleLoading] = useState(false);
-  const [error, setError] = useState("");
+  const [error,   setError]   = useState("");
   const [success, setSuccess] = useState(false);
 
   async function handleRegister(e: React.FormEvent) {
@@ -22,11 +35,11 @@ export function RegisterForm() {
     setLoading(true);
     setError("");
     const supabase = createClient();
-    const { error } = await supabase.auth.signUp({
+    const { data, error } = await supabase.auth.signUp({
       email,
       password,
       options: {
-        data: { full_name: fullName },
+        data: { full_name: fullName, region },
         emailRedirectTo: `${window.location.origin}/auth/callback`,
       },
     });
@@ -34,6 +47,13 @@ export function RegisterForm() {
       setError(error.message === "User already registered" ? "Bu e-posta zaten kayıtlı." : "Kayıt sırasında hata oluştu.");
       setLoading(false);
     } else {
+      // profiles tablosuna region'ı da yaz
+      if (data.user) {
+        await supabase
+          .from("profiles")
+          .update({ region })
+          .eq("id", data.user.id);
+      }
       setSuccess(true);
     }
   }
@@ -109,6 +129,23 @@ export function RegisterForm() {
           icon={<Lock size={14} />}
           required
         />
+
+        {/* Region seçimi */}
+        <div className="flex flex-col gap-1.5">
+          <label className="text-xs text-[var(--text-tertiary)] flex items-center gap-1.5">
+            <Globe size={12} /> Bölge / Region
+          </label>
+          <select
+            value={region}
+            onChange={(e) => setRegion(e.target.value)}
+            className="w-full h-10 px-3 text-sm rounded-xl border border-[var(--border)] bg-[var(--bg-secondary)] text-[var(--text-primary)] outline-none focus:border-[#FF6B35] transition-colors cursor-pointer"
+            required
+          >
+            {REGIONS.map((r) => (
+              <option key={r.code} value={r.code}>{r.label}</option>
+            ))}
+          </select>
+        </div>
 
         {error && (
           <p className="text-xs text-red-500 bg-red-50 dark:bg-red-950/30 border border-red-200 dark:border-red-900 rounded-lg px-3 py-2">

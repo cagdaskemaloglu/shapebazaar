@@ -3,6 +3,20 @@ import Link from "next/link";
 import { Upload, Compass } from "lucide-react";
 import { useTranslations } from "next-intl";
 import { usePathname } from "next/navigation";
+import { useEffect, useState } from "react";
+import { createClient } from "@/lib/supabase/client";
+
+const REGION_LABELS: Record<string, string> = {
+  TR:    "Turkey",
+  US:    "United States",
+  GB:    "United Kingdom",
+  DE:    "Germany",
+  FR:    "France",
+  NL:    "Netherlands",
+  AE:    "UAE",
+  SA:    "Saudi Arabia",
+  OTHER: "Global",
+};
 
 const STATS_KEYS = ["2.4K+", "180+", "12K+", "81"];
 
@@ -10,6 +24,22 @@ export function HeroSection() {
   const t        = useTranslations("hero");
   const pathname = usePathname();
   const locale   = pathname.split("/")[1] || "tr";
+  const [regionLabel, setRegionLabel] = useState("Turkey");
+
+  useEffect(() => {
+    const supabase = createClient();
+    supabase.auth.getUser().then(async ({ data: { user } }) => {
+      if (!user) return;
+      const { data } = await supabase
+        .from("profiles")
+        .select("region")
+        .eq("id", user.id)
+        .single();
+      if (data?.region) {
+        setRegionLabel(REGION_LABELS[data.region] ?? data.region);
+      }
+    });
+  }, []);
 
   const stats = [
     { num: "2.4K+", label: t("stats.models")   },
@@ -28,7 +58,7 @@ export function HeroSection() {
       <div className="relative max-w-7xl mx-auto px-4 sm:px-6 pt-16 pb-14 text-center">
         <div className="inline-flex items-center gap-2 bg-[rgba(255,107,53,0.1)] text-[#FF6B35] text-xs font-medium px-3 py-1.5 rounded-full mb-6">
           <span className="w-1.5 h-1.5 rounded-full bg-[#FF6B35] animate-pulse" />
-          {t("badge")}
+          Print Farm Network — {regionLabel}
         </div>
 
         <h1 className="text-4xl sm:text-5xl md:text-6xl font-semibold leading-[1.15] tracking-tight mb-5">

@@ -124,10 +124,20 @@ export function PartnerDashboardClient({ userId }: { userId: string }) {
   const [expanded,        setExpanded]        = useState<Set<string>>(new Set());
   const [shippingJobId,   setShippingJobId]   = useState<string | null>(null);
   const [shippingLoading, setShippingLoading] = useState(false);
+  const [partnerRegion,   setPartnerRegion]   = useState<string>("TR");
 
   const fetchAll = useCallback(async () => {
     setLoading(true);
     const supabase = createClient();
+
+    // Partner'ın region'ını çek
+    const { data: partnerProfile } = await supabase
+      .from("profiles")
+      .select("region")
+      .eq("id", userId)
+      .single();
+    const region = partnerProfile?.region ?? "TR";
+    setPartnerRegion(region);
 
     // Süresi dolmuş job'ları sıfırla
     await supabase
@@ -143,6 +153,7 @@ export function PartnerDashboardClient({ userId }: { userId: string }) {
         order:orders(id, total_amount, shipping_cost, city, district, recipient_name, address_line1, phone)
       `)
       .in("status", ["available", "claimed"])
+      .eq("region", region)
       .order("created_at", { ascending: false })
       .limit(50);
 
