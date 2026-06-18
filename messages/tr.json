@@ -509,5 +509,23 @@
       "safe": "Güvenli Ödeme",
       "single": "Tek Kargo"
     }
+  },
+  "contact": {
+    "title": "İletişim",
+    "subtitle": "Bizimle İletişime Geçin",
+    "description": "Sorularınız mı var? Bizimle iletişime geçmekten çekinmeyin. Ekibimiz 24 saat içinde dönüş yapacaktır.",
+    "formName": "Adınız",
+    "formEmail": "E-posta Adresiniz",
+    "formSubject": "Konu",
+    "formMessage": "Mesajınız",
+    "formPhone": "Telefon Numaranız (isteğe bağlı)",
+    "formSend": "Mesaj Gönder",
+    "formSending": "Gönderiliyor...",
+    "formSuccess": "Mesaj başarıyla gönderildi! Teşekkür ederiz.",
+    "formError": "Bir hata oluştu. Lütfen tekrar deneyin.",
+    "infoTitle": "İletişim Bilgileri",
+    "email": "E-posta",
+    "phone": "Telefon",
+    "address": "Adres"
   }
 }
