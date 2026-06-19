@@ -483,7 +483,18 @@ function SettingsTab({ user, profile, t, locale, onProfileUpdate }: {
       updates.shop_description = shopDesc;
       updates.shop_city        = shopCity;
     }
-    await supabase.from("profiles").update(updates).eq("id", user.id);
+    const { error } = await supabase
+      .from("profiles")
+      .update(updates)
+      .eq("id", user.id);
+
+    if (error) {
+      console.error("Profile update error:", error);
+      alert("Kayıt hatası: " + error.message);
+      setSaving(false);
+      return;
+    }
+
     onProfileUpdate(updates as Partial<Profile>);
     setSaving(false);
     setSaved(true);
