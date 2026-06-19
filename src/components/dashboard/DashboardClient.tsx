@@ -471,18 +471,27 @@ function SettingsTab({ user, profile, t, locale, onProfileUpdate }: {
   async function handleSave() {
     setSaving(true);
     const supabase = createClient();
+
+    // username unique constraint'e takılmaması için
+    // sadece profile'dan farklıysa ekle
     const updates: Record<string, string> = {
       full_name: fullName,
-      username,
       city,
       region,
       bio,
     };
+
+    // username değiştiyse ekle, değişmediyse gönderme
+    if (username !== (profile?.username ?? "")) {
+      updates.username = username;
+    }
+
     if (isPartner) {
       updates.shop_name        = shopName;
       updates.shop_description = shopDesc;
       updates.shop_city        = shopCity;
     }
+
     const { error } = await supabase
       .from("profiles")
       .update(updates)
@@ -490,12 +499,16 @@ function SettingsTab({ user, profile, t, locale, onProfileUpdate }: {
 
     if (error) {
       console.error("Profile update error:", error);
-      alert("Kayıt hatası: " + error.message);
+      if (error.code === "23505") {
+        alert("Bu kullanıcı adı zaten alınmış. Lütfen farklı bir kullanıcı adı deneyin.");
+      } else {
+        alert("Kayıt hatası: " + error.message);
+      }
       setSaving(false);
       return;
     }
 
-    onProfileUpdate(updates as Partial<Profile>);
+    onProfileUpdate({ ...updates, username: username } as Partial<Profile>);
     setSaving(false);
     setSaved(true);
     setTimeout(() => setSaved(false), 2000);
