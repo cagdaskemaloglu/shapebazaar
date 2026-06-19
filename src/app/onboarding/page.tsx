@@ -38,7 +38,7 @@ export default function OnboardingPage() {
 
     await supabase
       .from("profiles")
-      .update({ region: selected })
+      .update({ region: selected, onboarding_done: true })
       .eq("id", user.id);
 
     router.push("/tr/dashboard");

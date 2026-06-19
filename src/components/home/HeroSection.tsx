@@ -3,8 +3,6 @@ import Link from "next/link";
 import { Upload, Compass } from "lucide-react";
 import { useTranslations } from "next-intl";
 import { usePathname } from "next/navigation";
-import { useEffect, useState } from "react";
-import { createClient } from "@/lib/supabase/client";
 
 const REGION_LABELS: Record<string, string> = {
   TR:    "Turkey",
@@ -18,28 +16,12 @@ const REGION_LABELS: Record<string, string> = {
   OTHER: "Global",
 };
 
-const STATS_KEYS = ["2.4K+", "180+", "12K+", "81"];
-
-export function HeroSection() {
+export function HeroSection({ userRegion = "TR" }: { userRegion?: string }) {
   const t        = useTranslations("hero");
   const pathname = usePathname();
   const locale   = pathname.split("/")[1] || "tr";
-  const [regionLabel, setRegionLabel] = useState("Turkey");
 
-  useEffect(() => {
-    const supabase = createClient();
-    supabase.auth.getUser().then(async ({ data: { user } }) => {
-      if (!user) return;
-      const { data } = await supabase
-        .from("profiles")
-        .select("region")
-        .eq("id", user.id)
-        .single();
-      if (data?.region) {
-        setRegionLabel(REGION_LABELS[data.region] ?? data.region);
-      }
-    });
-  }, []);
+  const regionLabel = REGION_LABELS[userRegion] ?? userRegion;
 
   const stats = [
     { num: "2.4K+", label: t("stats.models")   },
