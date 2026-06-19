@@ -61,9 +61,10 @@ export function RegisterForm() {
   async function handleGoogle() {
     setGoogleLoading(true);
     const supabase = createClient();
+    const locale = window.location.pathname.split("/")[1] || "tr";
     await supabase.auth.signInWithOAuth({
       provider: "google",
-      options: { redirectTo: `${window.location.origin}/auth/callback?next=/dashboard` },
+      options: { redirectTo: `${window.location.origin}/${locale}/auth/callback?next=/${locale}/dashboard` },
     });
   }
 

@@ -2,11 +2,11 @@ import { NextResponse } from "next/server";
 import { createClient } from "@/lib/supabase/server";
 
 export async function GET(request: Request) {
-  const { searchParams, origin } = new URL(request.url);
+  const { searchParams, origin, pathname } = new URL(request.url);
   const code   = searchParams.get("code");
   const next   = searchParams.get("next") ?? "/";
-  // URL'deki locale'i al (örn: /en/auth/callback → "en")
-  const locale = request.url.match(/\/(tr|en)\//)?.[1] ?? "tr";
+  // /en/auth/callback → "en", /tr/auth/callback → "tr"
+  const locale = pathname.split("/")[1] === "en" ? "en" : "tr";
 
   if (code) {
     const supabase = await createClient();
