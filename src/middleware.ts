@@ -11,6 +11,7 @@ export async function middleware(request: NextRequest) {
   if (
     pathname.startsWith("/api/") ||
     pathname.startsWith("/auth/callback") ||
+    pathname.startsWith("/onboarding") ||
     pathname.startsWith("/_next/")
   ) {
     return NextResponse.next();

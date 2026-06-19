@@ -1,6 +1,6 @@
 "use client";
 import { useState, useEffect } from "react";
-import { useRouter } from "next/navigation";
+import { useRouter, usePathname } from "next/navigation";
 import { Globe, Check } from "lucide-react";
 import { createClient } from "@/lib/supabase/client";
 
@@ -17,7 +17,10 @@ const REGIONS = [
 ];
 
 export default function OnboardingPage() {
-  const router  = useRouter();
+  const router   = useRouter();
+  const pathname = usePathname();
+  const locale   = pathname.split("/")[1] || "tr";
+
   const [selected, setSelected] = useState("TR");
   const [saving,   setSaving]   = useState(false);
   const [userName, setUserName] = useState("");
@@ -25,10 +28,10 @@ export default function OnboardingPage() {
   useEffect(() => {
     const supabase = createClient();
     supabase.auth.getUser().then(({ data: { user } }) => {
-      if (!user) { router.push("/"); return; }
+      if (!user) { router.push(`/${locale}`); return; }
       setUserName(user.user_metadata?.full_name?.split(" ")[0] ?? "");
     });
-  }, [router]);
+  }, [router, locale]);
 
   async function handleSave() {
     setSaving(true);
@@ -41,13 +44,12 @@ export default function OnboardingPage() {
       .update({ region: selected, onboarding_done: true })
       .eq("id", user.id);
 
-    router.push("/tr/dashboard");
+    router.push(`/${locale}/dashboard`);
   }
 
   return (
     <div className="min-h-screen bg-[var(--bg-primary)] flex items-center justify-center px-4">
       <div className="w-full max-w-md">
-        {/* Logo */}
         <div className="text-center mb-8">
           <div className="inline-flex items-center gap-2 mb-4">
             <div className="w-8 h-8 rounded-xl bg-[#FF6B35] flex items-center justify-center">
@@ -63,7 +65,6 @@ export default function OnboardingPage() {
           </p>
         </div>
 
-        {/* Region grid */}
         <div className="grid grid-cols-3 gap-2 mb-6">
           {REGIONS.map((r) => (
             <button
