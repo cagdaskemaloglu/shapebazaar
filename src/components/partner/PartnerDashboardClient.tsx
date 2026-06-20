@@ -6,7 +6,7 @@ import { createClient } from "@/lib/supabase/client";
 import { formatPrice } from "@/lib/utils";
 import {
   Package, CheckCircle, Printer, ChevronDown, ChevronUp,
-  Clock, Truck, AlertTriangle, User, MapPin, Box
+  Clock, Truck, AlertTriangle, User, MapPin, Box, Download
 } from "lucide-react";
 
 interface OrderItem {
@@ -125,6 +125,28 @@ export function PartnerDashboardClient({ userId }: { userId: string }) {
   const [shippingJobId,   setShippingJobId]   = useState<string | null>(null);
   const [shippingLoading, setShippingLoading] = useState(false);
   const [partnerRegion,   setPartnerRegion]   = useState<string>("TR");
+
+  const [downloading, setDownloading] = useState<string | null>(null);
+
+  async function downloadFile(jobId: string) {
+    setDownloading(jobId);
+    try {
+      const res  = await fetch(`/api/partner/download?jobId=${jobId}`);
+      const data = await res.json();
+      if (!res.ok) { alert(data.error ?? "İndirme hatası"); return; }
+      // Tarayıcıda doğrudan indir
+      const a = document.createElement("a");
+      a.href     = data.url;
+      a.download = data.filename;
+      document.body.appendChild(a);
+      a.click();
+      document.body.removeChild(a);
+    } catch {
+      alert("İndirme başarısız. Lütfen tekrar deneyin.");
+    } finally {
+      setDownloading(null);
+    }
+  }
 
   const fetchAll = useCallback(async () => {
     setLoading(true);
@@ -427,6 +449,18 @@ export function PartnerDashboardClient({ userId }: { userId: string }) {
                       <button onClick={() => startPrinting(job.id)}
                         className="text-xs px-3 py-1.5 bg-purple-500 text-white rounded-lg hover:bg-purple-600 transition-colors">
                         {t("startPrint")}
+                      </button>
+                    )}
+                    {isMine && ["claimed", "printing"].includes(job.status) && (
+                      <button
+                        onClick={() => downloadFile(job.id)}
+                        disabled={downloading === job.id}
+                        className="text-xs px-3 py-1.5 bg-[var(--bg-secondary)] border border-[var(--border)] text-[var(--text-primary)] rounded-lg hover:bg-[var(--bg-tertiary)] disabled:opacity-50 transition-colors flex items-center gap-1.5"
+                      >
+                        {downloading === job.id
+                          ? <><div className="w-3 h-3 border-2 border-current/30 border-t-current rounded-full animate-spin" /> İndiriliyor…</>
+                          : <><Download size={12} /> Model İndir</>
+                        }
                       </button>
                     )}
                     {isMine && job.status === "printing" && (
