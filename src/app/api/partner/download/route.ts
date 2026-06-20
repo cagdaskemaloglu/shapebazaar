@@ -53,16 +53,17 @@ export async function GET(request: Request) {
     return NextResponse.json({ error: "Dosya sadece üstlenilen siparişler için indirilebilir" }, { status: 403 });
   }
 
-  // order'dan model_id çek
-  const { data: order, error: orderError } = await admin
-    .from("orders")
+  // order_items tablosundan model_id çek
+  const { data: orderItem, error: itemError } = await admin
+    .from("order_items")
     .select("model_id")
-    .eq("id", job.order_id)
+    .eq("order_id", job.order_id)
+    .limit(1)
     .single();
 
-  console.log("[download] order:", order, "orderError:", orderError);
+  console.log("[download] orderItem:", orderItem, "itemError:", itemError);
 
-  if (!order?.model_id) {
+  if (!orderItem?.model_id) {
     return NextResponse.json({ error: "Sipariş modeli bulunamadı" }, { status: 404 });
   }
 
@@ -70,7 +71,7 @@ export async function GET(request: Request) {
   const { data: model, error: modelError } = await admin
     .from("models")
     .select("file_url, title, file_format")
-    .eq("id", order.model_id)
+    .eq("id", orderItem.model_id)
     .single();
 
   console.log("[download] model:", model, "modelError:", modelError);

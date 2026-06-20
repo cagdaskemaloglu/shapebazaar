@@ -346,6 +346,7 @@
     "cancelled": "İptal"
   },
   "partner": {
+    "loading": "Yükleniyor...",
     "pageTitle": "Yazıcı Ortağı Ol",
     "pageSubtitle": "3D yazıcınızı ShapeBazaar ekosistemine katın. Sipariş havuzundan iş alın, her baskıdan kazanın.",
     "earn": "Her baskıdan kazan",
