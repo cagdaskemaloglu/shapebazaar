@@ -10,15 +10,21 @@ export async function GET(request: Request) {
     return NextResponse.json({ error: "jobId required" }, { status: 400 });
   }
 
-  // Kullanıcı auth — cookie'den session al
+  // Kullanıcı auth
   const supabase = await createClient();
   const { data: { user } } = await supabase.auth.getUser();
   if (!user) {
-    return NextResponse.json({ error: "Unauthorized" }, { status: 401 });
+    return NextResponse.json({ error: "Giriş yapmanız gerekiyor" }, { status: 401 });
   }
 
+  // Admin client — tüm sorgular için RLS bypass
+  const admin = createAdminClient(
+    process.env.NEXT_PUBLIC_SUPABASE_URL!,
+    process.env.SUPABASE_SERVICE_ROLE_KEY!
+  );
+
   // Partner onaylı mı?
-  const { data: profile } = await supabase
+  const { data: profile } = await admin
     .from("profiles")
     .select("is_partner_approved")
     .eq("id", user.id)
@@ -28,15 +34,17 @@ export async function GET(request: Request) {
     return NextResponse.json({ error: "Partner onayı gerekli" }, { status: 403 });
   }
 
-  // Bu job bu partner'a ait ve aktif durumda mı?
-  const { data: job } = await supabase
+  // print_job'u çek
+  const { data: job, error: jobError } = await admin
     .from("print_jobs")
-    .select("id, status, printer_id, order:orders(model_id)")
+    .select("id, status, printer_id, order_id")
     .eq("id", jobId)
     .single();
 
+  console.log("[download] job:", job, "jobError:", jobError);
+
   if (!job) {
-    return NextResponse.json({ error: "Sipariş bulunamadı" }, { status: 404 });
+    return NextResponse.json({ error: "Sipariş bulunamadı (job yok)" }, { status: 404 });
   }
   if (job.printer_id !== user.id) {
     return NextResponse.json({ error: "Bu sipariş size ait değil" }, { status: 403 });
@@ -45,17 +53,27 @@ export async function GET(request: Request) {
     return NextResponse.json({ error: "Dosya sadece üstlenilen siparişler için indirilebilir" }, { status: 403 });
   }
 
-  const modelId = (job.order as any)?.model_id;
-  if (!modelId) {
-    return NextResponse.json({ error: "Model bulunamadı" }, { status: 404 });
+  // order'dan model_id çek
+  const { data: order, error: orderError } = await admin
+    .from("orders")
+    .select("model_id")
+    .eq("id", job.order_id)
+    .single();
+
+  console.log("[download] order:", order, "orderError:", orderError);
+
+  if (!order?.model_id) {
+    return NextResponse.json({ error: "Sipariş modeli bulunamadı" }, { status: 404 });
   }
 
   // Model dosya bilgisini çek
-  const { data: model } = await supabase
+  const { data: model, error: modelError } = await admin
     .from("models")
     .select("file_url, title, file_format")
-    .eq("id", modelId)
+    .eq("id", order.model_id)
     .single();
+
+  console.log("[download] model:", model, "modelError:", modelError);
 
   if (!model?.file_url) {
     return NextResponse.json({ error: "Model dosyası bulunamadı" }, { status: 404 });
@@ -72,19 +90,17 @@ export async function GET(request: Request) {
     if (parts[1]) storagePath = decodeURIComponent(parts[1].split("?")[0]);
   }
 
-  // Service role key ile admin client — RLS bypass ederek signed URL oluştur
-  const adminClient = createAdminClient(
-    process.env.NEXT_PUBLIC_SUPABASE_URL!,
-    process.env.SUPABASE_SERVICE_ROLE_KEY!
-  );
+  console.log("[download] storagePath:", storagePath);
 
-  const { data: signedData, error: signError } = await adminClient
+  // Signed URL oluştur (1 saat geçerli)
+  const { data: signedData, error: signError } = await admin
     .storage
     .from("model-files")
-    .createSignedUrl(storagePath, 3600); // 1 saat geçerli
+    .createSignedUrl(storagePath, 3600);
+
+  console.log("[download] signedUrl:", !!signedData?.signedUrl, "signError:", signError);
 
   if (signError || !signedData?.signedUrl) {
-    console.error("Signed URL error:", signError, "| path:", storagePath);
     return NextResponse.json({ error: "İndirme linki oluşturulamadı: " + signError?.message }, { status: 500 });
   }
 
