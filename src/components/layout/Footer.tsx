@@ -52,11 +52,6 @@ export function Footer() {
           <p className="text-xs text-[var(--text-tertiary)]">
             © {new Date().getFullYear()} ShapeBazaar · Print Farm Network · {t("rights")}
           </p>
-          <div className="flex items-center gap-4 text-xs text-[var(--text-tertiary)]">
-            <span>Türkiye 🇹🇷</span>
-            <span>·</span>
-            <span>₺ TRY</span>
-          </div>
         </div>
       </div>
     </footer>

@@ -23,13 +23,6 @@ export function HeroSection({ userRegion = "TR" }: { userRegion?: string }) {
 
   const regionLabel = REGION_LABELS[userRegion] ?? userRegion;
 
-  const stats = [
-    { num: "2.4K+", label: t("stats.models")   },
-    { num: "180+",  label: t("stats.partners")  },
-    { num: "12K+",  label: t("stats.orders")    },
-    { num: "81 İl", label: t("stats.delivery")  },
-  ];
-
   return (
     <section className="relative overflow-hidden border-b border-[var(--border)] bg-[var(--bg-primary)]">
       <div className="absolute inset-0 opacity-[0.03] dark:opacity-[0.05]"
@@ -53,22 +46,13 @@ export function HeroSection({ userRegion = "TR" }: { userRegion?: string }) {
           {t("subtitle")}
         </p>
 
-        <div className="flex flex-col sm:flex-row items-center justify-center gap-3 mb-14">
+        <div className="flex flex-col sm:flex-row items-center justify-center gap-3">
           <Link href={`/${locale}/upload`} className="flex items-center gap-2 bg-[#FF6B35] text-white px-6 py-3 h-11 rounded-xl font-medium text-sm hover:bg-[#e85e2a] transition-colors">
             <Upload size={16} /> {t("uploadCta")}
           </Link>
           <Link href={`/${locale}/models`} className="flex items-center gap-2 border border-[var(--border)] text-[var(--text-primary)] px-6 py-3 h-11 rounded-xl text-sm hover:bg-[var(--bg-secondary)] transition-colors">
             <Compass size={16} /> {t("exploreCta")}
           </Link>
-        </div>
-
-        <div className="grid grid-cols-2 sm:grid-cols-4 gap-6 max-w-xl mx-auto">
-          {stats.map((s) => (
-            <div key={s.label} className="text-center">
-              <div className="text-2xl font-semibold text-[var(--text-primary)]">{s.num}</div>
-              <div className="text-xs text-[var(--text-tertiary)] mt-0.5">{s.label}</div>
-            </div>
-          ))}
         </div>
       </div>
     </section>
