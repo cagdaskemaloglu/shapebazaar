@@ -2,6 +2,7 @@
 import { useState, useEffect } from "react";
 import { useRouter, usePathname } from "next/navigation";
 import { Globe, Check } from "lucide-react";
+import { getLocaleFromRegion } from "@/lib/region";
 import { createClient } from "@/lib/supabase/client";
 
 const REGIONS = [
@@ -44,7 +45,9 @@ export default function OnboardingPage() {
       .update({ region: selected, onboarding_done: true })
       .eq("id", user.id);
 
-    router.push(`/${locale}/dashboard`);
+    // Region'a göre locale belirle ve yönlendir
+    const targetLocale = getLocaleFromRegion(selected);
+    router.push(`/${targetLocale}/dashboard`);
   }
 
   return (

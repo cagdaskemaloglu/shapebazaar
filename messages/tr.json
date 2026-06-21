@@ -35,7 +35,9 @@
     "viewAll": "Tümünü gör",
     "trend": "Trend",
     "new": "Yeni",
-    "free": "Ücretsiz"
+    "free": "Ücretsiz",
+    "noModels": "Henüz model yüklenmemiş.",
+    "designer": "Tasarımcı"
   },
   "howItWorks": {
     "title": "Nasıl çalışır?",
@@ -346,7 +348,6 @@
     "cancelled": "İptal"
   },
   "partner": {
-    "loading": "Yükleniyor...",
     "pageTitle": "Yazıcı Ortağı Ol",
     "pageSubtitle": "3D yazıcınızı ShapeBazaar ekosistemine katın. Sipariş havuzundan iş alın, her baskıdan kazanın.",
     "earn": "Her baskıdan kazan",
@@ -422,7 +423,10 @@
     "trackingNumber": "Takip Numarası",
     "saving": "Kaydediliyor…",
     "shipped": "Kargoya Verildi",
-    "cancel": "İptal"
+    "cancel": "İptal",
+    "loading": "Yükleniyor…",
+    "downloadModel": "Model İndir",
+    "downloading": "İndiriliyor…"
   },
   "admin": {
     "title": "Admin Paneli",

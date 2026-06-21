@@ -3,6 +3,7 @@ import { useState } from "react";
 import { useRouter } from "next/navigation";
 import { Mail, Lock, User, Globe } from "lucide-react";
 import { createClient } from "@/lib/supabase/client";
+import { getLocaleFromRegion } from "@/lib/region";
 import { Button } from "@/components/ui/Button";
 import { Input } from "@/components/ui/Input";
 
@@ -40,7 +41,7 @@ export function RegisterForm() {
       password,
       options: {
         data: { full_name: fullName, region },
-        emailRedirectTo: `${window.location.origin}/auth/callback`,
+        emailRedirectTo: `${window.location.origin}/${getLocaleFromRegion(region)}/auth/callback`,
       },
     });
     if (error) {

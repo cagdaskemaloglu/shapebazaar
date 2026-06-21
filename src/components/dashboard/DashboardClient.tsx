@@ -1,6 +1,7 @@
 "use client";
 import { useState, useEffect, useRef } from "react";
 import { useSearchParams, useRouter, usePathname } from "next/navigation";
+import { getLocaleFromRegion } from "@/lib/region";
 import { useTranslations } from "next-intl";
 import { Navbar } from "@/components/layout/Navbar";
 import { Footer } from "@/components/layout/Footer";
@@ -210,6 +211,7 @@ export function DashboardClient({ user, profile: initialProfile }: { user: User;
               profile={profile}
               t={t}
               locale={locale}
+              router={router}
               onProfileUpdate={(updated) => setProfile((p) => p ? { ...p, ...updated } : p)}
             />
           )}
@@ -422,11 +424,12 @@ function WalletTab({ balance, t }: { balance: number; t: ReturnType<typeof useTr
 }
 
 /* ── SETTINGS ── */
-function SettingsTab({ user, profile, t, locale, onProfileUpdate }: {
+function SettingsTab({ user, profile, t, locale, router, onProfileUpdate }: {
   user: User;
   profile: Profile | null;
   t: ReturnType<typeof useTranslations>;
   locale: string;
+  router: ReturnType<typeof useRouter>;
   onProfileUpdate: (updated: Partial<Profile>) => void;
 }) {
   const fileInputRef = useRef<HTMLInputElement>(null);
@@ -512,6 +515,12 @@ function SettingsTab({ user, profile, t, locale, onProfileUpdate }: {
     setSaving(false);
     setSaved(true);
     setTimeout(() => setSaved(false), 2000);
+
+    // Region değiştiyse doğru locale'e yönlendir
+    const targetLocale = getLocaleFromRegion(region);
+    if (targetLocale !== locale) {
+      router.push(`/${targetLocale}/dashboard?tab=settings`);
+    }
   }
 
   const initials = (profile?.full_name || user.email || "?")
@@ -568,9 +577,9 @@ function SettingsTab({ user, profile, t, locale, onProfileUpdate }: {
         <h2 className="text-sm font-semibold text-[var(--text-primary)]">{t("profileInfo")}</h2>
         <div className="grid grid-cols-1 sm:grid-cols-2 gap-3">
           {[
-            { label: t("fullName"), value: fullName, setter: setFullName, placeholder: "Adınız Soyadınız", type: "text"  },
-            { label: t("username"), value: username, setter: setUsername, placeholder: "@kullaniciadi",    type: "text"  },
-            { label: t("cityLabel"),value: city,     setter: setCity,     placeholder: "İstanbul",         type: "text"  },
+            { label: t("fullName"), value: fullName, setter: setFullName, placeholder: locale === "en" ? "John Doe"        : "Ahmet Yılmaz",    type: "text" },
+            { label: t("username"), value: username, setter: setUsername, placeholder: "@username",                                               type: "text" },
+            { label: t("cityLabel"),value: city,     setter: setCity,     placeholder: locale === "en" ? "Istanbul"         : "İstanbul",         type: "text" },
           ].map((f) => (
             <div key={f.label}>
               <label className="text-xs text-[var(--text-tertiary)] block mb-1">{f.label}</label>

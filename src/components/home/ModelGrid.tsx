@@ -5,6 +5,7 @@ import { Star, TrendingUp, Sparkles, Box } from "lucide-react";
 import { useTranslations } from "next-intl";
 import { usePathname } from "next/navigation";
 import { createClient } from "@/lib/supabase/client";
+import { formatPrice } from "@/lib/utils";
 
 interface DBModel {
   id: string;
@@ -91,7 +92,7 @@ export function ModelGrid() {
         {!loading && models.length === 0 && (
           <div className="text-center py-16 text-[var(--text-tertiary)]">
             <Box size={32} className="mx-auto mb-3 opacity-30" />
-            <p className="text-sm">Henüz model yüklenmemiş.</p>
+            <p className="text-sm">{t("noModels")}</p>
           </div>
         )}
 
@@ -102,7 +103,7 @@ export function ModelGrid() {
               const badge       = getBadge(m);
               const designerTag = m.designer?.username
                 ? `@${m.designer.username}`
-                : m.designer?.full_name ?? "Tasarımcı";
+                : m.designer?.full_name ?? t("designer");
 
               return (
                 <Link key={m.id} href={`/${locale}/models/${m.id}`} className="group block">
@@ -139,7 +140,7 @@ export function ModelGrid() {
                       <div className="text-xs text-[var(--text-tertiary)] mb-3 truncate">{designerTag}</div>
                       <div className="flex items-center justify-between">
                         <span className="font-semibold text-[#FF6B35] text-sm">
-                          {m.is_free ? "Ücretsiz" : `₺ ${m.base_price}`}
+                          {m.is_free ? t("free") : formatPrice(m.base_price, locale)}
                         </span>
                         {m.rating_count > 0 && (
                           <span className="flex items-center gap-1 text-xs text-[var(--text-tertiary)]">
