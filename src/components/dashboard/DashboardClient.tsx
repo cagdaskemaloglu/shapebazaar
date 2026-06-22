@@ -330,7 +330,8 @@ function OrdersTab({ orders, loading, statusLabels, t, locale }: {
           orders.map((o, i) => {
             const st = statusLabels[o.status] ?? { label: o.status, color: "" };
             return (
-              <div key={o.id} className={`flex items-center gap-4 p-4 ${i !== orders.length - 1 ? "border-b border-[var(--border)]" : ""}`}>
+              <a key={o.id} href={`/${locale}/orders/${o.id}`}
+                className={`flex items-center gap-4 p-4 hover:bg-[var(--bg-secondary)] transition-colors cursor-pointer ${i !== orders.length - 1 ? "border-b border-[var(--border)]" : ""}`}>
                 <div className="w-10 h-10 rounded-xl bg-[var(--bg-tertiary)] flex items-center justify-center shrink-0">
                   <Package size={18} className="text-[var(--text-tertiary)]" />
                 </div>
@@ -339,9 +340,9 @@ function OrdersTab({ orders, loading, statusLabels, t, locale }: {
                   <div className="text-xs text-[var(--text-tertiary)]">{o.id.slice(0, 8).toUpperCase()} · {new Date(o.created_at).toLocaleDateString(locale === "tr" ? "tr-TR" : "en-US")}</div>
                 </div>
                 <span className={`text-[11px] font-medium px-2.5 py-1 rounded-full ${st.color}`}>{st.label}</span>
-                <span className="font-semibold text-[var(--text-primary)]">{formatPrice(o.total_amount)}</span>
+                <span className="font-semibold text-[var(--text-primary)]">{formatPrice(o.total_amount, locale)}</span>
                 <ChevronRight size={14} className="text-[var(--text-tertiary)]" />
-              </div>
+              </a>
             );
           })
         )}

@@ -4,36 +4,34 @@ const resend = new Resend(process.env.RESEND_API_KEY ?? "re_placeholder");
 const FROM   = "ShapeBazaar <noreply@shapebazaar.com>";
 
 export async function sendOrderConfirmation({
-  to, buyerName, modelTitle, orderId, totalAmount,
+  to, buyerName, modelTitle, orderId, totalAmount, locale = "tr",
 }: {
   to: string; buyerName: string; modelTitle: string;
-  orderId: string; totalAmount: number;
+  orderId: string; totalAmount: number; locale?: string;
 }) {
+  const trackingUrl = `https://shapebazaar.com/${locale}/orders/${orderId}`;
   return resend.emails.send({
     from: FROM, to,
-    subject: `Siparişiniz alındı — ${modelTitle}`,
+    subject: locale === "tr" ? `Siparişiniz alındı — ${modelTitle}` : `Order confirmed — ${modelTitle}`,
     html: `
       <div style="font-family:system-ui,sans-serif;max-width:520px;margin:0 auto;padding:32px 24px">
-        <h1 style="font-size:22px;font-weight:500;color:#0F172A;margin-bottom:8px">Siparişiniz alındı! ✓</h1>
-        <p style="color:#475569;font-size:14px;line-height:1.6">Merhaba ${buyerName},</p>
+        <h1 style="font-size:22px;font-weight:500;color:#0F172A;margin-bottom:8px">${locale === "tr" ? "Siparişiniz alındı! ✓" : "Order confirmed! ✓"}</h1>
+        <p style="color:#475569;font-size:14px;line-height:1.6">${locale === "tr" ? `Merhaba ${buyerName},` : `Hello ${buyerName},`}</p>
         <p style="color:#475569;font-size:14px;line-height:1.6">
-          <strong>${modelTitle}</strong> siparişiniz başarıyla alındı ve baskı kuyruğuna eklendi.
+          <strong>${modelTitle}</strong> ${locale === "tr" ? "siparişiniz başarıyla alındı ve baskı kuyruğuna eklendi." : "has been received and added to the print queue."}
         </p>
         <div style="background:#F8FAFC;border-radius:12px;padding:16px;margin:24px 0">
           <div style="display:flex;justify-content:space-between;margin-bottom:8px">
-            <span style="color:#64748B;font-size:13px">Sipariş No</span>
+            <span style="color:#64748B;font-size:13px">${locale === "tr" ? "Sipariş No" : "Order No"}</span>
             <span style="font-size:13px;font-family:monospace">#${orderId.slice(0,8).toUpperCase()}</span>
           </div>
           <div style="display:flex;justify-content:space-between">
-            <span style="color:#64748B;font-size:13px">Toplam</span>
-            <span style="font-size:13px;font-weight:500;color:#FF6B35">₺${totalAmount.toFixed(0)}</span>
+            <span style="color:#64748B;font-size:13px">${locale === "tr" ? "Toplam" : "Total"}</span>
+            <span style="font-size:13px;font-weight:500;color:#FF6B35">${locale === "tr" ? `₺${totalAmount.toFixed(0)}` : `$${(totalAmount / 32).toFixed(2)}`}</span>
           </div>
         </div>
-        <p style="color:#475569;font-size:14px;line-height:1.6">
-          En yakın yazıcı ortağı siparişinizi alacak. Durum güncellemelerini e-posta ve dashboard'unuzdan takip edebilirsiniz.
-        </p>
-        <a href="https://shapebazaar.com/tr/dashboard" style="display:inline-block;margin-top:16px;background:#FF6B35;color:#fff;padding:10px 20px;border-radius:10px;text-decoration:none;font-size:13px;font-weight:500">
-          Siparişimi Takip Et →
+        <a href="${trackingUrl}" style="display:inline-block;margin-top:16px;background:#FF6B35;color:#fff;padding:10px 20px;border-radius:10px;text-decoration:none;font-size:13px;font-weight:500">
+          ${locale === "tr" ? "Siparişimi Takip Et →" : "Track My Order →"}
         </a>
         <p style="color:#94A3B8;font-size:12px;margin-top:32px">ShapeBazaar · Print Farm Network</p>
       </div>

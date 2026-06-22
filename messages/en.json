@@ -333,6 +333,32 @@
     "delivered": "Delivered",
     "cancelled": "Cancelled"
   },
+  "orderTracking": {
+    "title": "Order Tracking",
+    "orderNo": "Order No",
+    "date": "Order Date",
+    "status": "Status",
+    "items": "Items",
+    "delivery": "Delivery Address",
+    "cargo": "Shipping Info",
+    "cargoCompany": "Cargo Company",
+    "trackingNo": "Tracking Number",
+    "total": "Total",
+    "shipping": "Shipping",
+    "notFound": "Order not found",
+    "notFoundDesc": "This order does not exist or you don't have access.",
+    "backToDashboard": "← Back to Dashboard",
+    "steps": {
+      "pending": "Order Received",
+      "paid": "Payment Confirmed",
+      "in_print": "In Print",
+      "shipped": "Shipped",
+      "delivered": "Delivered"
+    },
+    "timeline": "Order Status",
+    "copyTracking": "Copy",
+    "copied": "Copied!"
+  },
   "admin": {
     "title": "Admin Panel",
     "totalUsers": "Users",
@@ -640,6 +666,9 @@
       "saving": "Saving…",
       "shipped": "Shipped",
       "cancel": "Cancel",
+      "loading": "Loading…",
+      "noRecords": "No records found.",
+      "completed": "Completed",
       "downloadModel": "Download Model",
       "downloading": "Downloading…",
       "pageTitle": "Become a Print Partner",

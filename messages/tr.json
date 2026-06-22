@@ -347,6 +347,32 @@
     "delivered": "Teslim Edildi",
     "cancelled": "İptal"
   },
+  "orderTracking": {
+    "title": "Sipariş Takibi",
+    "orderNo": "Sipariş No",
+    "date": "Sipariş Tarihi",
+    "status": "Durum",
+    "items": "Ürünler",
+    "delivery": "Teslimat Adresi",
+    "cargo": "Kargo Bilgisi",
+    "cargoCompany": "Kargo Firması",
+    "trackingNo": "Takip Numarası",
+    "total": "Toplam",
+    "shipping": "Kargo",
+    "notFound": "Sipariş bulunamadı",
+    "notFoundDesc": "Bu sipariş mevcut değil veya erişim izniniz yok.",
+    "backToDashboard": "← Dashboard'a dön",
+    "steps": {
+      "pending": "Sipariş Alındı",
+      "paid": "Ödeme Onaylandı",
+      "in_print": "Baskıda",
+      "shipped": "Kargoya Verildi",
+      "delivered": "Teslim Edildi"
+    },
+    "timeline": "Sipariş Durumu",
+    "copyTracking": "Kopyala",
+    "copied": "Kopyalandı!"
+  },
   "partner": {
     "pageTitle": "Yazıcı Ortağı Ol",
     "pageSubtitle": "3D yazıcınızı ShapeBazaar ekosistemine katın. Sipariş havuzundan iş alın, her baskıdan kazanın.",
@@ -425,6 +451,9 @@
     "shipped": "Kargoya Verildi",
     "cancel": "İptal",
     "loading": "Yükleniyor…",
+    "noRecords": "Kayıt bulunamadı.",
+    "completed": "Tamamlanan",
+    "history": "Geçmiş",
     "downloadModel": "Model İndir",
     "downloading": "İndiriliyor…"
   },
