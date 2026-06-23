@@ -46,10 +46,25 @@ export async function POST(req: NextRequest) {
           .select("model_id, model_title, model_price, print_cost, item_total")
           .eq("order_id", order.id);
 
-        // Print job oluştur (tüm sipariş tek job)
+        // Print job oluştur — buyer'ın region'ını ekle
+        const { data: buyerProfile } = await supabase
+          .from("profiles")
+          .select("region")
+          .eq("id", order.buyer_id)
+          .single();
+
+        const buyerRegion = buyerProfile?.region ?? "TR";
+
+        // orders tablosuna buyer_region yaz
+        await supabase
+          .from("orders")
+          .update({ buyer_region: buyerRegion })
+          .eq("id", order.id);
+
         await supabase.from("print_jobs").insert({
           order_id: order.id,
           status:   "available",
+          region:   buyerRegion,
         });
 
         // Her tasarımcıya kazanç yaz
@@ -83,13 +98,18 @@ export async function POST(req: NextRequest) {
         // Onay emaili gönder
         const { data: buyer } = await supabase.auth.admin.getUserById(order.buyer_id);
         const modelTitles = items?.map((i) => i.model_title).join(", ") ?? "Model";
+
+        // Buyer'ın locale'ini profile'dan çek
+        const buyerLocale = buyerProfile?.region === "TR" ? "tr" : "en";
+
         if (buyer?.user?.email) {
           await sendOrderConfirmation({
             to:          buyer.user.email,
-            buyerName:   order.recipient_name ?? "Müşteri",
+            buyerName:   order.recipient_name ?? (buyerLocale === "tr" ? "Müşteri" : "Customer"),
             modelTitle:  modelTitles,
             orderId:     order.id,
             totalAmount: order.total_amount,
+            locale:      buyerLocale,
           }).catch(() => {});
         }
       }

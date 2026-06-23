@@ -29,6 +29,8 @@ interface Model {
 }
 
 export function ModelsPageClient() {
+  const PAGE_SIZE = 24;
+
   const t      = useTranslations("modelsPage");
   const locale = useLocale();
   const [search,     setSearch]     = useState("");
@@ -38,7 +40,10 @@ export function ModelsPageClient() {
   const [models,     setModels]     = useState<Model[]>([]);
   const [loading,    setLoading]    = useState(true);
   const [total,      setTotal]      = useState(0);
+  const [page,       setPage]       = useState(1);
   const [categories, setCategories] = useState<Category[]>([]);
+
+  const totalPages = Math.ceil(total / PAGE_SIZE);
 
   // Kategorileri bir kez çek
   useEffect(() => {
@@ -79,14 +84,19 @@ export function ModelsPageClient() {
     if (sort === "price_desc") query = query.order("base_price",  { ascending: false });
     if (sort === "rating")     query = query.order("avg_rating",  { ascending: false });
 
-    const { data, count, error } = await query.limit(48);
+    const from = (page - 1) * PAGE_SIZE;
+    const to   = from + PAGE_SIZE - 1;
+    const { data, count, error } = await query.range(from, to);
 
     if (!error) {
       setModels((data ?? []) as unknown as Model[]);
       setTotal(count ?? 0);
     }
     setLoading(false);
-  }, [search, categoryId, sort]);
+  }, [search, categoryId, sort, page]);
+
+  // Filtre veya arama değişince 1. sayfaya dön
+  useEffect(() => { setPage(1); }, [search, categoryId, sort]);
 
   useEffect(() => {
     const t = setTimeout(fetchModels, 300);
@@ -211,6 +221,59 @@ export function ModelsPageClient() {
             <div className="flex flex-col gap-3">
               {models.map((m) => <ListCard key={m.id} model={m} />)}
             </div>
+          )}
+
+          {/* Pagination */}
+          {totalPages > 1 && (
+            <div className="flex items-center justify-center gap-2 mt-8 flex-wrap">
+              <button
+                onClick={() => { setPage((p) => Math.max(1, p - 1)); window.scrollTo({ top: 0, behavior: "smooth" }); }}
+                disabled={page === 1}
+                className="h-9 px-4 text-sm rounded-xl border border-[var(--border)] text-[var(--text-secondary)] hover:bg-[var(--bg-secondary)] disabled:opacity-40 disabled:cursor-not-allowed transition-colors"
+              >
+                ← {t("prev")}
+              </button>
+
+              <div className="flex gap-1">
+                {Array.from({ length: totalPages }, (_, i) => i + 1)
+                  .filter((p) => p === 1 || p === totalPages || Math.abs(p - page) <= 1)
+                  .reduce<(number | "…")[]>((acc, p, i, arr) => {
+                    if (i > 0 && (p as number) - (arr[i - 1] as number) > 1) acc.push("…");
+                    acc.push(p);
+                    return acc;
+                  }, [])
+                  .map((p, i) =>
+                    p === "…" ? (
+                      <span key={`e${i}`} className="h-9 w-9 flex items-center justify-center text-sm text-[var(--text-tertiary)]">…</span>
+                    ) : (
+                      <button
+                        key={p}
+                        onClick={() => { setPage(p as number); window.scrollTo({ top: 0, behavior: "smooth" }); }}
+                        className={`h-9 w-9 text-sm rounded-xl transition-colors ${
+                          page === p
+                            ? "bg-[#FF6B35] text-white font-medium"
+                            : "border border-[var(--border)] text-[var(--text-secondary)] hover:bg-[var(--bg-secondary)]"
+                        }`}
+                      >
+                        {p}
+                      </button>
+                    )
+                  )}
+              </div>
+
+              <button
+                onClick={() => { setPage((p) => Math.min(totalPages, p + 1)); window.scrollTo({ top: 0, behavior: "smooth" }); }}
+                disabled={page === totalPages}
+                className="h-9 px-4 text-sm rounded-xl border border-[var(--border)] text-[var(--text-secondary)] hover:bg-[var(--bg-secondary)] disabled:opacity-40 disabled:cursor-not-allowed transition-colors"
+              >
+                {t("next")} →
+              </button>
+            </div>
+          )}
+          {totalPages > 1 && (
+            <p className="text-center text-xs text-[var(--text-tertiary)] mt-2">
+              {t("pageInfo", { current: page, total: totalPages })}
+            </p>
           )}
         </div>
       </div>

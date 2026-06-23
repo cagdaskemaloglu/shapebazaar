@@ -11,16 +11,18 @@ export async function POST(req: NextRequest) {
 
     const { data: profile } = await supabase
       .from("profiles")
-      .select("full_name")
+      .select("full_name, region")
       .eq("id", userId)
       .single();
 
     const { data: authUser } = await supabase.auth.admin.getUserById(userId);
+    const locale = profile?.region === "TR" ? "tr" : "en";
 
     if (authUser?.user?.email) {
       await sendPartnerApproval({
-        to:   authUser.user.email,
-        name: profile?.full_name ?? "Ortak",
+        to:     authUser.user.email,
+        name:   profile?.full_name ?? (locale === "tr" ? "Ortak" : "Partner"),
+        locale,
       });
     }
 

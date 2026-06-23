@@ -146,7 +146,9 @@
     "clearFilters": "Clear filters",
     "noResults": "No models found matching your criteria.",
     "designer": "Designer",
-    "prints": "prints",
+    "prev": "Previous",
+    "next": "Next",
+    "pageInfo": "Page {current} of {total}",
     "sort": {
       "popular": "Most Popular",
       "newest": "Newest",
@@ -258,6 +260,7 @@
     "orders": "My Orders",
     "myModels": "My Models",
     "printJobs": "Print Jobs",
+    "designerStats": "Designer",
     "wallet": "Wallet",
     "settings": "Settings",
     "signOut": "Sign Out",
@@ -568,6 +571,17 @@
       "single": "Single Shipping"
     }
   },
+  "designerDashboard": {
+    "title": "Designer Statistics",
+    "totalModels": "Total Models",
+    "totalPrints": "Total Prints",
+    "avgRating": "Avg. Rating",
+    "totalEarnings": "Total Earnings",
+    "thisMonth": "This Month's Earnings",
+    "topModels": "Top Models",
+    "noModels": "You haven't uploaded any models yet.",
+    "prints": "prints"
+  },
   "designers": {
     "title": "Designers",
     "subtitle": "Explore talented designers and their creations",
@@ -583,6 +597,25 @@
     "printCount": "prints",
     "defaultName": "Designer",
     "noDesigners": "No designers with published models yet."
+  },
+  "designerProfile": {
+    "home": "Home",
+    "designers": "Designers",
+    "notFound": "Designer not found",
+    "backToDesigners": "← Back to Designers",
+    "memberSince": "Member since",
+    "publishedModels": "Published Models",
+    "totalPrints": "Total Prints",
+    "avgRating": "Avg. Rating",
+    "communityRank": "Community Rank",
+    "models": "Models",
+    "noModels": "This designer has no published models yet.",
+    "sort": {
+      "popular": "Popular",
+      "newest": "Newest",
+      "rating": "Rating"
+    },
+    "prints": "prints"
   },
   "becomePartner": {
     "title": "Become a Partner",

@@ -1,5 +1,6 @@
 "use client";
 import { useState, useEffect } from "react";
+import { useTranslations } from "next-intl";
 import { usePathname } from "next/navigation";
 import Link from "next/link";
 import { createClient } from "@/lib/supabase/client";
@@ -27,10 +28,12 @@ interface DesignerModel {
   thumbnail_url: string | null;
   file_format: string;
   created_at: string;
-  category: { name_tr: string } | null;
+  category: { name_tr: string; name_en: string | null } | null;
 }
 
 export function DesignerProfileClient({ designerId }: { designerId: string }) {
+  const t      = useTranslations("designerProfile");
+  const tFree  = useTranslations("modelsPage");
   const pathname = usePathname();
   const locale   = pathname.split("/")[1] || "tr";
 
@@ -56,7 +59,7 @@ export function DesignerProfileClient({ designerId }: { designerId: string }) {
 
       const { data: modelData } = await supabase
         .from("models")
-        .select("id, title, base_price, is_free, avg_rating, rating_count, print_count, thumbnail_url, file_format, created_at, category:categories(name_tr)")
+        .select("id, title, base_price, is_free, avg_rating, rating_count, print_count, thumbnail_url, file_format, created_at, category:categories(name_tr, name_en)")
         .eq("designer_id", designerId)
         .eq("is_published", true);
 
@@ -101,8 +104,8 @@ export function DesignerProfileClient({ designerId }: { designerId: string }) {
     return (
       <div className="max-w-5xl mx-auto px-4 sm:px-6 py-20 text-center">
         <AlertCircle size={40} className="mx-auto mb-4 text-[var(--text-tertiary)] opacity-40" />
-        <h2 className="text-lg font-medium text-[var(--text-primary)] mb-2">Tasarımcı bulunamadı</h2>
-        <a href={`/${locale}/designers`} className="text-sm text-[#FF6B35] hover:underline">← Tasarımcılara dön</a>
+        <h2 className="text-lg font-medium text-[var(--text-primary)] mb-2">{t("notFound")}</h2>
+        <a href={`/${locale}/designers`} className="text-sm text-[#FF6B35] hover:underline">{t("backToDesigners")}</a>
       </div>
     );
   }
@@ -113,9 +116,9 @@ export function DesignerProfileClient({ designerId }: { designerId: string }) {
     <div className="max-w-5xl mx-auto px-4 sm:px-6 py-10">
       {/* Breadcrumb */}
       <div className="flex items-center gap-1.5 text-xs text-[var(--text-tertiary)] mb-8">
-        <Link href={`/${locale}`} className="hover:text-[#FF6B35]">Ana Sayfa</Link>
+        <Link href={`/${locale}`} className="hover:text-[#FF6B35]">{t("home")}</Link>
         <span>›</span>
-        <Link href={`/${locale}/designers`} className="hover:text-[#FF6B35]">Tasarımcılar</Link>
+        <Link href={`/${locale}/designers`} className="hover:text-[#FF6B35]">{t("designers")}</Link>
         <span>›</span>
         <span className="text-[var(--text-primary)]">{displayName}</span>
       </div>
@@ -148,10 +151,10 @@ export function DesignerProfileClient({ designerId }: { designerId: string }) {
       {/* Stats */}
       <div className="grid grid-cols-2 sm:grid-cols-4 gap-3 mb-8">
         {[
-          { label: "Yayınlanan Model", value: models.length,          icon: Package,     color: "orange" },
-          { label: "Toplam Baskı",     value: totalPrints,            icon: TrendingUp,  color: "green"  },
-          { label: "Ort. Puan",        value: avgRating > 0 ? avgRating.toFixed(1) : "—", icon: Star, color: "orange" },
-          { label: "Topluluk Sırası",  value: "—",                    icon: TrendingUp,  color: "green"  },
+          { label: t("publishedModels"), value: models.length,          icon: Package,    color: "orange" },
+          { label: t("totalPrints"),     value: totalPrints,            icon: TrendingUp, color: "green"  },
+          { label: t("avgRating"),       value: avgRating > 0 ? avgRating.toFixed(1) : "—", icon: Star, color: "orange" },
+          { label: t("communityRank"),   value: "—",                    icon: TrendingUp, color: "green"  },
         ].map((s) => {
           const Icon = s.icon;
           return (
@@ -170,13 +173,13 @@ export function DesignerProfileClient({ designerId }: { designerId: string }) {
       <div>
         <div className="flex items-center justify-between mb-5">
           <h2 className="text-base font-semibold text-[var(--text-primary)]">
-            Modeller <span className="text-[var(--text-tertiary)] font-normal text-sm">({models.length})</span>
+            {t("models")} <span className="text-[var(--text-tertiary)] font-normal text-sm">({models.length})</span>
           </h2>
           <div className="flex gap-1 border border-[var(--border)] rounded-xl p-1">
             {[
-              { id: "popular", label: "Popüler"  },
-              { id: "newest",  label: "Yeni"     },
-              { id: "rating",  label: "Puan"     },
+              { id: "popular", label: t("sort.popular") },
+              { id: "newest",  label: t("sort.newest")  },
+              { id: "rating",  label: t("sort.rating")  },
             ].map((s) => (
               <button key={s.id} onClick={() => setSort(s.id as any)}
                 className={`px-3 py-1.5 rounded-lg text-xs transition-all ${sort === s.id ? "bg-[rgba(255,107,53,0.1)] text-[#FF6B35] font-medium" : "text-[var(--text-secondary)] hover:bg-[var(--bg-secondary)]"}`}>
@@ -189,7 +192,7 @@ export function DesignerProfileClient({ designerId }: { designerId: string }) {
         {models.length === 0 ? (
           <div className="text-center py-16 text-[var(--text-tertiary)]">
             <Package size={32} className="mx-auto mb-3 opacity-30" />
-            <p className="text-sm">Bu tasarımcının henüz yayınlanmış modeli yok.</p>
+            <p className="text-sm">{t("noModels")}</p>
           </div>
         ) : (
           <div className="grid grid-cols-2 sm:grid-cols-3 lg:grid-cols-4 gap-4">
@@ -206,14 +209,14 @@ export function DesignerProfileClient({ designerId }: { designerId: string }) {
                       </svg>
                     )}
                     {m.is_free && (
-                      <div className="absolute top-2 right-2 text-[10px] font-medium bg-[rgba(16,185,129,0.12)] text-[#10B981] px-2 py-0.5 rounded-full">Ücretsiz</div>
+                      <div className="absolute top-2 right-2 text-[10px] font-medium bg-[rgba(16,185,129,0.12)] text-[#10B981] px-2 py-0.5 rounded-full">{tFree("free")}</div>
                     )}
                   </div>
                   <div className="p-3">
-                    {m.category && <div className="text-xs text-[var(--text-tertiary)] mb-0.5">{m.category.name_tr}</div>}
+                    {m.category && <div className="text-xs text-[var(--text-tertiary)] mb-0.5">{locale === "en" ? m.category.name_en : m.category.name_tr}</div>}
                     <div className="font-medium text-sm text-[var(--text-primary)] truncate mb-2">{m.title}</div>
                     <div className="flex items-center justify-between">
-                      <span className="text-sm font-semibold text-[#FF6B35]">{m.is_free ? "Ücretsiz" : formatPrice(m.base_price)}</span>
+                      <span className="text-sm font-semibold text-[#FF6B35]">{m.is_free ? tFree("free") : formatPrice(m.base_price, locale)}</span>
                       {m.rating_count > 0 && (
                         <span className="flex items-center gap-1 text-xs text-[var(--text-tertiary)]">
                           <Star size={10} fill="currentColor" className="text-amber-400" />
@@ -221,7 +224,7 @@ export function DesignerProfileClient({ designerId }: { designerId: string }) {
                         </span>
                       )}
                     </div>
-                    <div className="text-xs text-[var(--text-tertiary)] mt-1">{m.print_count} baskı</div>
+                    <div className="text-xs text-[var(--text-tertiary)] mt-1">{m.print_count} {t("prints")}</div>
                   </div>
                 </div>
               </Link>

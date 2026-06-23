@@ -11,29 +11,46 @@ export async function POST(req: NextRequest) {
 
     const { data: order } = await supabase
       .from("orders")
-      .select("buyer_id, recipient_name, models(title)")
+      .select("buyer_id, recipient_name")
       .eq("id", orderId)
       .single();
 
     if (!order?.buyer_id) return NextResponse.json({ ok: false });
 
+    // Buyer'ın locale'ini çek
+    const { data: buyerProfile } = await supabase
+      .from("profiles")
+      .select("region")
+      .eq("id", order.buyer_id)
+      .single();
+    const buyerLocale = buyerProfile?.region === "TR" ? "tr" : "en";
+
+    // Sipariş ürün başlığını order_items'dan çek
+    const { data: items } = await supabase
+      .from("order_items")
+      .select("model_title")
+      .eq("order_id", orderId)
+      .limit(1);
+    const modelTitle = items?.[0]?.model_title ?? "Model";
+
     const { data: authUser } = await supabase.auth.admin.getUserById(order.buyer_id);
 
     if (authUser?.user?.email) {
       await sendShippingNotification({
-        to:          authUser.user.email,
-        buyerName:   order.recipient_name ?? "Müşteri",
-        modelTitle:  (order.models as any)?.[0]?.title ?? "Model",
+        to:            authUser.user.email,
+        buyerName:     order.recipient_name ?? (buyerLocale === "tr" ? "Müşteri" : "Customer"),
+        modelTitle,
+        orderId,
         trackingNumber,
         cargoCompany,
+        locale:        buyerLocale,
       });
     }
 
-    // Update order tracking info
     await supabase.from("orders").update({
-      status: "shipped",
+      status:          "shipped",
       tracking_number: trackingNumber,
-      cargo_company: cargoCompany,
+      cargo_company:   cargoCompany,
     }).eq("id", orderId);
 
     return NextResponse.json({ ok: true });

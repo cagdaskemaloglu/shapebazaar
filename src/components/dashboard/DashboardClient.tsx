@@ -9,7 +9,7 @@ import {
   LayoutDashboard, Package, Upload, Printer,
   Wallet, Settings, LogOut, ChevronRight,
   CheckCircle, Clock, ExternalLink, Trash2,
-  Camera, Store
+  Camera, Store, BarChart2, TrendingUp, Star, DollarSign
 } from "lucide-react";
 import { createClient } from "@/lib/supabase/client";
 import { uploadAvatar } from "@/lib/storage";
@@ -47,11 +47,13 @@ interface Model {
   is_free: boolean;
   print_count: number;
   avg_rating: number;
+  rating_count: number;
+  thumbnail_url: string | null;
   created_at: string;
   file_format: string;
 }
 
-const VALID_TABS = ["overview", "orders", "uploads", "printjobs", "wallet", "settings"];
+const VALID_TABS = ["overview", "orders", "uploads", "designer", "printjobs", "wallet", "settings"];
 
 export function DashboardClient({ user, profile: initialProfile }: { user: User; profile: Profile | null }) {
   const t        = useTranslations("dashboard");
@@ -91,12 +93,13 @@ export function DashboardClient({ user, profile: initialProfile }: { user: User;
   };
 
   const NAV_ITEMS = [
-    { id: "overview",  label: t("overview"),  icon: LayoutDashboard },
-    { id: "orders",    label: t("orders"),    icon: Package         },
-    { id: "uploads",   label: t("myModels"),  icon: Upload          },
-    { id: "printjobs", label: t("printJobs"), icon: Printer         },
-    { id: "wallet",    label: t("wallet"),    icon: Wallet          },
-    { id: "settings",  label: t("settings"),  icon: Settings        },
+    { id: "overview",  label: t("overview"),      icon: LayoutDashboard },
+    { id: "orders",    label: t("orders"),         icon: Package         },
+    { id: "uploads",   label: t("myModels"),       icon: Upload          },
+    { id: "designer",  label: t("designerStats"),  icon: BarChart2       },
+    { id: "printjobs", label: t("printJobs"),      icon: Printer         },
+    { id: "wallet",    label: t("wallet"),         icon: Wallet          },
+    { id: "settings",  label: t("settings"),       icon: Settings        },
   ];
 
   useEffect(() => { fetchOrders(); fetchModels(); }, []);
@@ -119,7 +122,7 @@ export function DashboardClient({ user, profile: initialProfile }: { user: User;
     const supabase = createClient();
     const { data } = await supabase
       .from("models")
-      .select("id, title, is_published, base_price, is_free, print_count, avg_rating, created_at, file_format")
+      .select("id, title, is_published, base_price, is_free, print_count, avg_rating, rating_count, thumbnail_url, created_at, file_format")
       .eq("designer_id", user.id)
       .order("created_at", { ascending: false });
     setModels((data ?? []) as Model[]);
@@ -204,6 +207,7 @@ export function DashboardClient({ user, profile: initialProfile }: { user: User;
           {activeTab === "overview"  && <OverviewTab orders={orders} models={models} walletBalance={walletBalance} loading={loadingOrders} statusLabels={STATUS_LABELS} t={t} locale={locale} />}
           {activeTab === "orders"    && <OrdersTab   orders={orders} loading={loadingOrders} statusLabels={STATUS_LABELS} t={t} locale={locale} />}
           {activeTab === "uploads"   && <UploadsTab  models={models} loading={loadingModels} onDelete={deleteModel} t={t} locale={locale} />}
+          {activeTab === "designer"  && <DesignerStatsTab userId={user.id} models={models} locale={locale} />}
           {activeTab === "wallet"    && <WalletTab   balance={walletBalance} t={t} />}
           {activeTab === "settings"  && (
             <SettingsTab
@@ -710,6 +714,108 @@ function SettingsTab({ user, profile, t, locale, router, onProfileUpdate }: {
           </a>
         </div>
       )}
+    </div>
+  );
+}
+/* ── Designer Stats Tab ─────────────────────────────── */
+function DesignerStatsTab({ userId, models, locale }: {
+  userId: string;
+  models: Model[];
+  locale: string;
+}) {
+  const t = useTranslations("designerDashboard");
+  const [totalEarnings, setTotalEarnings] = useState(0);
+  const [monthlySales,  setMonthlySales]  = useState(0);
+  const [loading,       setLoading]       = useState(true);
+
+  useEffect(() => {
+    const supabase = createClient();
+    supabase
+      .from("wallet_transactions")
+      .select("amount, created_at")
+      .eq("user_id", userId)
+      .eq("type", "earn")
+      .then(({ data }) => {
+        if (data) {
+          setTotalEarnings(data.reduce((s, r) => s + Number(r.amount), 0));
+          const monthAgo = new Date();
+          monthAgo.setMonth(monthAgo.getMonth() - 1);
+          setMonthlySales(data.filter(r => new Date(r.created_at) > monthAgo).reduce((s, r) => s + Number(r.amount), 0));
+        }
+        setLoading(false);
+      });
+  }, [userId]);
+
+  const totalPrints = models.reduce((s, m) => s + (m.print_count ?? 0), 0);
+  const avgRating = models.filter(m => m.rating_count > 0).length > 0
+    ? models.filter(m => m.rating_count > 0).reduce((s, m) => s + m.avg_rating, 0) / models.filter(m => m.rating_count > 0).length
+    : 0;
+  const topModels = [...models].sort((a, b) => b.print_count - a.print_count).slice(0, 5);
+
+  if (loading) return (
+    <div className="flex items-center justify-center py-20">
+      <div className="w-6 h-6 border-2 border-[#FF6B35]/30 border-t-[#FF6B35] rounded-full animate-spin" />
+    </div>
+  );
+
+  return (
+    <div className="space-y-6">
+      <h1 className="text-xl font-semibold text-[var(--text-primary)]">{t("title")}</h1>
+
+      <div className="grid grid-cols-2 sm:grid-cols-4 gap-3">
+        {[
+          { label: t("totalModels"),   value: models.length,                              icon: Upload,     color: "orange" },
+          { label: t("totalPrints"),   value: totalPrints,                                icon: TrendingUp, color: "green"  },
+          { label: t("avgRating"),     value: avgRating > 0 ? avgRating.toFixed(1) : "—", icon: Star,       color: "amber"  },
+          { label: t("totalEarnings"), value: formatPrice(totalEarnings, locale),         icon: DollarSign, color: "green"  },
+        ].map((s) => (
+          <div key={s.label} className="bg-[var(--bg-primary)] border border-[var(--border)] rounded-2xl p-4">
+            <s.icon size={16} className={`mb-2 ${s.color === "orange" ? "text-[#FF6B35]" : s.color === "amber" ? "text-amber-400" : "text-[#10B981]"}`} />
+            <div className="text-xl font-semibold text-[var(--text-primary)]">{s.value}</div>
+            <div className="text-xs text-[var(--text-tertiary)] mt-0.5">{s.label}</div>
+          </div>
+        ))}
+      </div>
+
+      <div className="bg-[rgba(255,107,53,0.05)] border border-[rgba(255,107,53,0.15)] rounded-2xl p-4 flex items-center justify-between">
+        <div>
+          <div className="text-xs text-[var(--text-tertiary)] mb-1">{t("thisMonth")}</div>
+          <div className="text-2xl font-semibold text-[#FF6B35]">{formatPrice(monthlySales, locale)}</div>
+        </div>
+        <TrendingUp size={32} className="text-[#FF6B35] opacity-30" />
+      </div>
+
+      <div className="bg-[var(--bg-primary)] border border-[var(--border)] rounded-2xl overflow-hidden">
+        <div className="p-4 border-b border-[var(--border)]">
+          <h2 className="text-sm font-semibold text-[var(--text-primary)]">{t("topModels")}</h2>
+        </div>
+        {topModels.length === 0 ? (
+          <div className="p-8 text-center text-sm text-[var(--text-tertiary)]">{t("noModels")}</div>
+        ) : (
+          <div className="divide-y divide-[var(--border)]">
+            {topModels.map((m, i) => (
+              <div key={m.id} className="flex items-center gap-3 p-4">
+                <div className="w-7 h-7 rounded-full bg-[var(--bg-secondary)] flex items-center justify-center text-xs font-bold text-[var(--text-tertiary)]">{i + 1}</div>
+                <div className="w-10 h-10 rounded-xl bg-[var(--bg-tertiary)] overflow-hidden shrink-0">
+                  {m.thumbnail_url ? <img src={m.thumbnail_url} alt={m.title} className="w-full h-full object-cover" /> : <div className="w-full h-full" />}
+                </div>
+                <div className="flex-1 min-w-0">
+                  <div className="text-sm font-medium text-[var(--text-primary)] truncate">{m.title}</div>
+                  <div className="flex items-center gap-2 mt-0.5">
+                    <span className="text-xs text-[var(--text-tertiary)]">{m.print_count} {t("prints")}</span>
+                    {m.rating_count > 0 && (
+                      <span className="flex items-center gap-0.5 text-xs text-amber-400">
+                        <Star size={9} fill="currentColor" /> {Number(m.avg_rating).toFixed(1)}
+                      </span>
+                    )}
+                  </div>
+                </div>
+                <div className="text-sm font-semibold text-[#FF6B35]">{m.is_free ? "—" : formatPrice(m.base_price, locale)}</div>
+              </div>
+            ))}
+          </div>
+        )}
+      </div>
     </div>
   );
 }

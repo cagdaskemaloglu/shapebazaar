@@ -73,6 +73,17 @@
       "cta": "Modellere göz at"
     }
   },
+  "designerDashboard": {
+    "title": "Tasarımcı İstatistikleri",
+    "totalModels": "Toplam Model",
+    "totalPrints": "Toplam Baskı",
+    "avgRating": "Ort. Puan",
+    "totalEarnings": "Toplam Kazanç",
+    "thisMonth": "Bu Ay Kazanç",
+    "topModels": "En Popüler Modeller",
+    "noModels": "Henüz model yüklemediniz.",
+    "prints": "baskı"
+  },
   "designers": {
     "title": "Tasarımcılar",
     "subtitle": "ShapeBazaar topluluğunun yaratıcı üyeleri",
@@ -88,6 +99,25 @@
     "designs": "Tasarımlar",
     "followers": "Takipçiler",
     "joinDesigners": "Tasarımcı Ol"
+  },
+  "designerProfile": {
+    "home": "Ana Sayfa",
+    "designers": "Tasarımcılar",
+    "notFound": "Tasarımcı bulunamadı",
+    "backToDesigners": "← Tasarımcılara dön",
+    "memberSince": "Üye olma tarihi",
+    "publishedModels": "Yayınlanan Model",
+    "totalPrints": "Toplam Baskı",
+    "avgRating": "Ort. Puan",
+    "communityRank": "Topluluk Sırası",
+    "models": "Modeller",
+    "noModels": "Bu tasarımcının henüz yayınlanmış modeli yok.",
+    "sort": {
+      "popular": "Popüler",
+      "newest": "Yeni",
+      "rating": "Puan"
+    },
+    "prints": "baskı"
   },
   "values": {
     "title": "Şirket değerlerimiz",
@@ -160,7 +190,9 @@
     "clearFilters": "Filtreleri temizle",
     "noResults": "Arama kriterlerinize uygun model bulunamadı.",
     "designer": "Tasarımcı",
-    "prints": "baskı",
+    "prev": "Önceki",
+    "next": "Sonraki",
+    "pageInfo": "{current}. sayfa / {total} sayfa",
     "sort": {
       "popular": "En Popüler",
       "newest": "En Yeni",
@@ -272,6 +304,7 @@
     "orders": "Siparişlerim",
     "myModels": "Modellerim",
     "printJobs": "Baskı Görevleri",
+    "designerStats": "Tasarımcı",
     "wallet": "Cüzdan",
     "settings": "Ayarlar",
     "signOut": "Çıkış Yap",

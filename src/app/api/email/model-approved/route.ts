@@ -19,18 +19,20 @@ export async function POST(req: NextRequest) {
 
     const { data: designer } = await supabase
       .from("profiles")
-      .select("full_name")
+      .select("full_name, region")
       .eq("id", model.designer_id)
       .single();
 
     const { data: authUser } = await supabase.auth.admin.getUserById(model.designer_id);
+    const locale = designer?.region === "TR" ? "tr" : "en";
 
     if (authUser?.user?.email) {
       await sendModelApproval({
-        to: authUser.user.email,
-        designerName: designer?.full_name ?? "Tasarımcı",
+        to:           authUser.user.email,
+        designerName: designer?.full_name ?? (locale === "tr" ? "Tasarımcı" : "Designer"),
         modelTitle,
         modelId,
+        locale,
       });
     }
 
