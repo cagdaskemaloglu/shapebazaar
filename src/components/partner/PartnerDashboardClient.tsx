@@ -259,29 +259,55 @@ export function PartnerDashboardClient({ userId }: { userId: string }) {
 
   async function startPrinting(jobId: string) {
     const supabase = createClient();
-    await supabase.from("print_jobs").update({ status: "printing" }).eq("id", jobId);
+    // Baskıya alındığında 48 saatlik yeni deadline set et
+    const newDeadline = new Date(Date.now() + 48 * 3600 * 1000).toISOString();
+    await supabase
+      .from("print_jobs")
+      .update({ status: "printing", deadline: newDeadline })
+      .eq("id", jobId);
     await fetchAll();
   }
 
   async function completeJob(jobId: string, trackingNumber: string, cargoCompany: string) {
+    // Kargo bilgisi zorunlu
+    if (!trackingNumber.trim()) {
+      alert(locale === "tr" ? "Lütfen kargo takip numarası girin." : "Please enter a tracking number.");
+      return;
+    }
     setShippingLoading(true);
     const supabase = createClient();
     const job = myJobs.find((j) => j.id === jobId);
-    await supabase.from("print_jobs").update({ status: "done", printed_at: new Date().toISOString() }).eq("id", jobId);
+
+    // print_job'u done yap
+    await supabase
+      .from("print_jobs")
+      .update({ status: "done", printed_at: new Date().toISOString() })
+      .eq("id", jobId);
+
     if (job?.order?.id) {
+      // Siparişi shipped yap, kargo bilgilerini kaydet
       await supabase.from("orders").update({
-        status: "shipped", tracking_number: trackingNumber, cargo_company: cargoCompany,
+        status:          "shipped",
+        tracking_number: trackingNumber.trim(),
+        cargo_company:   cargoCompany.trim() || null,
       }).eq("id", job.order.id);
+
+      // Partner kazancını hesapla ve cüzdana ekle
       const earning = (job.order.total_amount ?? 0) * PRINTER_EARNING_RATE;
       await supabase.from("wallet_transactions").insert({
-        user_id: userId, type: "earn", amount: earning,
+        user_id:     userId,
+        type:        "earn",
+        amount:      earning,
         description: `${t("earning")} — #${job.order.id.slice(0, 8)}`,
         ref_order_id: job.order.id,
       });
       await supabase.rpc("increment_wallet", { uid: userId, amount: earning });
+
+      // Kargo email gönder
       await fetch("/api/email/order-shipped", {
-        method: "POST", headers: { "Content-Type": "application/json" },
-        body: JSON.stringify({ orderId: job.order.id, trackingNumber, cargoCompany }),
+        method: "POST",
+        headers: { "Content-Type": "application/json" },
+        body: JSON.stringify({ orderId: job.order.id, trackingNumber: trackingNumber.trim(), cargoCompany: cargoCompany.trim() }),
       }).catch(() => {});
     }
     setShippingLoading(false);
