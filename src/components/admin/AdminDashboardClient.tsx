@@ -81,13 +81,22 @@ const COLORS = [
 ];
 
 export function AdminDashboardClient() {
-  const [tab,             setTab]             = useState<"models" | "partners" | "orders" | "test">("models");
+  const [tab,             setTab]             = useState<"models" | "partners" | "orders" | "reports" | "test">("models");
   const [pendingModels,   setPendingModels]   = useState<PendingModel[]>([]);
   const [pendingPartners, setPendingPartners] = useState<PendingPartner[]>([]);
   const [orders,          setOrders]          = useState<OrderRow[]>([]);
   const [stats,           setStats]           = useState({ totalUsers: 0, totalOrders: 0, revenue: 0 });
   const [loading,         setLoading]         = useState(true);
   const [expanded,        setExpanded]        = useState<Set<string>>(new Set());
+
+  // Filtreleme & arama
+  const [orderStatusFilter, setOrderStatusFilter] = useState<string>("all");
+  const [orderSearch,       setOrderSearch]       = useState("");
+  const [modelSearch,       setModelSearch]       = useState("");
+
+  // Toplu seçim
+  const [selectedModels,   setSelectedModels]   = useState<Set<string>>(new Set());
+  const [bulkLoading,      setBulkLoading]      = useState(false);
 
   // Test sipariş formu
   const [testModels,    setTestModels]    = useState<ModelOption[]>([]);
@@ -196,6 +205,36 @@ export function AdminDashboardClient() {
       body: JSON.stringify({ modelId, modelTitle: pendingModels.find((m) => m.id === modelId)?.title }),
     }).catch(() => {});
     setPendingModels((prev) => prev.filter((m) => m.id !== modelId));
+    setSelectedModels((prev) => { const n = new Set(prev); n.delete(modelId); return n; });
+  }
+
+  async function bulkApproveModels() {
+    if (selectedModels.size === 0) return;
+    setBulkLoading(true);
+    const supabase = createClient();
+    const ids = Array.from(selectedModels);
+    await supabase.from("models").update({ is_published: true }).in("id", ids);
+    for (const id of ids) {
+      await fetch("/api/email/model-approved", {
+        method: "POST", headers: { "Content-Type": "application/json" },
+        body: JSON.stringify({ modelId: id, modelTitle: pendingModels.find((m) => m.id === id)?.title }),
+      }).catch(() => {});
+    }
+    setPendingModels((prev) => prev.filter((m) => !selectedModels.has(m.id)));
+    setSelectedModels(new Set());
+    setBulkLoading(false);
+  }
+
+  async function bulkRejectModels() {
+    if (selectedModels.size === 0) return;
+    if (!confirm(`${selectedModels.size} modeli reddet?`)) return;
+    setBulkLoading(true);
+    const supabase = createClient();
+    const ids = Array.from(selectedModels);
+    await supabase.from("models").delete().in("id", ids);
+    setPendingModels((prev) => prev.filter((m) => !selectedModels.has(m.id)));
+    setSelectedModels(new Set());
+    setBulkLoading(false);
   }
 
   async function rejectModel(modelId: string) {
@@ -344,6 +383,7 @@ export function AdminDashboardClient() {
             { id: "models",   label: `Model Onayı (${pendingModels.length})`        },
             { id: "partners", label: `Ortak Başvuruları (${pendingPartners.length})` },
             { id: "orders",   label: `Siparişler (${orders.length})`                },
+            { id: "reports",  label: "📊 Raporlar"                                  },
             { id: "test",     label: "🧪 Test Siparişi", highlight: true            },
           ].map((t) => (
             <button key={t.id} onClick={() => setTab(t.id as any)}
@@ -366,10 +406,60 @@ export function AdminDashboardClient() {
             {/* MODEL ONAYI */}
             {tab === "models" && (
               <div className="flex flex-col gap-3">
+                {/* Toolbar */}
+                <div className="flex items-center gap-2 flex-wrap">
+                  <input
+                    value={modelSearch}
+                    onChange={(e) => setModelSearch(e.target.value)}
+                    placeholder="Model veya tasarımcı ara…"
+                    className="h-9 px-3 text-sm rounded-xl border border-[var(--border)] bg-[var(--bg-secondary)] text-[var(--text-primary)] outline-none focus:border-[#FF6B35] flex-1 min-w-[200px]"
+                  />
+                  <button
+                    onClick={() => setSelectedModels(new Set(pendingModels.filter(m =>
+                      !modelSearch || m.title.toLowerCase().includes(modelSearch.toLowerCase()) ||
+                      (m.designer?.full_name ?? "").toLowerCase().includes(modelSearch.toLowerCase())
+                    ).map(m => m.id)))}
+                    className="h-9 px-3 text-xs rounded-xl border border-[var(--border)] text-[var(--text-secondary)] hover:bg-[var(--bg-secondary)] transition-colors whitespace-nowrap"
+                  >
+                    Tümünü Seç
+                  </button>
+                  {selectedModels.size > 0 && (
+                    <>
+                      <span className="text-xs text-[var(--text-tertiary)] whitespace-nowrap">{selectedModels.size} seçili</span>
+                      <button onClick={bulkApproveModels} disabled={bulkLoading}
+                        className="h-9 px-3 text-xs rounded-xl bg-[rgba(16,185,129,0.1)] text-[#10B981] hover:bg-[rgba(16,185,129,0.2)] disabled:opacity-50 transition-colors font-medium whitespace-nowrap">
+                        {bulkLoading ? "İşleniyor…" : "✓ Hepsini Onayla"}
+                      </button>
+                      <button onClick={bulkRejectModels} disabled={bulkLoading}
+                        className="h-9 px-3 text-xs rounded-xl bg-red-100 text-red-600 dark:bg-red-900/30 dark:text-red-400 hover:opacity-80 disabled:opacity-50 transition-colors font-medium whitespace-nowrap">
+                        ✕ Hepsini Reddet
+                      </button>
+                    </>
+                  )}
+                </div>
+
                 {pendingModels.length === 0 ? (
                   <div className="text-center py-16 text-sm text-[var(--text-tertiary)]">Bekleyen model yok.</div>
-                ) : pendingModels.map((m) => (
-                  <div key={m.id} className="bg-[var(--bg-primary)] border border-[var(--border)] rounded-2xl p-4 flex items-center gap-4">
+                ) : pendingModels
+                    .filter((m) => !modelSearch ||
+                      m.title.toLowerCase().includes(modelSearch.toLowerCase()) ||
+                      (m.designer?.full_name ?? "").toLowerCase().includes(modelSearch.toLowerCase())
+                    )
+                    .map((m) => (
+                  <div key={m.id} className={`bg-[var(--bg-primary)] border rounded-2xl p-4 flex items-center gap-3 transition-colors ${
+                    selectedModels.has(m.id) ? "border-[#FF6B35] bg-[rgba(255,107,53,0.02)]" : "border-[var(--border)]"
+                  }`}>
+                    <input type="checkbox"
+                      checked={selectedModels.has(m.id)}
+                      onChange={(e) => {
+                        setSelectedModels((prev) => {
+                          const n = new Set(prev);
+                          e.target.checked ? n.add(m.id) : n.delete(m.id);
+                          return n;
+                        });
+                      }}
+                      className="w-4 h-4 rounded accent-[#FF6B35] cursor-pointer shrink-0"
+                    />
                     <div className="w-10 h-10 rounded-xl bg-[var(--bg-tertiary)] flex items-center justify-center text-xs font-mono font-semibold text-[var(--text-secondary)] shrink-0">
                       {m.file_format.toUpperCase()}
                     </div>
@@ -434,9 +524,52 @@ export function AdminDashboardClient() {
             {/* SİPARİŞLER */}
             {tab === "orders" && (
               <div className="flex flex-col gap-3">
-                {orders.length === 0 ? (
-                  <div className="text-center py-16 text-sm text-[var(--text-tertiary)]">Sipariş yok.</div>
-                ) : orders.map((o) => {
+                {/* Toolbar */}
+                <div className="flex items-center gap-2 flex-wrap">
+                  <input
+                    value={orderSearch}
+                    onChange={(e) => setOrderSearch(e.target.value)}
+                    placeholder="Alıcı adı veya sipariş no ara…"
+                    className="h-9 px-3 text-sm rounded-xl border border-[var(--border)] bg-[var(--bg-secondary)] text-[var(--text-primary)] outline-none focus:border-[#FF6B35] flex-1 min-w-[200px]"
+                  />
+                  <select
+                    value={orderStatusFilter}
+                    onChange={(e) => setOrderStatusFilter(e.target.value)}
+                    className="h-9 px-3 text-sm rounded-xl border border-[var(--border)] bg-[var(--bg-secondary)] text-[var(--text-primary)] outline-none focus:border-[#FF6B35] cursor-pointer"
+                  >
+                    {["all","pending","paid","in_print","shipped","delivered","cancelled"].map((s) => (
+                      <option key={s} value={s}>
+                        {s === "all" ? "Tüm Durumlar" :
+                         s === "pending" ? "Bekliyor" :
+                         s === "paid" ? "Ödendi" :
+                         s === "in_print" ? "Baskıda" :
+                         s === "shipped" ? "Kargoda" :
+                         s === "delivered" ? "Teslim Edildi" : "İptal"}
+                      </option>
+                    ))}
+                  </select>
+                  <span className="text-xs text-[var(--text-tertiary)]">
+                    {orders.filter(o =>
+                      (orderStatusFilter === "all" || o.status === orderStatusFilter) &&
+                      (!orderSearch || o.recipient_name?.toLowerCase().includes(orderSearch.toLowerCase()) ||
+                       o.id.slice(0,8).toLowerCase().includes(orderSearch.toLowerCase()))
+                    ).length} sonuç
+                  </span>
+                </div>
+
+                {orders.filter(o =>
+                  (orderStatusFilter === "all" || o.status === orderStatusFilter) &&
+                  (!orderSearch || o.recipient_name?.toLowerCase().includes(orderSearch.toLowerCase()) ||
+                   o.id.slice(0,8).toLowerCase().includes(orderSearch.toLowerCase()))
+                ).length === 0 ? (
+                  <div className="text-center py-16 text-sm text-[var(--text-tertiary)]">Sipariş bulunamadı.</div>
+                ) : orders
+                    .filter(o =>
+                      (orderStatusFilter === "all" || o.status === orderStatusFilter) &&
+                      (!orderSearch || o.recipient_name?.toLowerCase().includes(orderSearch.toLowerCase()) ||
+                       o.id.slice(0,8).toLowerCase().includes(orderSearch.toLowerCase()))
+                    )
+                    .map((o) => {
                   const isExp = expanded.has(o.id);
                   return (
                     <div key={o.id} className="bg-[var(--bg-primary)] border border-[var(--border)] rounded-2xl overflow-hidden">
@@ -511,6 +644,75 @@ export function AdminDashboardClient() {
                     </div>
                   );
                 })}
+              </div>
+            )}
+
+            {/* RAPORLAR */}
+            {tab === "reports" && (
+              <div className="flex flex-col gap-6">
+                <h2 className="text-base font-semibold text-[var(--text-primary)]">📊 Platform Raporları</h2>
+
+                {/* Gelir özeti */}
+                <div className="grid grid-cols-2 sm:grid-cols-4 gap-3">
+                  {[
+                    { label: "Toplam Gelir",    value: formatPrice(stats.revenue),           color: "orange" },
+                    { label: "Toplam Sipariş",  value: stats.totalOrders,                    color: "green"  },
+                    { label: "Toplam Kullanıcı",value: stats.totalUsers,                     color: "blue"   },
+                    { label: "Ort. Sipariş",    value: stats.totalOrders > 0 ? formatPrice(stats.revenue / stats.totalOrders) : "—", color: "purple" },
+                  ].map((s) => (
+                    <div key={s.label} className="bg-[var(--bg-primary)] border border-[var(--border)] rounded-2xl p-4">
+                      <div className={`text-xl font-semibold mb-1 ${
+                        s.color === "orange" ? "text-[#FF6B35]" :
+                        s.color === "green"  ? "text-[#10B981]" :
+                        s.color === "blue"   ? "text-blue-500"  : "text-purple-500"
+                      }`}>{s.value}</div>
+                      <div className="text-xs text-[var(--text-tertiary)]">{s.label}</div>
+                    </div>
+                  ))}
+                </div>
+
+                {/* Sipariş durumu dağılımı */}
+                <div className="bg-[var(--bg-primary)] border border-[var(--border)] rounded-2xl p-5">
+                  <h3 className="text-sm font-medium text-[var(--text-primary)] mb-4">Sipariş Durumu Dağılımı</h3>
+                  <div className="flex flex-col gap-2">
+                    {[
+                      { status: "pending",   label: "Bekliyor",      color: "bg-gray-400"    },
+                      { status: "paid",      label: "Ödendi",        color: "bg-blue-400"    },
+                      { status: "in_print",  label: "Baskıda",       color: "bg-purple-400"  },
+                      { status: "shipped",   label: "Kargoda",       color: "bg-yellow-400"  },
+                      { status: "delivered", label: "Teslim Edildi", color: "bg-[#10B981]"   },
+                      { status: "cancelled", label: "İptal",         color: "bg-red-400"     },
+                    ].map(({ status, label, color }) => {
+                      const count = orders.filter(o => o.status === status).length;
+                      const pct   = orders.length > 0 ? Math.round((count / orders.length) * 100) : 0;
+                      return (
+                        <div key={status} className="flex items-center gap-3">
+                          <div className="w-24 text-xs text-[var(--text-tertiary)] shrink-0">{label}</div>
+                          <div className="flex-1 h-2 bg-[var(--bg-secondary)] rounded-full overflow-hidden">
+                            <div className={`h-full ${color} rounded-full transition-all`} style={{ width: `${pct}%` }} />
+                          </div>
+                          <div className="w-12 text-xs text-[var(--text-tertiary)] text-right shrink-0">{count} (%{pct})</div>
+                        </div>
+                      );
+                    })}
+                  </div>
+                </div>
+
+                {/* Son siparişler özeti */}
+                <div className="bg-[var(--bg-primary)] border border-[var(--border)] rounded-2xl p-5">
+                  <h3 className="text-sm font-medium text-[var(--text-primary)] mb-4">Son 5 Sipariş</h3>
+                  <div className="flex flex-col divide-y divide-[var(--border)]">
+                    {orders.slice(0, 5).map((o) => (
+                      <div key={o.id} className="flex items-center justify-between py-2.5">
+                        <div>
+                          <div className="text-sm text-[var(--text-primary)]">#{o.id.slice(0,8).toUpperCase()}</div>
+                          <div className="text-xs text-[var(--text-tertiary)]">{o.recipient_name} · {new Date(o.created_at).toLocaleDateString("tr-TR")}</div>
+                        </div>
+                        <div className="text-sm font-semibold text-[#FF6B35]">{formatPrice(o.total_amount)}</div>
+                      </div>
+                    ))}
+                  </div>
+                </div>
               </div>
             )}
 
