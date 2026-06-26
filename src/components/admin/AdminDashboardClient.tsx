@@ -81,10 +81,15 @@ const COLORS = [
 ];
 
 export function AdminDashboardClient() {
-  const [tab,             setTab]             = useState<"models" | "partners" | "orders" | "reports" | "test">("models");
+  const [tab,             setTab]             = useState<"models" | "partners" | "orders" | "reports" | "withdrawals" | "test">("models");
   const [pendingModels,   setPendingModels]   = useState<PendingModel[]>([]);
   const [pendingPartners, setPendingPartners] = useState<PendingPartner[]>([]);
   const [orders,          setOrders]          = useState<OrderRow[]>([]);
+  const [withdrawals,     setWithdrawals]     = useState<{
+    id: string; amount: number; iban: string; full_name: string;
+    status: string; created_at: string; admin_note: string | null;
+    user: { full_name: string | null; email?: string } | null;
+  }[]>([]);
   const [stats,           setStats]           = useState({ totalUsers: 0, totalOrders: 0, revenue: 0 });
   const [loading,         setLoading]         = useState(true);
   const [expanded,        setExpanded]        = useState<Set<string>>(new Set());
@@ -181,9 +186,16 @@ export function AdminDashboardClient() {
 
     const totalRevenue = enrichedOrders.reduce((s, o) => s + (o.total_amount ?? 0), 0);
 
+    // Withdrawal requests
+    const { data: wdData } = await supabase
+      .from("withdrawal_requests")
+      .select("id, amount, iban, full_name, status, created_at, admin_note, user:profiles(full_name)")
+      .order("created_at", { ascending: false });
+
     setPendingModels((modelsRes.data ?? []) as unknown as PendingModel[]);
     setPendingPartners((partnersRes.data ?? []) as unknown as PendingPartner[]);
     setOrders(enrichedOrders);
+    setWithdrawals((wdData ?? []) as any);
     setTestModels((modelsForTest.data ?? []) as ModelOption[]);
     setStats({ totalUsers: usersRes.count ?? 0, totalOrders: ordersRes.data?.length ?? 0, revenue: totalRevenue });
     setLoading(false);
@@ -380,11 +392,12 @@ export function AdminDashboardClient() {
         {/* Tabs */}
         <div className="flex gap-1 border border-[var(--border)] rounded-xl p-1 mb-6 w-fit flex-wrap">
           {[
-            { id: "models",   label: `Model Onayı (${pendingModels.length})`        },
-            { id: "partners", label: `Ortak Başvuruları (${pendingPartners.length})` },
-            { id: "orders",   label: `Siparişler (${orders.length})`                },
-            { id: "reports",  label: "📊 Raporlar"                                  },
-            { id: "test",     label: "🧪 Test Siparişi", highlight: true            },
+            { id: "models",      label: `Model Onayı (${pendingModels.length})`        },
+            { id: "partners",    label: `Ortak Başvuruları (${pendingPartners.length})` },
+            { id: "orders",      label: `Siparişler (${orders.length})`                },
+            { id: "withdrawals", label: `💸 Çekim Talepleri (${withdrawals.filter(w => w.status === "pending").length})` },
+            { id: "reports",     label: "📊 Raporlar"                                  },
+            { id: "test",        label: "🧪 Test Siparişi", highlight: true            },
           ].map((t) => (
             <button key={t.id} onClick={() => setTab(t.id as any)}
               className={`px-4 py-2 rounded-lg text-sm transition-all ${
@@ -641,6 +654,73 @@ export function AdminDashboardClient() {
                           ))}
                         </div>
                       )}
+                    </div>
+                  );
+                })}
+              </div>
+            )}
+
+            {/* ÇEKİM TALEPLERİ */}
+            {tab === "withdrawals" && (
+              <div className="flex flex-col gap-3">
+                {withdrawals.length === 0 ? (
+                  <div className="text-center py-16 text-sm text-[var(--text-tertiary)]">Henüz çekim talebi yok.</div>
+                ) : withdrawals.map((w) => {
+                  const STATUS_COLORS: Record<string, string> = {
+                    pending:  "bg-yellow-100 text-yellow-700 dark:bg-yellow-900/30 dark:text-yellow-400",
+                    approved: "bg-blue-100 text-blue-700 dark:bg-blue-900/30 dark:text-blue-400",
+                    rejected: "bg-red-100 text-red-600 dark:bg-red-900/30 dark:text-red-400",
+                    paid:     "bg-[rgba(16,185,129,0.1)] text-[#10B981]",
+                  };
+                  return (
+                    <div key={w.id} className="bg-[var(--bg-primary)] border border-[var(--border)] rounded-2xl p-4">
+                      <div className="flex items-start justify-between gap-3 flex-wrap">
+                        <div className="flex-1 min-w-0">
+                          <div className="flex items-center gap-2 mb-1">
+                            <span className="font-semibold text-[#FF6B35]">{formatPrice(w.amount)}</span>
+                            <span className={`text-xs font-medium px-2 py-0.5 rounded-full ${STATUS_COLORS[w.status]}`}>
+                              {w.status === "pending" ? "Beklemede" : w.status === "approved" ? "Onaylandı" :
+                               w.status === "rejected" ? "Reddedildi" : "Ödendi"}
+                            </span>
+                          </div>
+                          <div className="text-sm text-[var(--text-secondary)]">{w.full_name}</div>
+                          <div className="text-xs font-mono text-[var(--text-tertiary)] mt-0.5">{w.iban}</div>
+                          <div className="text-xs text-[var(--text-tertiary)]">
+                            {(w.user as any)?.full_name} · {new Date(w.created_at).toLocaleDateString("tr-TR")}
+                          </div>
+                          {w.admin_note && (
+                            <div className="text-xs text-red-500 mt-1">Not: {w.admin_note}</div>
+                          )}
+                        </div>
+
+                        {w.status === "pending" && (
+                          <div className="flex gap-2 shrink-0">
+                            <button
+                              onClick={async () => {
+                                const supabase = createClient();
+                                await supabase.from("withdrawal_requests")
+                                  .update({ status: "paid" }).eq("id", w.id);
+                                setWithdrawals((prev) => prev.map((x) => x.id === w.id ? { ...x, status: "paid" } : x));
+                              }}
+                              className="h-8 px-3 text-xs rounded-xl bg-[rgba(16,185,129,0.1)] text-[#10B981] hover:bg-[rgba(16,185,129,0.2)] transition-colors font-medium"
+                            >
+                              ✓ Ödendi
+                            </button>
+                            <button
+                              onClick={async () => {
+                                const note = prompt("Red nedeni (isteğe bağlı):");
+                                const supabase = createClient();
+                                await supabase.from("withdrawal_requests")
+                                  .update({ status: "rejected", admin_note: note ?? null }).eq("id", w.id);
+                                setWithdrawals((prev) => prev.map((x) => x.id === w.id ? { ...x, status: "rejected", admin_note: note ?? null } : x));
+                              }}
+                              className="h-8 px-3 text-xs rounded-xl bg-red-50 text-red-600 dark:bg-red-950/20 hover:opacity-80 transition-colors font-medium"
+                            >
+                              ✕ Reddet
+                            </button>
+                          </div>
+                        )}
+                      </div>
                     </div>
                   );
                 })}

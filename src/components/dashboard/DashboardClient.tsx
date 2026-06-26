@@ -208,7 +208,7 @@ export function DashboardClient({ user, profile: initialProfile }: { user: User;
           {activeTab === "orders"    && <OrdersTab   orders={orders} loading={loadingOrders} statusLabels={STATUS_LABELS} t={t} locale={locale} />}
           {activeTab === "uploads"   && <UploadsTab  models={models} loading={loadingModels} onDelete={deleteModel} t={t} locale={locale} />}
           {activeTab === "designer"  && <DesignerStatsTab userId={user.id} models={models} locale={locale} />}
-          {activeTab === "wallet"    && <WalletTab   balance={walletBalance} t={t} />}
+          {activeTab === "wallet"    && <WalletTab   balance={walletBalance} userId={user.id} t={t} locale={locale} />}
           {activeTab === "settings"  && (
             <SettingsTab
               user={user}
@@ -411,18 +411,185 @@ function UploadsTab({ models, loading, onDelete, t, locale }: {
 }
 
 /* ── WALLET ── */
-function WalletTab({ balance, t }: { balance: number; t: ReturnType<typeof useTranslations> }) {
+function WalletTab({ balance, userId, t, locale }: {
+  balance: number;
+  userId: string;
+  t: ReturnType<typeof useTranslations>;
+  locale: string;
+}) {
+  const [transactions,  setTransactions]  = useState<{ id: string; type: string; amount: number; description: string; created_at: string }[]>([]);
+  const [withdrawals,   setWithdrawals]   = useState<{ id: string; amount: number; iban: string; status: string; created_at: string; admin_note: string | null }[]>([]);
+  const [txLoading,     setTxLoading]     = useState(true);
+
+  const [amount,        setAmount]        = useState("");
+  const [iban,          setIban]          = useState("");
+  const [holderName,    setHolderName]    = useState("");
+  const [submitting,    setSubmitting]    = useState(false);
+  const [message,       setMessage]       = useState<{ type: "success" | "error"; text: string } | null>(null);
+
+  useEffect(() => {
+    const supabase = createClient();
+    Promise.all([
+      supabase.from("wallet_transactions").select("id, type, amount, description, created_at")
+        .eq("user_id", userId).order("created_at", { ascending: false }).limit(20),
+      supabase.from("withdrawal_requests").select("id, amount, iban, status, created_at, admin_note")
+        .eq("user_id", userId).order("created_at", { ascending: false }),
+    ]).then(([txRes, wdRes]) => {
+      setTransactions(txRes.data ?? []);
+      setWithdrawals(wdRes.data ?? []);
+      setTxLoading(false);
+    });
+  }, [userId]);
+
+  async function handleWithdrawal(e: React.FormEvent) {
+    e.preventDefault();
+    const amt = parseFloat(amount);
+    if (isNaN(amt) || amt < 50) { setMessage({ type: "error", text: t("withdrawalMin") }); return; }
+    if (amt > balance)           { setMessage({ type: "error", text: t("withdrawalInsufficient") }); return; }
+    if (!iban.trim() || !holderName.trim()) { setMessage({ type: "error", text: "IBAN ve ad soyad zorunlu." }); return; }
+
+    setSubmitting(true);
+    setMessage(null);
+    const supabase = createClient();
+    const { error } = await supabase.from("withdrawal_requests").insert({
+      user_id:   userId,
+      amount:    amt,
+      iban:      iban.trim().replace(/\s/g, ""),
+      full_name: holderName.trim(),
+    });
+    setSubmitting(false);
+    if (error) {
+      setMessage({ type: "error", text: t("withdrawalError") });
+    } else {
+      setMessage({ type: "success", text: t("withdrawalSuccess") });
+      setAmount("");
+      setIban("");
+      setHolderName("");
+      // Talebi listeye ekle
+      const { data: wdRes } = await supabase.from("withdrawal_requests")
+        .select("id, amount, iban, status, created_at, admin_note")
+        .eq("user_id", userId).order("created_at", { ascending: false });
+      setWithdrawals(wdRes ?? []);
+    }
+  }
+
+  const STATUS_COLORS: Record<string, string> = {
+    pending:  "bg-yellow-100 text-yellow-700 dark:bg-yellow-900/30 dark:text-yellow-400",
+    approved: "bg-blue-100 text-blue-700 dark:bg-blue-900/30 dark:text-blue-400",
+    rejected: "bg-red-100 text-red-600 dark:bg-red-900/30 dark:text-red-400",
+    paid:     "bg-[rgba(16,185,129,0.1)] text-[#10B981]",
+  };
+
   return (
     <div className="flex flex-col gap-5">
       <h1 className="text-xl font-semibold text-[var(--text-primary)]">{t("walletTitle")}</h1>
+
+      {/* Bakiye kartı */}
       <div className="rounded-2xl p-6 text-white" style={{ background: "linear-gradient(135deg, #FF6B35, #e85e2a)" }}>
         <div className="text-sm opacity-80 mb-1">{t("walletBalance")}</div>
-        <div className="text-4xl font-semibold">{formatPrice(balance)}</div>
+        <div className="text-4xl font-semibold">{formatPrice(balance, locale)}</div>
         <div className="text-sm opacity-70 mt-2">{t("walletDesc")}</div>
       </div>
+
+      {/* Çekim formu */}
+      <div className="bg-[var(--bg-primary)] border border-[var(--border)] rounded-2xl p-5">
+        <h2 className="text-sm font-semibold text-[var(--text-primary)] mb-4">{t("withdrawal")}</h2>
+        <form onSubmit={handleWithdrawal} className="flex flex-col gap-3">
+          <div className="grid grid-cols-1 sm:grid-cols-2 gap-3">
+            <div>
+              <label className="text-xs text-[var(--text-tertiary)] block mb-1">{t("withdrawalAmount")}</label>
+              <input
+                type="number" min="50" step="0.01"
+                value={amount} onChange={(e) => setAmount(e.target.value)}
+                placeholder="50.00"
+                className="w-full h-10 px-3 text-sm rounded-xl border border-[var(--border)] bg-[var(--bg-secondary)] text-[var(--text-primary)] outline-none focus:border-[#FF6B35] transition-colors"
+              />
+            </div>
+            <div>
+              <label className="text-xs text-[var(--text-tertiary)] block mb-1">{t("withdrawalName")}</label>
+              <input
+                type="text" value={holderName} onChange={(e) => setHolderName(e.target.value)}
+                placeholder="Ad Soyad"
+                className="w-full h-10 px-3 text-sm rounded-xl border border-[var(--border)] bg-[var(--bg-secondary)] text-[var(--text-primary)] outline-none focus:border-[#FF6B35] transition-colors"
+              />
+            </div>
+          </div>
+          <div>
+            <label className="text-xs text-[var(--text-tertiary)] block mb-1">{t("withdrawalIban")}</label>
+            <input
+              type="text" value={iban} onChange={(e) => setIban(e.target.value)}
+              placeholder="TR00 0000 0000 0000 0000 0000 00"
+              className="w-full h-10 px-3 text-sm rounded-xl border border-[var(--border)] bg-[var(--bg-secondary)] text-[var(--text-primary)] outline-none focus:border-[#FF6B35] font-mono transition-colors"
+            />
+          </div>
+
+          {message && (
+            <div className={`text-sm px-3 py-2 rounded-xl ${
+              message.type === "success"
+                ? "bg-[rgba(16,185,129,0.1)] text-[#10B981]"
+                : "bg-red-50 text-red-600 dark:bg-red-950/20"
+            }`}>
+              {message.text}
+            </div>
+          )}
+
+          <button type="submit" disabled={submitting || balance < 50}
+            className="h-10 rounded-xl bg-[#FF6B35] text-white text-sm font-medium hover:bg-[#e85e2a] disabled:opacity-50 transition-colors flex items-center justify-center gap-2">
+            {submitting
+              ? <><div className="w-4 h-4 border-2 border-white/30 border-t-white rounded-full animate-spin" /> {t("withdrawalSubmitting")}</>
+              : t("withdrawalSubmit")
+            }
+          </button>
+          <p className="text-xs text-[var(--text-tertiary)]">{t("withdrawalMin")}</p>
+        </form>
+      </div>
+
+      {/* Çekim geçmişi */}
+      {withdrawals.length > 0 && (
+        <div className="bg-[var(--bg-primary)] border border-[var(--border)] rounded-2xl p-5">
+          <h2 className="text-sm font-semibold text-[var(--text-primary)] mb-4">{t("withdrawalHistory")}</h2>
+          <div className="flex flex-col divide-y divide-[var(--border)]">
+            {withdrawals.map((w) => (
+              <div key={w.id} className="flex items-center justify-between py-3">
+                <div>
+                  <div className="text-sm text-[var(--text-primary)] font-medium">{formatPrice(w.amount, locale)}</div>
+                  <div className="text-xs text-[var(--text-tertiary)] font-mono mt-0.5">{w.iban}</div>
+                  <div className="text-xs text-[var(--text-tertiary)]">{new Date(w.created_at).toLocaleDateString(locale === "tr" ? "tr-TR" : "en-US")}</div>
+                  {w.admin_note && <div className="text-xs text-red-500 mt-0.5">{w.admin_note}</div>}
+                </div>
+                <span className={`text-xs font-medium px-2.5 py-1 rounded-full ${STATUS_COLORS[w.status] ?? ""}`}>
+                  {t(`withdrawal${w.status.charAt(0).toUpperCase() + w.status.slice(1)}` as any)}
+                </span>
+              </div>
+            ))}
+          </div>
+        </div>
+      )}
+
+      {/* İşlem geçmişi */}
       <div className="bg-[var(--bg-primary)] border border-[var(--border)] rounded-2xl p-5">
         <h2 className="text-sm font-semibold text-[var(--text-primary)] mb-4">{t("transactions")}</h2>
-        <div className="text-center py-8 text-[var(--text-tertiary)] text-sm">{t("noTransactions")}</div>
+        {txLoading ? (
+          <div className="text-center py-8 text-[var(--text-tertiary)] text-sm">Yükleniyor…</div>
+        ) : transactions.length === 0 ? (
+          <div className="text-center py-8 text-[var(--text-tertiary)] text-sm">{t("noTransactions")}</div>
+        ) : (
+          <div className="flex flex-col divide-y divide-[var(--border)]">
+            {transactions.map((tx) => (
+              <div key={tx.id} className="flex items-center justify-between py-3">
+                <div>
+                  <div className="text-sm text-[var(--text-primary)]">{tx.description}</div>
+                  <div className="text-xs text-[var(--text-tertiary)]">
+                    {new Date(tx.created_at).toLocaleDateString(locale === "tr" ? "tr-TR" : "en-US")}
+                  </div>
+                </div>
+                <span className={`text-sm font-semibold ${tx.type === "earn" ? "text-[#10B981]" : "text-red-500"}`}>
+                  {tx.type === "earn" ? "+" : "-"}{formatPrice(tx.amount, locale)}
+                </span>
+              </div>
+            ))}
+          </div>
+        )}
       </div>
     </div>
   );
