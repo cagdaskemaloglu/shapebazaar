@@ -1,24 +1,13 @@
 import { NextRequest, NextResponse } from "next/server";
 import { createClient } from "@/lib/supabase/server";
 import { sendOrderConfirmation } from "@/lib/email/resend";
-
-const IYZICO_BASE_URL = process.env.IYZICO_BASE_URL ?? "https://sandbox-api.iyzipay.com";
-const IYZICO_API_KEY  = process.env.IYZICO_API_KEY  ?? "";
-const IYZICO_SECRET   = process.env.IYZICO_SECRET_KEY ?? "";
-
-function generateAuthHeader(body: string): string {
-  const randomKey  = Math.random().toString(36).substring(2);
-  const dataToSign = IYZICO_API_KEY + randomKey + IYZICO_SECRET + body;
-  const crypto     = require("crypto");
-  const signature  = crypto.createHash("sha1").update(dataToSign).digest("base64");
-  return `IYZWS apiKey:${IYZICO_API_KEY}&randomKey:${randomKey}&signature:${signature}`;
-}
+import { IYZICO_BASE_URL, generateAuthHeader, SITE_URL } from "@/lib/iyzico";
 
 export async function POST(req: NextRequest) {
   try {
     const formData = await req.formData();
     const token    = formData.get("token") as string;
-    if (!token) return NextResponse.redirect(`${process.env.NEXT_PUBLIC_SITE_URL}/payment/failed`);
+    if (!token) return NextResponse.redirect(`${SITE_URL}/payment/failed`);
 
     const bodyStr = JSON.stringify({ locale: "tr", token });
     const iyzRes  = await fetch(`${IYZICO_BASE_URL}/payment/iyzipos/checkoutform/auth/ecom/detail`, {
@@ -31,7 +20,6 @@ export async function POST(req: NextRequest) {
     const supabase = await createClient();
 
     if (iyzData.paymentStatus === "SUCCESS") {
-      // Siparişi ödenmiş olarak işaretle
       const { data: order } = await supabase
         .from("orders")
         .update({ status: "paid", paid_at: new Date().toISOString() })
@@ -40,13 +28,12 @@ export async function POST(req: NextRequest) {
         .single();
 
       if (order) {
-        // Sipariş kalemlerini çek
         const { data: items } = await supabase
           .from("order_items")
           .select("model_id, model_title, model_price, print_cost, item_total")
           .eq("order_id", order.id);
 
-        // Print job oluştur — buyer'ın region'ını ekle
+        // Buyer region — tek seferlik
         const { data: buyerProfile } = await supabase
           .from("profiles")
           .select("region")
@@ -54,8 +41,8 @@ export async function POST(req: NextRequest) {
           .single();
 
         const buyerRegion = buyerProfile?.region ?? "TR";
+        const buyerLocale = buyerRegion === "TR" ? "tr" : "en";
 
-        // orders tablosuna buyer_region yaz
         await supabase
           .from("orders")
           .update({ buyer_region: buyerRegion })
@@ -67,11 +54,10 @@ export async function POST(req: NextRequest) {
           region:   buyerRegion,
         });
 
-        // Her tasarımcıya kazanç yaz
+        // Tasarımcı kazanç
         if (items && items.length > 0) {
           for (const item of items) {
             if (!item.model_id) continue;
-
             const { data: model } = await supabase
               .from("models")
               .select("designer_id, base_price")
@@ -87,45 +73,38 @@ export async function POST(req: NextRequest) {
                 description:  `Satış kazancı — ${item.model_title} (Sipariş #${order.id.slice(0, 8)})`,
                 ref_order_id: order.id,
               });
-              await supabase.rpc("increment_wallet", {
-                uid:    model.designer_id,
-                amount: designerEarning,
-              });
+              await supabase.rpc("increment_wallet", { uid: model.designer_id, amount: designerEarning });
             }
           }
         }
 
-        // Onay emaili gönder
-        const { data: buyer } = await supabase.auth.admin.getUserById(order.buyer_id);
+        // Onay emaili
+        const { data: authUser } = await supabase.auth.admin.getUserById(order.buyer_id);
         const modelTitles = items?.map((i) => i.model_title).join(", ") ?? "Model";
 
-        // Buyer'ın locale'ini profile'dan çek
-        const buyerLocale = buyerProfile?.region === "TR" ? "tr" : "en";
-
-        if (buyer?.user?.email) {
+        if (authUser?.user?.email) {
           await sendOrderConfirmation({
-            to:          buyer.user.email,
+            to:          authUser.user.email,
             buyerName:   order.recipient_name ?? (buyerLocale === "tr" ? "Müşteri" : "Customer"),
             modelTitle:  modelTitles,
             orderId:     order.id,
             totalAmount: order.total_amount,
             locale:      buyerLocale,
-          }).catch(() => {});
+          }).catch(console.error);
         }
-      }
 
-      return NextResponse.redirect(
-        `${process.env.NEXT_PUBLIC_SITE_URL}/payment/success?orderId=${order?.id}`
-      );
-    } else {
-      await supabase
-        .from("orders")
-        .update({ status: "cancelled" })
-        .eq("payment_id", iyzData.conversationId);
-      return NextResponse.redirect(`${process.env.NEXT_PUBLIC_SITE_URL}/payment/failed`);
+        return NextResponse.redirect(`${SITE_URL}/payment/success?orderId=${order.id}`);
+      }
     }
+
+    await supabase
+      .from("orders")
+      .update({ status: "cancelled" })
+      .eq("payment_id", iyzData.conversationId);
+    return NextResponse.redirect(`${SITE_URL}/payment/failed`);
+
   } catch (err) {
     console.error("Payment callback error:", err);
-    return NextResponse.redirect(`${process.env.NEXT_PUBLIC_SITE_URL}/payment/failed`);
+    return NextResponse.redirect(`${SITE_URL}/payment/failed`);
   }
 }
