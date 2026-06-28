@@ -5,6 +5,7 @@ import { formatPrice } from "@/lib/utils";
 import { ModelViewer } from "@/components/viewer/ModelViewer";
 import { createClient } from "@/lib/supabase/client";
 import { getModelPublicUrl } from "@/lib/storage";
+import { useTranslations } from "next-intl";
 import { usePathname } from "next/navigation";
 import {
   calcPrintCost,
@@ -42,6 +43,7 @@ interface FeaturedModel {
 }
 
 export function FeaturedViewer() {
+  const t        = useTranslations("viewer");
   const pathname = usePathname();
   const locale   = pathname.split("/")[1] || "tr";
 
@@ -82,7 +84,7 @@ export function FeaturedViewer() {
     return (
       <section className="bg-[var(--bg-secondary)] border-b border-[var(--border)] py-10">
         <p className="text-center text-sm text-[var(--text-tertiary)] mb-6">
-          Bir model seç — yapılandır — sipariş ver
+          {t("subtitle")}
         </p>
         <div className="max-w-3xl mx-auto px-4 sm:px-6">
           <div className="bg-[var(--bg-primary)] border border-[var(--border)] rounded-2xl overflow-hidden flex flex-col md:flex-row animate-pulse">
@@ -114,7 +116,7 @@ export function FeaturedViewer() {
   return (
     <section className="bg-[var(--bg-secondary)] border-b border-[var(--border)] py-10">
       <p className="text-center text-sm text-[var(--text-tertiary)] mb-6">
-        Bir model seç — yapılandır — sipariş ver
+        {t("subtitle")}
       </p>
 
       <div className="max-w-3xl mx-auto px-4 sm:px-6">
