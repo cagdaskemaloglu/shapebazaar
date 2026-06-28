@@ -1,7 +1,7 @@
 import { NextRequest, NextResponse } from "next/server";
 import { createClient } from "@/lib/supabase/server";
 
-// Bu endpoint Vercel Cron tarafından her saat çağrılır
+// Bu endpoint Vercel Cron tarafından her saat çağrılır ----
 // vercel.json: { "crons": [{ "path": "/api/cron/reset-print-jobs", "schedule": "0 * * * *" }] }
 
 export async function GET(req: NextRequest) {
