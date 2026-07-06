@@ -1,7 +1,7 @@
 import { NextRequest, NextResponse } from "next/server";
 import { createClient } from "@/lib/supabase/server";
 import { sendOrderConfirmation } from "@/lib/email/resend";
-import { IYZICO_BASE_URL, generateAuthHeader, SITE_URL } from "@/lib/iyzico";
+import { retrieveCheckoutForm, SITE_URL } from "@/lib/iyzico";
 
 export async function POST(req: NextRequest) {
   try {
@@ -9,13 +9,7 @@ export async function POST(req: NextRequest) {
     const token    = formData.get("token") as string;
     if (!token) return NextResponse.redirect(`${SITE_URL}/payment/failed`);
 
-    const bodyStr = JSON.stringify({ locale: "tr", token });
-    const iyzRes  = await fetch(`${IYZICO_BASE_URL}/payment/iyzipos/checkoutform/auth/ecom/detail`, {
-      method:  "POST",
-      headers: { "Content-Type": "application/json", Authorization: generateAuthHeader(bodyStr) },
-      body:    bodyStr,
-    });
-    const iyzData = await iyzRes.json();
+    const iyzData = await retrieveCheckoutForm({ locale: "tr", token });
 
     const supabase = await createClient();
 
@@ -33,7 +27,7 @@ export async function POST(req: NextRequest) {
           .select("model_id, model_title, model_price, print_cost, item_total")
           .eq("order_id", order.id);
 
-        // Buyer region — tek seferlik
+        // Buyer region
         const { data: buyerProfile } = await supabase
           .from("profiles")
           .select("region")
@@ -43,8 +37,7 @@ export async function POST(req: NextRequest) {
         const buyerRegion = buyerProfile?.region ?? "TR";
         const buyerLocale = buyerRegion === "TR" ? "tr" : "en";
 
-        await supabase
-          .from("orders")
+        await supabase.from("orders")
           .update({ buyer_region: buyerRegion })
           .eq("id", order.id);
 
@@ -60,20 +53,20 @@ export async function POST(req: NextRequest) {
             if (!item.model_id) continue;
             const { data: model } = await supabase
               .from("models")
-              .select("designer_id, base_price")
+              .select("designer_id")
               .eq("id", item.model_id)
               .single();
 
             if (model?.designer_id && item.model_price > 0) {
-              const designerEarning = item.model_price * 0.9;
+              const earning = item.model_price * 0.9;
               await supabase.from("wallet_transactions").insert({
                 user_id:      model.designer_id,
                 type:         "earn",
-                amount:       designerEarning,
-                description:  `Satış kazancı — ${item.model_title} (Sipariş #${order.id.slice(0, 8)})`,
+                amount:       earning,
+                description:  `Satış kazancı — ${item.model_title} (#${order.id.slice(0, 8)})`,
                 ref_order_id: order.id,
               });
-              await supabase.rpc("increment_wallet", { uid: model.designer_id, amount: designerEarning });
+              await supabase.rpc("increment_wallet", { uid: model.designer_id, amount: earning });
             }
           }
         }
@@ -93,18 +86,21 @@ export async function POST(req: NextRequest) {
           }).catch(console.error);
         }
 
-        return NextResponse.redirect(`${SITE_URL}/payment/success?orderId=${order.id}`);
+        return NextResponse.redirect(`${SITE_URL}/tr/payment/success?orderId=${order.id}`);
       }
     }
 
+    // Ödeme başarısız
     await supabase
       .from("orders")
       .update({ status: "cancelled" })
-      .eq("payment_id", iyzData.conversationId);
-    return NextResponse.redirect(`${SITE_URL}/payment/failed`);
+      .eq("payment_id", iyzData.conversationId)
+      .match(() => {});
+
+    return NextResponse.redirect(`${SITE_URL}/tr/payment/failed`);
 
   } catch (err) {
     console.error("Payment callback error:", err);
-    return NextResponse.redirect(`${SITE_URL}/payment/failed`);
+    return NextResponse.redirect(`${SITE_URL}/tr/payment/failed`);
   }
 }
