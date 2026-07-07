@@ -52,20 +52,40 @@ export function CartDrawer() {
             printCost:   i.printCost,
             itemTotal:   i.itemTotal,
           })),
-          subtotal:   subtotal(),
-          shipping:   shipping(),
-          grandTotal: grandTotal(),
+          subtotal:    subtotal(),
+          shipping:    shipping(),
+          grandTotal:  grandTotal(),
+          platformFee: grandTotal() * 0.1,
           address,
         }),
       });
       const data = await res.json();
-      if (data.error) { setPayError(data.error); setPaying(false); return; }
+      console.log("[payment/init] response:", data);
+
+      if (data.error) {
+        setPayError(data.error);
+        setPaying(false);
+        return;
+      }
+
+      if (!data.checkoutFormContent) {
+        setPayError("İyzico form içeriği alınamadı. Lütfen tekrar deneyin.");
+        setPaying(false);
+        return;
+      }
+
       const div = document.createElement("div");
       div.innerHTML = data.checkoutFormContent;
       document.body.appendChild(div);
       const form = div.querySelector("form");
-      if (form) form.submit();
-    } catch {
+      if (form) {
+        form.submit();
+      } else {
+        setPayError("Ödeme formu oluşturulamadı.");
+        setPaying(false);
+      }
+    } catch (err) {
+      console.error("[payment] error:", err);
       setPayError(t("errors.connection"));
       setPaying(false);
     }
