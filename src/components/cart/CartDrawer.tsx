@@ -74,12 +74,31 @@ export function CartDrawer() {
         return;
       }
 
-      const div = document.createElement("div");
-      div.innerHTML = data.checkoutFormContent;
-      document.body.appendChild(div);
-      const form = div.querySelector("form");
+      // İyzico yeni flow: <script> inject ederek ödeme sayfasını açar
+      const container = document.createElement("div");
+      container.innerHTML = data.checkoutFormContent;
+      document.body.appendChild(container);
+
+      // Önce form dene (eski flow)
+      const form = container.querySelector("form");
       if (form) {
         form.submit();
+        return;
+      }
+
+      // Yeni flow: script tag'lerini çalıştır
+      const scripts = container.querySelectorAll("script");
+      if (scripts.length > 0) {
+        scripts.forEach((oldScript) => {
+          const newScript = document.createElement("script");
+          if (oldScript.src) {
+            newScript.src = oldScript.src;
+          } else {
+            newScript.textContent = oldScript.textContent;
+          }
+          newScript.type = oldScript.type || "text/javascript";
+          document.body.appendChild(newScript);
+        });
       } else {
         setPayError("Ödeme formu oluşturulamadı.");
         setPaying(false);
