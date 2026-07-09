@@ -7,19 +7,31 @@ export async function POST(req: NextRequest) {
   try {
     const formData = await req.formData();
     const token    = formData.get("token") as string;
-    if (!token) return NextResponse.redirect(`${SITE_URL}/payment/failed`);
+
+    console.log("[callback] token:", token);
+
+    if (!token) {
+      console.log("[callback] no token, redirecting to failed");
+      return NextResponse.redirect(`${SITE_URL}/tr/payment/failed`);
+    }
 
     const iyzData = await retrieveCheckoutForm({ locale: "tr", token });
+    console.log("[callback] iyzData:", JSON.stringify(iyzData));
 
     const supabase = await createClient();
 
-    if (iyzData.paymentStatus === "SUCCESS") {
-      const { data: order } = await supabase
+    if (iyzData.status === "success" && iyzData.paymentStatus === "SUCCESS") {
+      console.log("[callback] payment SUCCESS, conversationId:", iyzData.conversationId);
+
+      // conversationId ile order bul
+      const { data: order, error: orderFindErr } = await supabase
         .from("orders")
         .update({ status: "paid", paid_at: new Date().toISOString() })
         .eq("payment_id", iyzData.conversationId)
         .select()
         .single();
+
+      console.log("[callback] order:", order?.id, "orderFindErr:", orderFindErr);
 
       if (order) {
         const { data: items } = await supabase
@@ -86,11 +98,17 @@ export async function POST(req: NextRequest) {
           }).catch(console.error);
         }
 
+        console.log("[callback] redirecting to success");
         return NextResponse.redirect(`${SITE_URL}/tr/payment/success?orderId=${order.id}`);
       }
+
+      // Order bulunamadı — conversationId ile tekrar dene
+      console.log("[callback] order not found for conversationId:", iyzData.conversationId);
+      return NextResponse.redirect(`${SITE_URL}/tr/payment/success`);
     }
 
-    // Ödeme başarısız
+    console.log("[callback] payment not SUCCESS:", iyzData.status, iyzData.paymentStatus, iyzData.errorMessage);
+
     await supabase
       .from("orders")
       .update({ status: "cancelled" })
@@ -100,7 +118,7 @@ export async function POST(req: NextRequest) {
     return NextResponse.redirect(`${SITE_URL}/tr/payment/failed`);
 
   } catch (err) {
-    console.error("Payment callback error:", err);
+    console.error("[callback] error:", err);
     return NextResponse.redirect(`${SITE_URL}/tr/payment/failed`);
   }
 }
