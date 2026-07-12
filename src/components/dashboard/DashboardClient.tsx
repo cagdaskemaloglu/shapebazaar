@@ -36,7 +36,7 @@ interface Order {
   created_at: string;
   status: string;
   total_amount: number;
-  models: { title: string }[] | null;
+  order_items: { model_title: string }[] | null;
 }
 
 interface Model {
@@ -107,12 +107,13 @@ export function DashboardClient({ user, profile: initialProfile }: { user: User;
   async function fetchOrders() {
     setLoadingOrders(true);
     const supabase = createClient();
-    const { data } = await supabase
+    const { data, error } = await supabase
       .from("orders")
-      .select("id, created_at, status, total_amount, models(title)")
+      .select("id, created_at, status, total_amount, order_items(model_title)")
       .eq("buyer_id", user.id)
       .order("created_at", { ascending: false })
       .limit(20);
+    console.log("[orders] data:", data, "error:", error);
     setOrders((data ?? []) as Order[]);
     setLoadingOrders(false);
   }
@@ -277,7 +278,7 @@ function OverviewTab({ orders, models, walletBalance, loading, statusLabels, t, 
                   <Package size={14} className="text-[var(--text-tertiary)]" />
                 </div>
                 <div className="flex-1 min-w-0">
-                  <div className="text-sm font-medium text-[var(--text-primary)] truncate">{o.models?.[0]?.title ?? t("model")}</div>
+                  <div className="text-sm font-medium text-[var(--text-primary)] truncate">{o.order_items?.[0]?.model_title ?? t("model")}</div>
                   <div className="text-xs text-[var(--text-tertiary)]">{new Date(o.created_at).toLocaleDateString(locale === "tr" ? "tr-TR" : "en-US")}</div>
                 </div>
                 <span className={`text-[11px] font-medium px-2 py-0.5 rounded-full ${st.color}`}>{st.label}</span>
@@ -340,7 +341,7 @@ function OrdersTab({ orders, loading, statusLabels, t, locale }: {
                   <Package size={18} className="text-[var(--text-tertiary)]" />
                 </div>
                 <div className="flex-1 min-w-0">
-                  <div className="font-medium text-sm text-[var(--text-primary)]">{o.models?.[0]?.title ?? t("model")}</div>
+                  <div className="font-medium text-sm text-[var(--text-primary)]">{o.order_items?.[0]?.model_title ?? t("model")}</div>
                   <div className="text-xs text-[var(--text-tertiary)]">{o.id.slice(0, 8).toUpperCase()} · {new Date(o.created_at).toLocaleDateString(locale === "tr" ? "tr-TR" : "en-US")}</div>
                 </div>
                 <span className={`text-[11px] font-medium px-2.5 py-1 rounded-full ${st.color}`}>{st.label}</span>
