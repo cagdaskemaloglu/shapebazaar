@@ -1,8 +1,16 @@
 import { NextRequest, NextResponse } from "next/server";
-import { createClient } from "@/lib/supabase/server";
+import { createAdminClient } from "@/lib/supabase/admin";
 import { sendOrderConfirmation } from "@/lib/email/resend";
 import { retrieveCheckoutForm, SITE_URL } from "@/lib/iyzico";
 
+/**
+ * iyzico'nun kendi sunucusundan/checkout sayfasından gelen callback POST'u.
+ * Bu istek alıcının tarayıcı oturum cookie'lerini taşımayabilir (cross-site
+ * POST), bu yüzden RLS'e güvenen anon-key client yerine bilerek
+ * service-role (admin) client kullanıyoruz. Güvenlik, RLS yerine
+ * retrieveCheckoutForm() içindeki iyzico token doğrulamasından geliyor —
+ * yani bu route'a rastgele biri sahte bir "başarılı ödeme" bildiremiyor.
+ */
 export async function POST(req: NextRequest) {
   try {
     const formData = await req.formData();
@@ -18,12 +26,12 @@ export async function POST(req: NextRequest) {
     const iyzData = await retrieveCheckoutForm({ locale: "tr", token });
     console.log("[callback] iyzData:", JSON.stringify(iyzData));
 
-    const supabase = await createClient();
+    const supabase = createAdminClient();
 
     if (iyzData.status === "success" && iyzData.paymentStatus === "SUCCESS") {
       console.log("[callback] payment SUCCESS, conversationId:", iyzData.conversationId);
 
-      // conversationId ile order bul
+      // conversationId ile order bul ve "paid" yap
       const { data: order, error: orderFindErr } = await supabase
         .from("orders")
         .update({ status: "paid", paid_at: new Date().toISOString() })
@@ -53,11 +61,12 @@ export async function POST(req: NextRequest) {
           .update({ buyer_region: buyerRegion })
           .eq("id", order.id);
 
-        await supabase.from("print_jobs").insert({
+        const { error: printJobErr } = await supabase.from("print_jobs").insert({
           order_id: order.id,
           status:   "available",
           region:   buyerRegion,
         });
+        if (printJobErr) console.error("[callback] print_job insert error:", printJobErr);
 
         // Tasarımcı kazanç
         if (items && items.length > 0) {
@@ -71,20 +80,24 @@ export async function POST(req: NextRequest) {
 
             if (model?.designer_id && item.model_price > 0) {
               const earning = item.model_price * 0.9;
-              await supabase.from("wallet_transactions").insert({
+              const { error: walletErr } = await supabase.from("wallet_transactions").insert({
                 user_id:      model.designer_id,
                 type:         "earn",
                 amount:       earning,
                 description:  `Satış kazancı — ${item.model_title} (#${order.id.slice(0, 8)})`,
                 ref_order_id: order.id,
               });
-              await supabase.rpc("increment_wallet", { uid: model.designer_id, amount: earning });
+              if (walletErr) console.error("[callback] wallet_transactions insert error:", walletErr);
+
+              const { error: rpcErr } = await supabase.rpc("increment_wallet", { uid: model.designer_id, amount: earning });
+              if (rpcErr) console.error("[callback] increment_wallet rpc error:", rpcErr);
             }
           }
         }
 
-        // Onay emaili
-        const { data: authUser } = await supabase.auth.admin.getUserById(order.buyer_id);
+        // Onay emaili (auth.admin.* için service role zorunlu)
+        const { data: authUser, error: authUserErr } = await supabase.auth.admin.getUserById(order.buyer_id);
+        if (authUserErr) console.error("[callback] getUserById error:", authUserErr);
         const modelTitles = items?.map((i) => i.model_title).join(", ") ?? "Model";
 
         if (authUser?.user?.email) {
@@ -112,8 +125,7 @@ export async function POST(req: NextRequest) {
     await supabase
       .from("orders")
       .update({ status: "cancelled" })
-      .eq("payment_id", iyzData.conversationId)
-      .match(() => {});
+      .eq("payment_id", iyzData.conversationId);
 
     return NextResponse.redirect(`${SITE_URL}/tr/payment/failed`);
 

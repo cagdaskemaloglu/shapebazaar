@@ -210,8 +210,11 @@ export function AdminDashboardClient() {
   }
 
   async function approveModel(modelId: string) {
-    const supabase = createClient();
-    await supabase.from("models").update({ is_published: true }).eq("id", modelId);
+    const res = await fetch("/api/admin/models/approve", {
+      method: "POST", headers: { "Content-Type": "application/json" },
+      body: JSON.stringify({ modelIds: [modelId] }),
+    });
+    if (!res.ok) { alert("Model onaylanamadı."); return; }
     await fetch("/api/email/model-approved", {
       method: "POST", headers: { "Content-Type": "application/json" },
       body: JSON.stringify({ modelId, modelTitle: pendingModels.find((m) => m.id === modelId)?.title }),
@@ -223,9 +226,12 @@ export function AdminDashboardClient() {
   async function bulkApproveModels() {
     if (selectedModels.size === 0) return;
     setBulkLoading(true);
-    const supabase = createClient();
     const ids = Array.from(selectedModels);
-    await supabase.from("models").update({ is_published: true }).in("id", ids);
+    const res = await fetch("/api/admin/models/approve", {
+      method: "POST", headers: { "Content-Type": "application/json" },
+      body: JSON.stringify({ modelIds: ids }),
+    });
+    if (!res.ok) { alert("Modeller onaylanamadı."); setBulkLoading(false); return; }
     for (const id of ids) {
       await fetch("/api/email/model-approved", {
         method: "POST", headers: { "Content-Type": "application/json" },
@@ -241,23 +247,32 @@ export function AdminDashboardClient() {
     if (selectedModels.size === 0) return;
     if (!confirm(`${selectedModels.size} modeli reddet?`)) return;
     setBulkLoading(true);
-    const supabase = createClient();
     const ids = Array.from(selectedModels);
-    await supabase.from("models").delete().in("id", ids);
+    const res = await fetch("/api/admin/models/reject", {
+      method: "POST", headers: { "Content-Type": "application/json" },
+      body: JSON.stringify({ modelIds: ids }),
+    });
+    if (!res.ok) { alert("Modeller reddedilemedi."); setBulkLoading(false); return; }
     setPendingModels((prev) => prev.filter((m) => !selectedModels.has(m.id)));
     setSelectedModels(new Set());
     setBulkLoading(false);
   }
 
   async function rejectModel(modelId: string) {
-    const supabase = createClient();
-    await supabase.from("models").delete().eq("id", modelId);
+    const res = await fetch("/api/admin/models/reject", {
+      method: "POST", headers: { "Content-Type": "application/json" },
+      body: JSON.stringify({ modelIds: [modelId] }),
+    });
+    if (!res.ok) { alert("Model reddedilemedi."); return; }
     setPendingModels((prev) => prev.filter((m) => m.id !== modelId));
   }
 
   async function approvePartner(userId: string) {
-    const supabase = createClient();
-    await supabase.from("profiles").update({ role: "printer_partner", is_partner_approved: true }).eq("id", userId);
+    const res = await fetch("/api/admin/partners/approve", {
+      method: "POST", headers: { "Content-Type": "application/json" },
+      body: JSON.stringify({ userId }),
+    });
+    if (!res.ok) { alert("Ortak onaylanamadı."); return; }
     await fetch("/api/email/partner-approved", {
       method: "POST", headers: { "Content-Type": "application/json" },
       body: JSON.stringify({ userId }),
@@ -266,25 +281,32 @@ export function AdminDashboardClient() {
   }
 
   async function rejectPartner(userId: string) {
-    const supabase = createClient();
-    await supabase.from("profiles").update({ partner_requested_at: null }).eq("id", userId);
+    const res = await fetch("/api/admin/partners/reject", {
+      method: "POST", headers: { "Content-Type": "application/json" },
+      body: JSON.stringify({ userId }),
+    });
+    if (!res.ok) { alert("Başvuru reddedilemedi."); return; }
     setPendingPartners((prev) => prev.filter((p) => p.id !== userId));
   }
 
   async function updateOrderStatus(orderId: string, status: string) {
-    const supabase = createClient();
-    const update: Record<string, any> = { status };
+    let trackingNumber = "";
+    let cargoCompany = "";
     if (status === "shipped") {
-      const trackingNumber = prompt("Kargo takip numarası:") ?? "";
-      const cargoCompany   = prompt("Kargo firması (opsiyonel):") ?? "";
-      update.tracking_number = trackingNumber;
-      update.cargo_company   = cargoCompany;
+      trackingNumber = prompt("Kargo takip numarası:") ?? "";
+      cargoCompany   = prompt("Kargo firması (opsiyonel):") ?? "";
+    }
+    const res = await fetch("/api/admin/orders/status", {
+      method: "POST", headers: { "Content-Type": "application/json" },
+      body: JSON.stringify({ orderId, status, trackingNumber, cargoCompany }),
+    });
+    if (!res.ok) { alert("Sipariş durumu güncellenemedi."); return; }
+    if (status === "shipped") {
       await fetch("/api/email/order-shipped", {
         method: "POST", headers: { "Content-Type": "application/json" },
         body: JSON.stringify({ orderId, trackingNumber, cargoCompany }),
       }).catch(() => {});
     }
-    await supabase.from("orders").update(update).eq("id", orderId);
     setOrders((prev) => prev.map((o) => o.id === orderId ? { ...o, status } : o));
   }
 
@@ -294,68 +316,30 @@ export function AdminDashboardClient() {
     setTestLoading(true);
     setTestSuccess(false);
 
-    const supabase   = createClient();
-    const model      = testModels.find((m) => m.id === testForm.modelId);
-    if (!model) { setTestLoading(false); return; }
+    const res = await fetch("/api/admin/orders/test", {
+      method: "POST", headers: { "Content-Type": "application/json" },
+      body: JSON.stringify({
+        modelId:       testForm.modelId,
+        recipientName: testForm.recipientName,
+        address:       testForm.address,
+        city:          testForm.city,
+        district:      testForm.district,
+        phone:         testForm.phone,
+        material:      testForm.material,
+        colorName:     testForm.colorName,
+        colorHex:      testForm.colorHex,
+        scale:         testForm.scale,
+        infill:        testForm.infill,
+      }),
+    });
 
-    // Kullanıcıyı al (admin kendisi)
-    const { data: { user } } = await supabase.auth.getUser();
-    if (!user) { setTestLoading(false); return; }
-
-    const designPrice  = model.is_free ? 0 : model.base_price;
-    const printCost    = ((model.weight_grams ?? 50) * 1.0) + 50; // basit hesap
-    const platformFee  = (designPrice + printCost) * 0.10;
-    const shippingCost = 150;
-    const totalAmount  = designPrice + printCost + platformFee + shippingCost;
-    const conversationId = `TEST-${Date.now()}`;
-
-    // Order oluştur
-    const { data: order, error: orderErr } = await supabase
-      .from("orders")
-      .insert({
-        buyer_id:       user.id,
-        status:         "paid",
-        shipping_cost:  shippingCost,
-        platform_fee:   platformFee,
-        total_amount:   totalAmount,
-        recipient_name: testForm.recipientName,
-        address_line1:  testForm.address,
-        city:           testForm.city,
-        district:       testForm.district,
-        phone:          testForm.phone,
-        payment_id:     conversationId,
-        paid_at:        new Date().toISOString(),
-      })
-      .select("id")
-      .single();
-
-    if (orderErr || !order) {
-      console.error(orderErr);
-      alert("Sipariş oluşturulamadı.");
+    if (!res.ok) {
+      const body = await res.json().catch(() => ({}));
+      console.error(body);
+      alert(body.error ?? "Sipariş oluşturulamadı.");
       setTestLoading(false);
       return;
     }
-
-    // Order item oluştur
-    await supabase.from("order_items").insert({
-      order_id:     order.id,
-      model_id:     model.id,
-      model_title:  model.title,
-      material:     testForm.material,
-      color_name:   testForm.colorName,
-      color_hex:    testForm.colorHex,
-      scale_percent: parseFloat(testForm.scale) || 100,
-      infill:       testForm.infill,
-      model_price:  designPrice,
-      print_cost:   printCost,
-      item_total:   designPrice + printCost + platformFee,
-    });
-
-    // Print job oluştur
-    await supabase.from("print_jobs").insert({
-      order_id: order.id,
-      status:   "available",
-    });
 
     setTestSuccess(true);
     setTestLoading(false);
@@ -697,9 +681,11 @@ export function AdminDashboardClient() {
                           <div className="flex gap-2 shrink-0">
                             <button
                               onClick={async () => {
-                                const supabase = createClient();
-                                await supabase.from("withdrawal_requests")
-                                  .update({ status: "paid" }).eq("id", w.id);
+                                const res = await fetch("/api/admin/withdrawals/update", {
+                                  method: "POST", headers: { "Content-Type": "application/json" },
+                                  body: JSON.stringify({ id: w.id, status: "paid" }),
+                                });
+                                if (!res.ok) { alert("Güncellenemedi."); return; }
                                 setWithdrawals((prev) => prev.map((x) => x.id === w.id ? { ...x, status: "paid" } : x));
                               }}
                               className="h-8 px-3 text-xs rounded-xl bg-[rgba(16,185,129,0.1)] text-[#10B981] hover:bg-[rgba(16,185,129,0.2)] transition-colors font-medium"
@@ -709,9 +695,11 @@ export function AdminDashboardClient() {
                             <button
                               onClick={async () => {
                                 const note = prompt("Red nedeni (isteğe bağlı):");
-                                const supabase = createClient();
-                                await supabase.from("withdrawal_requests")
-                                  .update({ status: "rejected", admin_note: note ?? null }).eq("id", w.id);
+                                const res = await fetch("/api/admin/withdrawals/update", {
+                                  method: "POST", headers: { "Content-Type": "application/json" },
+                                  body: JSON.stringify({ id: w.id, status: "rejected", adminNote: note ?? null }),
+                                });
+                                if (!res.ok) { alert("Güncellenemedi."); return; }
                                 setWithdrawals((prev) => prev.map((x) => x.id === w.id ? { ...x, status: "rejected", admin_note: note ?? null } : x));
                               }}
                               className="h-8 px-3 text-xs rounded-xl bg-red-50 text-red-600 dark:bg-red-950/20 hover:opacity-80 transition-colors font-medium"
