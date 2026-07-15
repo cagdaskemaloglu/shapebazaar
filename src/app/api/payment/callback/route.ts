@@ -28,14 +28,24 @@ export async function POST(req: NextRequest) {
 
     const supabase = createAdminClient();
 
-    if (iyzData.status === "success" && iyzData.paymentStatus === "SUCCESS") {
-      console.log("[callback] payment SUCCESS, conversationId:", iyzData.conversationId);
+    // iyzico'nun checkout form "detail" yanıtı conversationId döndürmüyor
+    // (sadece init isteğinde geri geliyor) — bu yüzden basketId kullanıyoruz,
+    // init'te basketId'yi bilerek conversationId ile birebir aynı gönderdik.
+    const paymentRef = iyzData.basketId ?? iyzData.conversationId;
 
-      // conversationId ile order bul ve "paid" yap
+    if (iyzData.status === "success" && iyzData.paymentStatus === "SUCCESS") {
+      console.log("[callback] payment SUCCESS, paymentRef:", paymentRef);
+
+      if (!paymentRef) {
+        console.error("[callback] ne basketId ne conversationId var, order eşleştirilemiyor:", iyzData);
+        return NextResponse.redirect(`${SITE_URL}/tr/payment/failed`);
+      }
+
+      // basketId (=conversationId) ile order bul ve "paid" yap
       const { data: order, error: orderFindErr } = await supabase
         .from("orders")
         .update({ status: "paid", paid_at: new Date().toISOString() })
-        .eq("payment_id", iyzData.conversationId)
+        .eq("payment_id", paymentRef)
         .select()
         .single();
 
@@ -115,17 +125,19 @@ export async function POST(req: NextRequest) {
         return NextResponse.redirect(`${SITE_URL}/tr/payment/success?orderId=${order.id}`);
       }
 
-      // Order bulunamadı — conversationId ile tekrar dene
-      console.log("[callback] order not found for conversationId:", iyzData.conversationId);
+      // Order bulunamadı
+      console.log("[callback] order not found for paymentRef:", paymentRef);
       return NextResponse.redirect(`${SITE_URL}/tr/payment/success`);
     }
 
     console.log("[callback] payment not SUCCESS:", iyzData.status, iyzData.paymentStatus, iyzData.errorMessage);
 
-    await supabase
-      .from("orders")
-      .update({ status: "cancelled" })
-      .eq("payment_id", iyzData.conversationId);
+    if (paymentRef) {
+      await supabase
+        .from("orders")
+        .update({ status: "cancelled" })
+        .eq("payment_id", paymentRef);
+    }
 
     return NextResponse.redirect(`${SITE_URL}/tr/payment/failed`);
 

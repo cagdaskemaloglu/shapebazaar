@@ -4,7 +4,7 @@ const API_KEY    = (process.env.IYZICO_API_KEY     ?? "").trim();
 const SECRET_KEY = (process.env.IYZICO_SECRET_KEY  ?? "").trim();
 const BASE_URL   = (process.env.IYZICO_BASE_URL    ?? "https://sandbox-api.iyzipay.com").trim();
 
-export const SITE_URL = (process.env.NEXT_PUBLIC_SITE_URL ?? "https://www.shapebazaar.com").trim();
+export const SITE_URL = (process.env.NEXT_PUBLIC_SITE_URL ?? "https://www.shapebazaar.com").trim().replace(/\/+$/, "");
 
 // IYZWSv2 + HMAC-SHA256 — resmi iyzipay paketinin birebir aynısı
 function generateAuthHeader(path: string, body: object, randomString: string): string {
@@ -149,6 +149,10 @@ export interface CheckoutFormRetrieveResult {
   status: "success" | "failure";
   paymentStatus?: string;
   conversationId?: string;
+  // iyzico'nun checkout form "detail" (retrieve) yanıtında conversationId
+  // genelde DÖNMÜYOR — sipariş eşleştirmesi için basketId kullanılmalı
+  // (init'te basketId: conversationId olarak birebir aynı gönderiliyor).
+  basketId?: string;
   errorMessage?: string;
   errorCode?: string;
 }
