@@ -150,95 +150,17 @@ export function PartnerDashboardClient({ userId }: { userId: string }) {
 
   const fetchAll = useCallback(async () => {
     setLoading(true);
-    const supabase = createClient();
-
-    // Partner'ın region'ını çek
-    const { data: partnerProfile } = await supabase
-      .from("profiles")
-      .select("region")
-      .eq("id", userId)
-      .single();
-    const region = partnerProfile?.region ?? "TR";
-    setPartnerRegion(region);
-
-    // Süresi dolmuş job'ları sıfırla
-    await supabase
-      .from("print_jobs")
-      .update({ status: "available", printer_id: null, claimed_at: null, deadline: null })
-      .eq("status", "claimed")
-      .lt("deadline", new Date().toISOString());
-
-    const { data: pool, error: poolErr } = await supabase
-      .from("print_jobs")
-      .select(`
-        id, status, claimed_at, printed_at, deadline, created_at, printer_id, printer_notes,
-        order:orders(id, total_amount, shipping_cost, city, district, recipient_name, address_line1, phone)
-      `)
-      .in("status", ["available", "claimed"])
-      .eq("region", region)
-      .order("created_at", { ascending: false })
-      .limit(50);
-
-    if (poolErr) console.error("Pool fetch error:", poolErr);
-
-    const { data: mine, error: mineErr } = await supabase
-      .from("print_jobs")
-      .select(`
-        id, status, claimed_at, printed_at, deadline, created_at, printer_id, printer_notes,
-        order:orders(id, total_amount, shipping_cost, city, district, recipient_name, address_line1, phone)
-      `)
-      .eq("printer_id", userId)
-      .order("created_at", { ascending: false });
-
-    if (mineErr) console.error("Mine fetch error:", mineErr);
-
-    const { data: wallet } = await supabase
-      .from("profiles")
-      .select("wallet_balance")
-      .eq("id", userId)
-      .single();
-
-    // Printer bilgilerini ayrı çek
-    const allJobs    = [...(pool ?? []), ...(mine ?? [])];
-    const printerIds = [...new Set(allJobs.map((j: any) => j.printer_id).filter(Boolean))];
-    let printerMap: Record<string, { full_name: string | null; username: string | null }> = {};
-    if (printerIds.length > 0) {
-      const { data: printers } = await supabase
-        .from("profiles")
-        .select("id, full_name, username")
-        .in("id", printerIds);
-      for (const p of printers ?? []) {
-        printerMap[p.id] = { full_name: p.full_name, username: p.username };
-      }
+    const res = await fetch("/api/partner/jobs/list");
+    if (!res.ok) {
+      console.error("fetchAll error:", await res.json().catch(() => ({})));
+      setLoading(false);
+      return;
     }
-
-    // Order items
-    const orderIds = [...new Set(allJobs.map((j: any) => j.order?.id).filter(Boolean))];
-    let itemsMap: Record<string, OrderItem[]> = {};
-    if (orderIds.length > 0) {
-      const { data: items } = await supabase
-        .from("order_items")
-        .select("id, order_id, model_title, material, color_name, color_hex, scale_percent, infill, item_total")
-        .in("order_id", orderIds);
-      for (const item of items ?? []) {
-        const oi = item as any;
-        if (!itemsMap[oi.order_id]) itemsMap[oi.order_id] = [];
-        itemsMap[oi.order_id].push(oi);
-      }
-    }
-
-    function enrich(jobs: any[]): PrintJob[] {
-      return jobs.map((j) => ({
-        ...j,
-        printer_full_name: j.printer_id ? printerMap[j.printer_id]?.full_name ?? null : null,
-        printer_username:  j.printer_id ? printerMap[j.printer_id]?.username  ?? null : null,
-        items: itemsMap[j.order?.id ?? ""] ?? [],
-      }));
-    }
-
-    setPoolJobs(enrich(pool ?? []));
-    setMyJobs(enrich(mine ?? []));
-    setEarnings(wallet?.wallet_balance ?? 0);
+    const data = await res.json();
+    setPartnerRegion(data.partnerRegion ?? "TR");
+    setPoolJobs(data.poolJobs ?? []);
+    setMyJobs(data.myJobs ?? []);
+    setEarnings(data.earnings ?? 0);
     setLoading(false);
   }, [userId]);
 
