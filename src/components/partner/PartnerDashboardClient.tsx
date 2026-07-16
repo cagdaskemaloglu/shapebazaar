@@ -275,39 +275,29 @@ export function PartnerDashboardClient({ userId }: { userId: string }) {
       return;
     }
     setShippingLoading(true);
-    const supabase = createClient();
-    const job = myJobs.find((j) => j.id === jobId);
 
-    // print_job'u done yap
-    await supabase
-      .from("print_jobs")
-      .update({ status: "done", printed_at: new Date().toISOString() })
-      .eq("id", jobId);
+    const res = await fetch("/api/partner/jobs/ship", {
+      method: "POST",
+      headers: { "Content-Type": "application/json" },
+      body: JSON.stringify({ jobId, trackingNumber: trackingNumber.trim(), cargoCompany: cargoCompany.trim() }),
+    });
 
-    if (job?.order?.id) {
-      // Siparişi shipped yap, kargo bilgilerini kaydet
-      await supabase.from("orders").update({
-        status:          "shipped",
-        tracking_number: trackingNumber.trim(),
-        cargo_company:   cargoCompany.trim() || null,
-      }).eq("id", job.order.id);
+    if (!res.ok) {
+      const body = await res.json().catch(() => ({}));
+      alert(body.error ?? (locale === "tr" ? "Bir hata oluştu." : "Something went wrong."));
+      setShippingLoading(false);
+      return;
+    }
 
-      // Partner kazancını hesapla ve cüzdana ekle
-      const earning = (job.order.total_amount ?? 0) * PRINTER_EARNING_RATE;
-      await supabase.from("wallet_transactions").insert({
-        user_id:     userId,
-        type:        "earn",
-        amount:      earning,
-        description: `${t("earning")} — #${job.order.id.slice(0, 8)}`,
-        ref_order_id: job.order.id,
-      });
-      await supabase.rpc("increment_wallet", { uid: userId, amount: earning });
+    const { orderId } = await res.json();
 
-      // Kargo email gönder
+    // Kargo email gönder — kazanç artık burada DEĞİL, müşteri "Teslim Aldım"
+    // dediğinde /api/orders/confirm-delivery içinde dağıtılıyor.
+    if (orderId) {
       await fetch("/api/email/order-shipped", {
         method: "POST",
         headers: { "Content-Type": "application/json" },
-        body: JSON.stringify({ orderId: job.order.id, trackingNumber: trackingNumber.trim(), cargoCompany: cargoCompany.trim() }),
+        body: JSON.stringify({ orderId, trackingNumber: trackingNumber.trim(), cargoCompany: cargoCompany.trim() }),
       }).catch(() => {});
     }
     setShippingLoading(false);

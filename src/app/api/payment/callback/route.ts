@@ -78,32 +78,9 @@ export async function POST(req: NextRequest) {
         });
         if (printJobErr) console.error("[callback] print_job insert error:", printJobErr);
 
-        // Tasarımcı kazanç
-        if (items && items.length > 0) {
-          for (const item of items) {
-            if (!item.model_id) continue;
-            const { data: model } = await supabase
-              .from("models")
-              .select("designer_id")
-              .eq("id", item.model_id)
-              .single();
-
-            if (model?.designer_id && item.model_price > 0) {
-              const earning = item.model_price * 0.9;
-              const { error: walletErr } = await supabase.from("wallet_transactions").insert({
-                user_id:      model.designer_id,
-                type:         "earn",
-                amount:       earning,
-                description:  `Satış kazancı — ${item.model_title} (#${order.id.slice(0, 8)})`,
-                ref_order_id: order.id,
-              });
-              if (walletErr) console.error("[callback] wallet_transactions insert error:", walletErr);
-
-              const { error: rpcErr } = await supabase.rpc("increment_wallet", { uid: model.designer_id, amount: earning });
-              if (rpcErr) console.error("[callback] increment_wallet rpc error:", rpcErr);
-            }
-          }
-        }
+        // NOT: Tasarımcı ve yazıcı ortağı kazançları burada DAĞITILMIYOR.
+        // Kazançlar, müşteri "Teslim Aldım" deyip /api/orders/confirm-delivery
+        // çağrıldığında hesaplanıp cüzdanlara yansıtılıyor.
 
         // Onay emaili (auth.admin.* için service role zorunlu)
         const { data: authUser, error: authUserErr } = await supabase.auth.admin.getUserById(order.buyer_id);

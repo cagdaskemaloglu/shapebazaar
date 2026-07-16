@@ -1,10 +1,11 @@
 "use client";
 import { useState } from "react";
+import { useRouter } from "next/navigation";
 import { useTranslations } from "next-intl";
 import Link from "next/link";
 import {
   CheckCircle, Clock, Printer, Truck, Package,
-  Copy, Check, MapPin, ArrowLeft
+  Copy, Check, MapPin, ArrowLeft, Loader2
 } from "lucide-react";
 import { formatPrice } from "@/lib/utils";
 
@@ -54,9 +55,32 @@ const STEP_ICONS = {
 export function OrderTrackingClient({ order, items, locale }: Props) {
   const t = useTranslations("orderTracking");
   const tStatus = useTranslations("status");
+  const router = useRouter();
   const [copied, setCopied] = useState(false);
+  const [status, setStatus] = useState(order.status);
+  const [confirming, setConfirming] = useState(false);
+  const [confirmError, setConfirmError] = useState<string | null>(null);
 
-  const currentStepIndex = STATUS_STEPS.indexOf(order.status as any);
+  const currentStepIndex = STATUS_STEPS.indexOf(status as any);
+
+  async function confirmDelivery() {
+    setConfirming(true);
+    setConfirmError(null);
+    const res = await fetch("/api/orders/confirm-delivery", {
+      method: "POST",
+      headers: { "Content-Type": "application/json" },
+      body: JSON.stringify({ orderId: order.id }),
+    });
+    if (!res.ok) {
+      const body = await res.json().catch(() => ({}));
+      setConfirmError(body.error ?? (locale === "tr" ? "Bir hata oluştu, tekrar dene." : "Something went wrong, please retry."));
+      setConfirming(false);
+      return;
+    }
+    setStatus("delivered");
+    setConfirming(false);
+    router.refresh();
+  }
 
   function copyTracking() {
     if (!order.tracking_number) return;
@@ -156,6 +180,32 @@ export function OrderTrackingClient({ order, items, locale }: Props) {
               </div>
             </div>
           </div>
+        </div>
+      )}
+
+      {/* Teslim Onayı */}
+      {status === "shipped" && (
+        <div className="bg-[rgba(16,185,129,0.05)] border border-[rgba(16,185,129,0.2)] rounded-2xl p-4 mb-4">
+          <h2 className="text-sm font-medium text-[var(--text-primary)] mb-2 flex items-center gap-2">
+            <Package size={14} className="text-[#10B981]" /> {t("confirmDeliveryTitle")}
+          </h2>
+          <p className="text-xs text-[var(--text-tertiary)] mb-3">{t("confirmDeliveryDesc")}</p>
+          {confirmError && <p className="text-xs text-red-600 mb-3">{confirmError}</p>}
+          <button
+            onClick={confirmDelivery}
+            disabled={confirming}
+            className="w-full sm:w-auto flex items-center justify-center gap-2 bg-[#10B981] text-white text-sm font-medium px-5 py-2.5 rounded-xl hover:bg-[#0ea975] transition-colors disabled:opacity-60"
+          >
+            {confirming ? <Loader2 size={14} className="animate-spin" /> : <CheckCircle size={14} />}
+            {t("confirmDeliveryButton")}
+          </button>
+        </div>
+      )}
+
+      {status === "delivered" && (
+        <div className="bg-[rgba(16,185,129,0.05)] border border-[rgba(16,185,129,0.2)] rounded-2xl p-4 mb-4 flex items-center gap-2">
+          <CheckCircle size={16} className="text-[#10B981]" />
+          <span className="text-sm text-[var(--text-primary)]">{t("deliveredConfirmed")}</span>
         </div>
       )}
 

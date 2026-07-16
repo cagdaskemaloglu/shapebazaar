@@ -423,7 +423,11 @@
     },
     "timeline": "Sipariş Durumu",
     "copyTracking": "Kopyala",
-    "copied": "Kopyalandı!"
+    "copied": "Kopyalandı!",
+    "confirmDeliveryTitle": "Siparişi Teslim Aldınız mı?",
+    "confirmDeliveryDesc": "Ürünü teslim aldıysanız onaylayın — bu, yazıcı ortağına ve tasarımcıya kazançlarının aktarılmasını sağlar.",
+    "confirmDeliveryButton": "Teslim Aldım, Onayla",
+    "deliveredConfirmed": "Teslimatı onayladınız. Teşekkürler!"
   },
   "partner": {
     "pageTitle": "Yazıcı Ortağı Ol",
