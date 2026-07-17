@@ -26,7 +26,7 @@ export async function GET() {
     .eq("id", user.id)
     .single();
 
-  if (myProfile?.role !== "printer_partner" || !myProfile.is_partner_approved) {
+  if (!myProfile?.is_partner_approved) {
     return NextResponse.json({ error: "Yazıcı ortağı yetkisi gerekiyor" }, { status: 403 });
   }
 

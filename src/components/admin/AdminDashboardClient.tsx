@@ -125,79 +125,19 @@ export function AdminDashboardClient() {
 
   async function fetchAll() {
     setLoading(true);
-    const supabase = createClient();
-
-    const [modelsRes, partnersRes, ordersRes, usersRes, modelsForTest] = await Promise.all([
-      supabase.from("models")
-        .select("id,title,created_at,file_format,base_price,is_free,designer:profiles(full_name)")
-        .eq("is_published", false)
-        .order("created_at", { ascending: false }),
-
-      supabase.from("profiles")
-        .select("id,full_name,city,bio,partner_requested_at")
-        .not("partner_requested_at", "is", null)
-        .eq("is_partner_approved", false),
-
-      supabase.from("orders")
-        .select("id,status,total_amount,created_at,city,recipient_name,buyer:profiles(full_name)")
-        .order("created_at", { ascending: false })
-        .limit(50),
-
-      supabase.from("profiles").select("id", { count: "exact", head: true }),
-
-      supabase.from("models")
-        .select("id,title,base_price,is_free,weight_grams")
-        .eq("is_published", true)
-        .order("created_at", { ascending: false })
-        .limit(50),
-    ]);
-
-    // Her sipariş için order_items çek
-    const orderIds = (ordersRes.data ?? []).map((o: any) => o.id);
-    let itemsMap: Record<string, OrderItem[]> = {};
-    if (orderIds.length > 0) {
-      const { data: items } = await supabase
-        .from("order_items")
-        .select("id,order_id,model_title,material,color_name,scale_percent,item_total")
-        .in("order_id", orderIds);
-      for (const item of items ?? []) {
-        if (!itemsMap[item.order_id]) itemsMap[item.order_id] = [];
-        itemsMap[item.order_id].push(item as OrderItem);
-      }
+    const res = await fetch("/api/admin/dashboard-data");
+    if (!res.ok) {
+      console.error("fetchAll error:", await res.json().catch(() => ({})));
+      setLoading(false);
+      return;
     }
-
-    // Print job durumlarını çek
-    let jobMap: Record<string, string> = {};
-    if (orderIds.length > 0) {
-      const { data: jobs } = await supabase
-        .from("print_jobs")
-        .select("order_id,status")
-        .in("order_id", orderIds);
-      for (const job of jobs ?? []) {
-        jobMap[job.order_id] = job.status;
-      }
-    }
-
-    const enrichedOrders: OrderRow[] = (ordersRes.data ?? []).map((o: any) => ({
-      ...o,
-      items:            itemsMap[o.id] ?? [],
-      print_job_status: jobMap[o.id] ?? null,
-    }));
-
-    const totalRevenue = enrichedOrders.reduce((s, o) => s + (o.total_amount ?? 0), 0);
-
-    // Withdrawal requests
-    const { data: wdData } = await supabase
-      .from("withdrawal_requests")
-      .select("id, amount, iban, full_name, status, created_at, admin_note, user:profiles(full_name)")
-      .order("created_at", { ascending: false });
-
-    setPendingModels((modelsRes.data ?? []) as unknown as PendingModel[]);
-    setPendingPartners((partnersRes.data ?? []) as unknown as PendingPartner[]);
-    setOrders(enrichedOrders);
-    setWithdrawals((wdData ?? []) as any);
-    setTestModels((modelsForTest.data ?? []) as ModelOption[]);
-    setStats({ totalUsers: usersRes.count ?? 0, totalOrders: ordersRes.data?.length ?? 0, revenue: totalRevenue });
+    const data = await res.json();
+    setPendingModels(data.pendingModels ?? []);
+    setPendingPartners(data.pendingPartners ?? []);
+    setOrders(data.orders ?? []);
+    setWithdrawals(data.withdrawals ?? []);
+    setTestModels(data.testModels ?? []);
+    setStats(data.stats ?? { totalUsers: 0, totalOrders: 0, revenue: 0 });
     setLoading(false);
   }
 
