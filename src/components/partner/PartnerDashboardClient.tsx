@@ -416,6 +416,17 @@ export function PartnerDashboardClient({ userId }: { userId: string }) {
                   </div>
                 </div>
 
+                {isMine && order && ["claimed", "printing"].includes(job.status) && (
+                  <div className="mx-4 mb-4 -mt-1 bg-[var(--bg-secondary)] rounded-xl px-3 py-2.5">
+                    <div className="text-[10px] font-semibold uppercase tracking-wider text-[var(--text-tertiary)] mb-1.5">{t("deliveryAddress")}</div>
+                    <div className="text-sm font-medium text-[var(--text-primary)]">{order.recipient_name ?? "—"}</div>
+                    <div className="text-xs text-[var(--text-tertiary)] mt-0.5">
+                      {[order.address_line1, order.district, order.city].filter(Boolean).join(", ")}
+                    </div>
+                    {order.phone && <div className="text-xs text-[var(--text-tertiary)] mt-0.5">{order.phone}</div>}
+                  </div>
+                )}
+
                 {isExpanded && (
                   <div className="border-t border-[var(--border)] px-4 pb-4 pt-3 flex flex-col gap-3">
                     {items.length > 0 && (
@@ -465,7 +476,7 @@ export function PartnerDashboardClient({ userId }: { userId: string }) {
                       </div>
                     )}
 
-                    {isMine && order && (
+                    {isMine && order && job.status === "done" && (
                       <div>
                         <div className="text-xs font-semibold uppercase tracking-wider text-[var(--text-tertiary)] mb-2">{t("deliveryAddress")}</div>
                         <div className="bg-[var(--bg-secondary)] rounded-xl px-3 py-2.5">

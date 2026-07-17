@@ -3,6 +3,7 @@ import { CheckCircle } from "lucide-react";
 import { Navbar } from "@/components/layout/Navbar";
 import { Footer } from "@/components/layout/Footer";
 import { getTranslations } from "next-intl/server";
+import { ClearCartOnMount } from "@/components/cart/ClearCartOnMount";
 
 export default async function PaymentSuccess({
   params,
@@ -17,6 +18,7 @@ export default async function PaymentSuccess({
 
   return (
     <div className="min-h-screen flex flex-col">
+      <ClearCartOnMount />
       <Navbar />
       <main className="flex-1 flex items-center justify-center px-4">
         <div className="text-center max-w-sm">

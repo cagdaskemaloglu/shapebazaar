@@ -14,6 +14,7 @@ import {
 import { createClient } from "@/lib/supabase/client";
 import { uploadAvatar } from "@/lib/storage";
 import { formatPrice } from "@/lib/utils";
+import { useCartStore } from "@/lib/cart";
 import type { User } from "@supabase/supabase-js";
 
 interface Profile {
@@ -140,6 +141,7 @@ export function DashboardClient({ user, profile: initialProfile }: { user: User;
   async function handleSignOut() {
     const supabase = createClient();
     await supabase.auth.signOut();
+    useCartStore.getState().clearCart();
     router.push("/");
     router.refresh();
   }

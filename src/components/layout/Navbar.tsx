@@ -10,6 +10,7 @@ import {
 import { createClient } from "@/lib/supabase/client";
 import type { User as SupabaseUser } from "@supabase/supabase-js";
 import { CartButton } from "@/components/cart/CartButton";
+import { useCartStore } from "@/lib/cart";
 
 interface NavbarProps {
   user?: { email: string; full_name?: string } | null;
@@ -94,6 +95,7 @@ export function Navbar({ user: initialUser }: NavbarProps) {
   async function handleSignOut() {
     const supabase = createClient();
     await supabase.auth.signOut();
+    useCartStore.getState().clearCart(); // farklı bir kullanıcı aynı tarayıcıda başkasının sepetini görmesin
     setDropdownOpen(false);
     setIsPartner(false);
     router.push(`/${locale}`);
