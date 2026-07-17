@@ -12,6 +12,7 @@ import {
 interface OrderItem {
   id: string;
   order_id: string;
+  model_id: string | null;
   model_title: string;
   material: string;
   color_name: string | null;
@@ -126,26 +127,36 @@ export function PartnerDashboardClient({ userId }: { userId: string }) {
   const [shippingLoading, setShippingLoading] = useState(false);
   const [partnerRegion,   setPartnerRegion]   = useState<string>("TR");
 
-  const [downloading, setDownloading] = useState<string | null>(null);
+  const [downloading,   setDownloading]   = useState<string | null>(null);
+  const [downloadFiles, setDownloadFiles] = useState<Record<string, { modelId: string; title: string; filename: string; url: string }[]>>({});
+  const [downloadError, setDownloadError] = useState<Record<string, string>>({});
 
-  async function downloadFile(jobId: string) {
+  async function fetchDownloadLinks(jobId: string) {
+    if (downloadFiles[jobId]) return; // zaten çekilmiş
     setDownloading(jobId);
+    setDownloadError((prev) => ({ ...prev, [jobId]: "" }));
     try {
       const res  = await fetch(`/api/partner/download?jobId=${jobId}`);
       const data = await res.json();
-      if (!res.ok) { alert(data.error ?? "İndirme hatası"); return; }
-      // Tarayıcıda doğrudan indir
-      const a = document.createElement("a");
-      a.href     = data.url;
-      a.download = data.filename;
-      document.body.appendChild(a);
-      a.click();
-      document.body.removeChild(a);
+      if (!res.ok) {
+        setDownloadError((prev) => ({ ...prev, [jobId]: data.error ?? "İndirme hatası" }));
+        return;
+      }
+      setDownloadFiles((prev) => ({ ...prev, [jobId]: data.files ?? [] }));
     } catch {
-      alert("İndirme başarısız. Lütfen tekrar deneyin.");
+      setDownloadError((prev) => ({ ...prev, [jobId]: "İndirme linkleri alınamadı. Lütfen tekrar deneyin." }));
     } finally {
       setDownloading(null);
     }
+  }
+
+  function triggerDownload(url: string, filename: string) {
+    const a = document.createElement("a");
+    a.href     = url;
+    a.download = filename;
+    document.body.appendChild(a);
+    a.click();
+    document.body.removeChild(a);
   }
 
   const fetchAll = useCallback(async () => {
@@ -227,12 +238,15 @@ export function PartnerDashboardClient({ userId }: { userId: string }) {
     await fetchAll();
   }
 
-  function toggleExpand(id: string) {
+  function toggleExpand(job: PrintJob) {
     setExpanded((prev) => {
       const next = new Set(prev);
-      next.has(id) ? next.delete(id) : next.add(id);
+      next.has(job.id) ? next.delete(job.id) : next.add(job.id);
       return next;
     });
+    if (job.printer_id === userId && ["claimed", "printing", "done"].includes(job.status)) {
+      fetchDownloadLinks(job.id);
+    }
   }
 
   const activeJobs    = myJobs.filter((j) => ["claimed", "printing"].includes(j.status));
@@ -389,25 +403,13 @@ export function PartnerDashboardClient({ userId }: { userId: string }) {
                         {t("startPrint")}
                       </button>
                     )}
-                    {isMine && ["claimed", "printing"].includes(job.status) && (
-                      <button
-                        onClick={() => downloadFile(job.id)}
-                        disabled={downloading === job.id}
-                        className="text-xs px-3 py-1.5 bg-[var(--bg-secondary)] border border-[var(--border)] text-[var(--text-primary)] rounded-lg hover:bg-[var(--bg-tertiary)] disabled:opacity-50 transition-colors flex items-center gap-1.5"
-                      >
-                        {downloading === job.id
-                          ? <><div className="w-3 h-3 border-2 border-current/30 border-t-current rounded-full animate-spin" /> İndiriliyor…</>
-                          : <><Download size={12} /> Model İndir</>
-                        }
-                      </button>
-                    )}
                     {isMine && job.status === "printing" && (
                       <button onClick={() => setShippingJobId(job.id)}
                         className="text-xs px-3 py-1.5 bg-[#FF6B35] text-white rounded-lg hover:bg-[#e85e2a] transition-colors flex items-center gap-1">
                         <Truck size={12} /> {t("completeBtn")}
                       </button>
                     )}
-                    <button onClick={() => toggleExpand(job.id)}
+                    <button onClick={() => toggleExpand(job)}
                       className="w-7 h-7 flex items-center justify-center rounded-lg text-[var(--text-tertiary)] hover:bg-[var(--bg-secondary)] transition-colors">
                       {isExpanded ? <ChevronUp size={14} /> : <ChevronDown size={14} />}
                     </button>
@@ -420,22 +422,46 @@ export function PartnerDashboardClient({ userId }: { userId: string }) {
                       <div>
                         <div className="text-xs font-semibold uppercase tracking-wider text-[var(--text-tertiary)] mb-2">{t("products")}</div>
                         <div className="flex flex-col gap-2">
-                          {items.map((item) => (
-                            <div key={item.id} className="flex items-center gap-3 bg-[var(--bg-secondary)] rounded-xl px-3 py-2.5">
-                              <div className="w-4 h-4 rounded-full shrink-0 border border-[var(--border)]" style={{ background: item.color_hex ?? "#ccc" }} />
-                              <div className="flex-1 min-w-0">
-                                <div className="text-sm font-medium text-[var(--text-primary)] truncate">{item.model_title}</div>
-                                <div className="text-xs text-[var(--text-tertiary)]">
-                                  {item.material}
-                                  {item.scale_percent ? ` · %${item.scale_percent}` : ""}
-                                  {item.infill ? ` · ${item.infill}` : ""}
-                                  {item.color_name ? ` · ${item.color_name}` : ""}
+                          {items.map((item) => {
+                            const canDownload = isMine && ["claimed", "printing", "done"].includes(job.status);
+                            const file = item.model_id
+                              ? downloadFiles[job.id]?.find((f) => f.modelId === item.model_id)
+                              : undefined;
+                            return (
+                              <div key={item.id} className="flex items-center gap-3 bg-[var(--bg-secondary)] rounded-xl px-3 py-2.5">
+                                <div className="w-4 h-4 rounded-full shrink-0 border border-[var(--border)]" style={{ background: item.color_hex ?? "#ccc" }} />
+                                <div className="flex-1 min-w-0">
+                                  <div className="text-sm font-medium text-[var(--text-primary)] truncate">{item.model_title}</div>
+                                  <div className="text-xs text-[var(--text-tertiary)]">
+                                    {item.material}
+                                    {item.scale_percent ? ` · %${item.scale_percent}` : ""}
+                                    {item.infill ? ` · ${item.infill}` : ""}
+                                    {item.color_name ? ` · ${item.color_name}` : ""}
+                                  </div>
                                 </div>
+                                <div className="text-sm font-medium text-[var(--text-primary)] shrink-0">{formatPrice(item.item_total)}</div>
+                                {canDownload && (
+                                  file ? (
+                                    <button
+                                      onClick={() => triggerDownload(file.url, file.filename)}
+                                      className="shrink-0 w-7 h-7 flex items-center justify-center rounded-lg bg-[var(--bg-tertiary)] text-[var(--text-primary)] hover:opacity-80 transition-colors"
+                                      title={`${file.filename} indir`}
+                                    >
+                                      <Download size={13} />
+                                    </button>
+                                  ) : downloading === job.id ? (
+                                    <div className="shrink-0 w-7 h-7 flex items-center justify-center">
+                                      <div className="w-3 h-3 border-2 border-current/30 border-t-current rounded-full animate-spin" />
+                                    </div>
+                                  ) : null
+                                )}
                               </div>
-                              <div className="text-sm font-medium text-[var(--text-primary)] shrink-0">{formatPrice(item.item_total)}</div>
-                            </div>
-                          ))}
+                            );
+                          })}
                         </div>
+                        {downloadError[job.id] && (
+                          <p className="text-xs text-red-500 mt-2">{downloadError[job.id]}</p>
+                        )}
                       </div>
                     )}
 

@@ -1,7 +1,25 @@
 import { NextResponse } from "next/server";
 import { createClient } from "@/lib/supabase/server";
-import { createClient as createAdminClient } from "@supabase/supabase-js";
+import { createAdminClient } from "@/lib/supabase/admin";
 
+function extractStoragePath(fileUrl: string): string {
+  let storagePath = fileUrl;
+  const storageMatch = fileUrl.match(/\/storage\/v1\/object\/(?:sign\/|public\/)?model-files\/(.+?)(?:\?|$)/);
+  if (storageMatch) {
+    storagePath = decodeURIComponent(storageMatch[1]);
+  } else if (fileUrl.startsWith("http")) {
+    const url = new URL(fileUrl);
+    const parts = url.pathname.split("/model-files/");
+    if (parts[1]) storagePath = decodeURIComponent(parts[1].split("?")[0]);
+  }
+  return storagePath;
+}
+
+/**
+ * Bir sipariş birden fazla model içerebilir (sepet/order_items). Bu route
+ * artık İLK modelle sınırlı kalmıyor — siparişteki her BENZERSİZ model için
+ * ayrı imzalı indirme linki döndürüyor.
+ */
 export async function GET(request: Request) {
   const { searchParams } = new URL(request.url);
   const jobId = searchParams.get("jobId");
@@ -10,20 +28,14 @@ export async function GET(request: Request) {
     return NextResponse.json({ error: "jobId required" }, { status: 400 });
   }
 
-  // Kullanıcı auth
   const supabase = await createClient();
   const { data: { user } } = await supabase.auth.getUser();
   if (!user) {
     return NextResponse.json({ error: "Giriş yapmanız gerekiyor" }, { status: 401 });
   }
 
-  // Admin client — tüm sorgular için RLS bypass
-  const admin = createAdminClient(
-    process.env.NEXT_PUBLIC_SUPABASE_URL!,
-    process.env.SUPABASE_SERVICE_ROLE_KEY!
-  );
+  const admin = createAdminClient();
 
-  // Partner onaylı mı?
   const { data: profile } = await admin
     .from("profiles")
     .select("is_partner_approved")
@@ -34,14 +46,11 @@ export async function GET(request: Request) {
     return NextResponse.json({ error: "Partner onayı gerekli" }, { status: 403 });
   }
 
-  // print_job'u çek
   const { data: job, error: jobError } = await admin
     .from("print_jobs")
     .select("id, status, printer_id, order_id")
     .eq("id", jobId)
     .single();
-
-  console.log("[download] job:", job, "jobError:", jobError);
 
   if (!job) {
     return NextResponse.json({ error: "Sipariş bulunamadı (job yok)" }, { status: 404 });
@@ -53,61 +62,59 @@ export async function GET(request: Request) {
     return NextResponse.json({ error: "Dosya sadece üstlenilen siparişler için indirilebilir" }, { status: 403 });
   }
 
-  // order_items tablosundan model_id çek
-  const { data: orderItem, error: itemError } = await admin
+  // Siparişteki TÜM item'ları çek (aynı model birden fazla kez sipariş edilmiş
+  // olabilir — model_id'ye göre benzersizleştiriyoruz, aynı dosya iki kez
+  // listelenmesin diye)
+  const { data: orderItems, error: itemsError } = await admin
     .from("order_items")
-    .select("model_id")
-    .eq("order_id", job.order_id)
-    .limit(1)
-    .single();
+    .select("model_id, model_title")
+    .eq("order_id", job.order_id);
 
-  console.log("[download] orderItem:", orderItem, "itemError:", itemError);
-
-  if (!orderItem?.model_id) {
-    return NextResponse.json({ error: "Sipariş modeli bulunamadı" }, { status: 404 });
+  if (itemsError || !orderItems || orderItems.length === 0) {
+    return NextResponse.json({ error: "Sipariş modelleri bulunamadı" }, { status: 404 });
   }
 
-  // Model dosya bilgisini çek
-  const { data: model, error: modelError } = await admin
+  const uniqueModelIds = [...new Set(orderItems.map((i) => i.model_id).filter(Boolean))] as string[];
+  if (uniqueModelIds.length === 0) {
+    return NextResponse.json({ error: "Sipariş modelleri bulunamadı" }, { status: 404 });
+  }
+
+  const { data: models, error: modelsError } = await admin
     .from("models")
-    .select("file_url, title, file_format")
-    .eq("id", orderItem.model_id)
-    .single();
+    .select("id, file_url, title, file_format")
+    .in("id", uniqueModelIds);
 
-  console.log("[download] model:", model, "modelError:", modelError);
-
-  if (!model?.file_url) {
-    return NextResponse.json({ error: "Model dosyası bulunamadı" }, { status: 404 });
+  if (modelsError || !models) {
+    return NextResponse.json({ error: "Model dosyaları bulunamadı" }, { status: 404 });
   }
 
-  // file_url'den storage path'i çıkar
-  let storagePath = model.file_url;
-  const storageMatch = model.file_url.match(/\/storage\/v1\/object\/(?:sign\/|public\/)?model-files\/(.+?)(?:\?|$)/);
-  if (storageMatch) {
-    storagePath = decodeURIComponent(storageMatch[1]);
-  } else if (model.file_url.startsWith("http")) {
-    const url = new URL(model.file_url);
-    const parts = url.pathname.split("/model-files/");
-    if (parts[1]) storagePath = decodeURIComponent(parts[1].split("?")[0]);
+  const files: { modelId: string; title: string; filename: string; url: string }[] = [];
+
+  for (const model of models) {
+    if (!model.file_url) continue;
+    const storagePath = extractStoragePath(model.file_url);
+
+    const { data: signedData, error: signError } = await admin
+      .storage
+      .from("model-files")
+      .createSignedUrl(storagePath, 3600);
+
+    if (signError || !signedData?.signedUrl) {
+      console.error("[download] signedUrl error for model", model.id, signError);
+      continue;
+    }
+
+    files.push({
+      modelId:  model.id,
+      title:    model.title,
+      filename: `${model.title}.${model.file_format}`,
+      url:      signedData.signedUrl,
+    });
   }
 
-  console.log("[download] storagePath:", storagePath);
-
-  // Signed URL oluştur (1 saat geçerli)
-  const { data: signedData, error: signError } = await admin
-    .storage
-    .from("model-files")
-    .createSignedUrl(storagePath, 3600);
-
-  console.log("[download] signedUrl:", !!signedData?.signedUrl, "signError:", signError);
-
-  if (signError || !signedData?.signedUrl) {
-    return NextResponse.json({ error: "İndirme linki oluşturulamadı: " + signError?.message }, { status: 500 });
+  if (files.length === 0) {
+    return NextResponse.json({ error: "İndirme linki oluşturulamadı" }, { status: 500 });
   }
 
-  return NextResponse.json({
-    url:      signedData.signedUrl,
-    filename: `${model.title}.${model.file_format}`,
-    expiresIn: 3600,
-  });
+  return NextResponse.json({ files, expiresIn: 3600 });
 }

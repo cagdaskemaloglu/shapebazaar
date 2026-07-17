@@ -79,7 +79,7 @@ export async function GET() {
   if (orderIds.length > 0) {
     const { data: items } = await admin
       .from("order_items")
-      .select("id, order_id, model_title, material, color_name, color_hex, scale_percent, infill, item_total")
+      .select("id, order_id, model_id, model_title, material, color_name, color_hex, scale_percent, infill, item_total")
       .in("order_id", orderIds);
     for (const item of items ?? []) {
       if (!itemsMap[item.order_id]) itemsMap[item.order_id] = [];
