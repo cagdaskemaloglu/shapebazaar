@@ -1,11 +1,14 @@
 import { Navbar } from "@/components/layout/Navbar";
 import { Footer } from "@/components/layout/Footer";
 import { useTranslations } from "next-intl";
+import { getTranslations } from "next-intl/server";
 import { Heart, Target, Zap, Users } from "lucide-react";
 
-export const metadata = {
-  title: "Mission & Vision | ShapeBazaar",
-};
+export async function generateMetadata({ params }: { params: Promise<{ locale: string }> }) {
+  const { locale } = await params;
+  const t = await getTranslations({ locale, namespace: "mission" });
+  return { title: `${t("title")} | ShapeBazaar` };
+}
 
 export default function MissionVisionPage() {
   const t = useTranslations("mission");

@@ -614,5 +614,36 @@
     "email": "E-posta",
     "phone": "Telefon",
     "address": "Adres"
+  },
+  "about": {
+    "title": "Hakkımızda",
+    "hero": "ShapeBazaar Hikayesi",
+    "intro": "ShapeBazaar, dijital tasarımların gerçek ürünlere dönüştüğü bir platformdur. 2024 yılında kurulan projemiz; tasarımcıları, üreticileri ve kullanıcıları tek çatı altında bir araya getirerek 3D baskı endüstrisinde bir devrim yaratmayı hedefliyor.",
+    "vision_title": "Vizyonumuz",
+    "vision_desc": "Tasarımı demokratikleştirmek ve her fikrin gerçek dünyada fiziksel bir forma kavuşmasını sağlamak.",
+    "team_title": "Ekibimiz",
+    "team_desc": "Türkiye'nin en yetenekli yazılım geliştiricileri, tasarımcıları ve girişimcileri tarafından kuruldu."
+  },
+  "mission": {
+    "title": "Misyon & Vizyon",
+    "missionTitle": "Misyonumuz",
+    "missionDesc": "Her tasarımcının yeteneğini gelire dönüştürmesi, her üreticinin kapasitesini değerlendirmesi ve her müşterinin hayallerini gerçekleştirmesi için gereken araçları sağlamak.",
+    "visionTitle": "Vizyonumuz",
+    "visionDesc": "Türkiye'den başlayarak küresel bir 3D baskı ağı kurmak. Tasarımın, üretimin ve tüketimin merkezi bir kontrol olmadan, açık ve adil şekilde işleyen, herkesin parçası olabileceği bir ekosistem yaratmak.",
+    "valuesTitle": "Değerlerimiz",
+    "value1": "Adalet",
+    "value1Desc": "Tüm taraflar için eşit fırsatlar ve şeffaf fiyatlandırma.",
+    "value2": "Topluluk",
+    "value2Desc": "Birlikte büyüyoruz. Tek bir oyuncu değil, bir ağ hedefliyoruz.",
+    "value3": "Kalite",
+    "value3Desc": "Tasarım, üretim ve teslimatın her aşamasında yüksek standartlar.",
+    "value4": "Yenilikçilik",
+    "value4Desc": "3D baskı teknolojisini herkes için erişilebilir ve ekonomik hale getirmek."
+  },
+  "blog": {
+    "title": "Blog",
+    "subtitle": "En son haberler, rehberler ve başarı hikayeleri",
+    "noContent": "Yazılar yakında burada. Bizi takip etmeyi unutmayın!",
+    "readMore": "Devamını Oku"
   }
 }

@@ -1,10 +1,13 @@
 import { Navbar } from "@/components/layout/Navbar";
 import { Footer } from "@/components/layout/Footer";
 import { useTranslations } from "next-intl";
+import { getTranslations } from "next-intl/server";
 
-export const metadata = {
-  title: "About Us | ShapeBazaar",
-};
+export async function generateMetadata({ params }: { params: Promise<{ locale: string }> }) {
+  const { locale } = await params;
+  const t = await getTranslations({ locale, namespace: "about" });
+  return { title: `${t("title")} | ShapeBazaar` };
+}
 
 export default function AboutPage() {
   const t = useTranslations("about");

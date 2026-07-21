@@ -1,11 +1,14 @@
 import { Navbar } from "@/components/layout/Navbar";
 import { Footer } from "@/components/layout/Footer";
 import { useTranslations } from "next-intl";
+import { getTranslations } from "next-intl/server";
 import { ArrowRight, BookOpen } from "lucide-react";
 
-export const metadata = {
-  title: "Blog | ShapeBazaar",
-};
+export async function generateMetadata({ params }: { params: Promise<{ locale: string }> }) {
+  const { locale } = await params;
+  const t = await getTranslations({ locale, namespace: "blog" });
+  return { title: `${t("title")} | ShapeBazaar` };
+}
 
 export default function BlogPage() {
   const t = useTranslations("blog");
