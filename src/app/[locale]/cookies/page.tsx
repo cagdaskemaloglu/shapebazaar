@@ -74,10 +74,9 @@ export default function CookiePolicyPage() {
 
             {/* Tip Box */}
             <div className="bg-purple-50 dark:bg-purple-900/20 rounded-lg p-6 mt-12">
-              <h3 className="font-bold mb-2">İpucu</h3>
+              <h3 className="font-bold mb-2">{t("tipTitle")}</h3>
               <p className="text-slate-600 dark:text-slate-300">
-                Çoğu tarayıcı ayarlarından çerezleri yönetebilirsiniz. Daha fazla
-                bilgi için tarayıcınızın yardım sayfasını ziyaret edin.
+                {t("tipText")}
               </p>
             </div>
           </div>

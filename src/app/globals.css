@@ -79,3 +79,41 @@ body {
   --color-brand-light: #F8FAFC;
   --color-brand-green: #10B981;
 }
+
+/* ── Dual-thumb price range slider ── */
+.dual-range {
+  -webkit-appearance: none;
+  appearance: none;
+  background: transparent;
+  pointer-events: none;
+}
+.dual-range::-webkit-slider-thumb {
+  -webkit-appearance: none;
+  appearance: none;
+  pointer-events: auto;
+  width: 16px;
+  height: 16px;
+  border-radius: 9999px;
+  background: #FF6B35;
+  border: 2px solid white;
+  box-shadow: 0 1px 3px rgba(0,0,0,0.3);
+  cursor: pointer;
+  margin-top: 0;
+}
+.dual-range::-moz-range-thumb {
+  pointer-events: auto;
+  width: 16px;
+  height: 16px;
+  border-radius: 9999px;
+  background: #FF6B35;
+  border: 2px solid white;
+  box-shadow: 0 1px 3px rgba(0,0,0,0.3);
+  cursor: pointer;
+}
+.dual-range::-webkit-slider-runnable-track {
+  -webkit-appearance: none;
+  background: transparent;
+}
+.dual-range::-moz-range-track {
+  background: transparent;
+}

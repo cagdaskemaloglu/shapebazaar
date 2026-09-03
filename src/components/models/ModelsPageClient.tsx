@@ -1,11 +1,13 @@
 "use client";
-import { useState, useEffect, useCallback } from "react";
-import { Search, SlidersHorizontal, Star, TrendingUp, Sparkles, Grid3X3, List } from "lucide-react";
+import { useState, useEffect, useCallback, useRef } from "react";
+import { Search, Star, TrendingUp, Sparkles, Grid3X3, List, ChevronDown } from "lucide-react";
 import { useTranslations, useLocale } from "next-intl";
 import { createClient } from "@/lib/supabase/client";
 import { formatPrice } from "@/lib/utils";
 
 const SORT_VALUES = ["popular", "newest", "price_asc", "price_desc", "rating"];
+const MAX_PRICE = 500;
+const PRICE_STEP = 10;
 
 interface Category {
   id: number;
@@ -16,6 +18,7 @@ interface Category {
 interface Model {
   id: string;
   title: string;
+  title_en: string | null;
   base_price: number;
   is_free: boolean;
   thumbnail_url: string | null;
@@ -43,7 +46,32 @@ export function ModelsPageClient() {
   const [page,       setPage]       = useState(1);
   const [categories, setCategories] = useState<Category[]>([]);
 
+  // Uygulanan fiyat aralığı (sorguya giden)
+  const [priceMin, setPriceMin] = useState(0);
+  const [priceMax, setPriceMax] = useState(MAX_PRICE);
+  // Slider açıkken kullanılan taslak değerler (Uygula'ya basılana kadar sorguya gitmez)
+  const [draftMin, setDraftMin] = useState(0);
+  const [draftMax, setDraftMax] = useState(MAX_PRICE);
+  const [priceOpen, setPriceOpen] = useState(false);
+  const priceRef = useRef<HTMLDivElement>(null);
+
   const totalPages = Math.ceil(total / PAGE_SIZE);
+
+  // Fiyat popover'ının dışına tıklanınca kapat
+  useEffect(() => {
+    function onClickOutside(e: MouseEvent) {
+      if (priceRef.current && !priceRef.current.contains(e.target as Node)) {
+        setPriceOpen(false);
+      }
+    }
+    document.addEventListener("mousedown", onClickOutside);
+    return () => document.removeEventListener("mousedown", onClickOutside);
+  }, []);
+
+  const priceLabel =
+    priceMin === 0 && priceMax === MAX_PRICE
+      ? t("price")
+      : `${priceMin === 0 ? t("free") : formatPrice(priceMin, locale)} – ${priceMax >= MAX_PRICE ? `${formatPrice(priceMax, locale)}${t("andUp")}` : formatPrice(priceMax, locale)}`;
 
   // Kategorileri bir kez çek
   useEffect(() => {
@@ -64,7 +92,7 @@ export function ModelsPageClient() {
     let query = supabase
       .from("models")
       .select(`
-        id, title, base_price, is_free, thumbnail_url,
+        id, title, title_en, base_price, is_free, thumbnail_url,
         avg_rating, rating_count, print_count, created_at, file_format,
         designer:profiles(full_name, username),
         category:categories(name_tr, name_en)
@@ -72,10 +100,17 @@ export function ModelsPageClient() {
       .eq("is_published", true);
 
     if (search.trim()) {
-      query = query.ilike("title", `%${search.trim()}%`);
+      const q = search.trim();
+      query = query.or(`title.ilike.%${q}%,title_en.ilike.%${q}%`);
     }
     if (categoryId !== null) {
       query = query.eq("category_id", categoryId);
+    }
+    if (priceMin > 0) {
+      query = query.gte("base_price", priceMin);
+    }
+    if (priceMax < MAX_PRICE) {
+      query = query.lte("base_price", priceMax);
     }
 
     if (sort === "popular")    query = query.order("print_count", { ascending: false });
@@ -93,14 +128,14 @@ export function ModelsPageClient() {
       setTotal(count ?? 0);
     }
     setLoading(false);
-  }, [search, categoryId, sort, page]);
+  }, [search, categoryId, sort, page, priceMin, priceMax]);
 
   // Filtre veya arama değişince 1. sayfaya dön
-  useEffect(() => { setPage(1); }, [search, categoryId, sort]);
+  useEffect(() => { setPage(1); }, [search, categoryId, sort, priceMin, priceMax]);
 
   useEffect(() => {
-    const t = setTimeout(fetchModels, 300);
-    return () => clearTimeout(t);
+    const timer = setTimeout(fetchModels, 300);
+    return () => clearTimeout(timer);
   }, [fetchModels]);
 
   return (
@@ -113,8 +148,8 @@ export function ModelsPageClient() {
       </div>
 
       {/* Search + controls */}
-      <div className="flex flex-col sm:flex-row gap-3 mb-6">
-        <div className="relative flex-1">
+      <div className="flex flex-col sm:flex-row flex-wrap gap-3 mb-6">
+        <div className="relative flex-1 min-w-[180px]">
           <Search size={15} className="absolute left-3 top-1/2 -translate-y-1/2 text-[var(--text-tertiary)]" />
           <input
             type="text"
@@ -124,6 +159,105 @@ export function ModelsPageClient() {
             className="w-full h-10 pl-9 pr-3 text-sm rounded-xl border border-[var(--border)] bg-[var(--bg-secondary)] text-[var(--text-primary)] outline-none focus:border-[#FF6B35] transition-colors placeholder:text-[var(--text-tertiary)]"
           />
         </div>
+
+        {/* Kategori dropdown */}
+        <select
+          value={categoryId ?? ""}
+          onChange={(e) => setCategoryId(e.target.value === "" ? null : Number(e.target.value))}
+          className="h-10 px-3 text-sm rounded-xl border border-[var(--border)] bg-[var(--bg-secondary)] text-[var(--text-primary)] outline-none focus:border-[#FF6B35] transition-colors cursor-pointer max-w-[160px]"
+        >
+          <option value="">{t("all")}</option>
+          {categories.map((cat) => (
+            <option key={cat.id} value={cat.id}>
+              {locale === "en" && cat.name_en ? cat.name_en : cat.name_tr}
+            </option>
+          ))}
+        </select>
+
+        {/* Fiyat dropdown — slider */}
+        <div className="relative" ref={priceRef}>
+          <button
+            type="button"
+            onClick={() => {
+              if (!priceOpen) { setDraftMin(priceMin); setDraftMax(priceMax); }
+              setPriceOpen((o) => !o);
+            }}
+            className={`h-10 px-3 flex items-center gap-1.5 text-sm rounded-xl border transition-colors cursor-pointer whitespace-nowrap ${
+              priceMin > 0 || priceMax < MAX_PRICE
+                ? "border-[#FF6B35] text-[#FF6B35] bg-[rgba(255,107,53,0.06)]"
+                : "border-[var(--border)] bg-[var(--bg-secondary)] text-[var(--text-primary)]"
+            }`}
+          >
+            {priceLabel}
+            <ChevronDown size={14} className={`transition-transform ${priceOpen ? "rotate-180" : ""}`} />
+          </button>
+
+          {priceOpen && (
+            <div className="absolute z-20 top-12 left-0 w-72 bg-[var(--bg-primary)] border border-[var(--border)] rounded-2xl shadow-lg p-4">
+              <div className="text-xs font-semibold uppercase tracking-wider text-[var(--text-tertiary)] mb-4">{t("price")}</div>
+
+              <div className="flex items-center justify-between text-sm text-[var(--text-primary)] font-medium mb-3">
+                <span>{draftMin === 0 ? t("free") : formatPrice(draftMin, locale)}</span>
+                <span>{draftMax >= MAX_PRICE ? `${formatPrice(draftMax, locale)}${t("andUp")}` : formatPrice(draftMax, locale)}</span>
+              </div>
+
+              <div className="relative h-4 flex items-center mb-4">
+                <div className="absolute inset-x-0 h-1.5 rounded-full bg-[var(--bg-tertiary)]" />
+                <div
+                  className="absolute h-1.5 rounded-full bg-[#FF6B35]"
+                  style={{
+                    left: `${(draftMin / MAX_PRICE) * 100}%`,
+                    right: `${100 - (draftMax / MAX_PRICE) * 100}%`,
+                  }}
+                />
+                <input
+                  type="range"
+                  min={0}
+                  max={MAX_PRICE}
+                  step={PRICE_STEP}
+                  value={draftMin}
+                  onChange={(e) => setDraftMin(Math.min(Number(e.target.value), draftMax - PRICE_STEP))}
+                  className="dual-range absolute inset-x-0 w-full h-4"
+                />
+                <input
+                  type="range"
+                  min={0}
+                  max={MAX_PRICE}
+                  step={PRICE_STEP}
+                  value={draftMax}
+                  onChange={(e) => setDraftMax(Math.max(Number(e.target.value), draftMin + PRICE_STEP))}
+                  className="dual-range absolute inset-x-0 w-full h-4"
+                />
+              </div>
+
+              {/* Hızlı işaretler */}
+              <div className="flex justify-between text-[10px] text-[var(--text-tertiary)] mb-4">
+                <span>{t("free")}</span>
+                <span>{formatPrice(100, locale)}</span>
+                <span>{formatPrice(250, locale)}</span>
+                <span>{formatPrice(MAX_PRICE, locale)}{t("andUp")}</span>
+              </div>
+
+              <div className="flex gap-2">
+                <button
+                  type="button"
+                  onClick={() => { setDraftMin(0); setDraftMax(MAX_PRICE); }}
+                  className="flex-1 h-9 text-sm rounded-xl border border-[var(--border)] text-[var(--text-secondary)] hover:bg-[var(--bg-secondary)] transition-colors"
+                >
+                  {t("reset")}
+                </button>
+                <button
+                  type="button"
+                  onClick={() => { setPriceMin(draftMin); setPriceMax(draftMax); setPriceOpen(false); }}
+                  className="flex-1 h-9 text-sm rounded-xl bg-[#FF6B35] text-white font-medium hover:bg-[#e85e2a] transition-colors"
+                >
+                  {t("apply")}
+                </button>
+              </div>
+            </div>
+          )}
+        </div>
+
         <select
           value={sort}
           onChange={(e) => setSort(e.target.value)}
@@ -145,55 +279,9 @@ export function ModelsPageClient() {
         </div>
       </div>
 
-      <div className="flex gap-6">
-        {/* Sidebar */}
-        <aside className="hidden md:block w-48 shrink-0">
-          <div className="bg-[var(--bg-primary)] border border-[var(--border)] rounded-2xl p-4">
-            <div className="text-xs font-semibold uppercase tracking-wider text-[var(--text-tertiary)] mb-3">{t("category")}</div>
-            <div className="flex flex-col gap-0.5">
-              {/* Tümü butonu */}
-              <button
-                onClick={() => setCategoryId(null)}
-                className={`text-left text-sm px-2.5 py-1.5 rounded-lg transition-colors ${
-                  categoryId === null
-                    ? "bg-[rgba(255,107,53,0.1)] text-[#FF6B35] font-medium"
-                    : "text-[var(--text-secondary)] hover:bg-[var(--bg-secondary)]"
-                }`}
-              >
-                {t("all")}
-              </button>
-              {/* Veritabanından gelen kategoriler */}
-              {categories.map((cat) => (
-                <button
-                  key={cat.id}
-                  onClick={() => setCategoryId(cat.id)}
-                  className={`text-left text-sm px-2.5 py-1.5 rounded-lg transition-colors ${
-                    categoryId === cat.id
-                      ? "bg-[rgba(255,107,53,0.1)] text-[#FF6B35] font-medium"
-                      : "text-[var(--text-secondary)] hover:bg-[var(--bg-secondary)]"
-                  }`}
-                >
-                  {locale === "en" && cat.name_en ? cat.name_en : cat.name_tr}
-                </button>
-              ))}
-            </div>
-            <div className="border-t border-[var(--border)] mt-4 pt-4">
-              <div className="text-xs font-semibold uppercase tracking-wider text-[var(--text-tertiary)] mb-3">{t("price")}</div>
-              <div className="flex flex-col gap-2">
-                {[t("free"), "₺0–₺100", "₺100–₺250", "₺250+"].map((p) => (
-                  <label key={p} className="flex items-center gap-2 text-sm text-[var(--text-secondary)] cursor-pointer">
-                    <input type="checkbox" className="accent-[#FF6B35]" />
-                    {p}
-                  </label>
-                ))}
-              </div>
-            </div>
-          </div>
-        </aside>
-
-        {/* Grid */}
-        <div className="flex-1">
-          {loading ? (
+      {/* Grid */}
+      <div>
+        {loading ? (
             <div className="grid grid-cols-2 sm:grid-cols-3 lg:grid-cols-4 gap-4">
               {Array.from({ length: 8 }).map((_, i) => (
                 <div key={i} className="bg-[var(--bg-secondary)] border border-[var(--border)] rounded-2xl overflow-hidden animate-pulse">
@@ -209,7 +297,7 @@ export function ModelsPageClient() {
             <div className="text-center py-20 text-[var(--text-tertiary)]">
               <Search size={36} className="mx-auto mb-3 opacity-30" />
               <p className="text-sm">{t("noResults")}</p>
-              <button onClick={() => { setSearch(""); setCategoryId(null); }} className="text-sm text-[#FF6B35] hover:underline mt-2">
+              <button onClick={() => { setSearch(""); setCategoryId(null); setPriceMin(0); setPriceMax(MAX_PRICE); }} className="text-sm text-[#FF6B35] hover:underline mt-2">
                 {t("clearFilters")}
               </button>
             </div>
@@ -275,7 +363,6 @@ export function ModelsPageClient() {
               {t("pageInfo", { current: page, total: totalPages })}
             </p>
           )}
-        </div>
       </div>
     </div>
   );
@@ -284,6 +371,7 @@ export function ModelsPageClient() {
 function GridCard({ model }: { model: Model }) {
   const t      = useTranslations("modelsPage");
   const locale = useLocale();
+  const title  = locale === "en" && model.title_en ? model.title_en : model.title;
   const designer = model.designer?.username
     ? `@${model.designer.username}`
     : model.designer?.full_name ?? t("designer");
@@ -293,7 +381,7 @@ function GridCard({ model }: { model: Model }) {
       <div className="bg-[var(--bg-primary)] border border-[var(--border)] rounded-2xl overflow-hidden hover:border-[var(--border-strong)] hover:shadow-sm transition-all duration-200">
         <div className="h-36 bg-[var(--bg-tertiary)] flex items-center justify-center relative overflow-hidden">
           {model.thumbnail_url ? (
-            <img src={model.thumbnail_url} alt={model.title} className="w-full h-full object-cover group-hover:scale-105 transition-transform duration-300" />
+            <img src={model.thumbnail_url} alt={title} className="w-full h-full object-cover group-hover:scale-105 transition-transform duration-300" />
           ) : (
             <ModelIcon />
           )}
@@ -319,7 +407,7 @@ function GridCard({ model }: { model: Model }) {
         </div>
         <div className="p-3">
           <div className="text-xs text-[var(--text-tertiary)] mb-0.5">{designer}</div>
-          <div className="font-medium text-sm text-[var(--text-primary)] truncate mb-2">{model.title}</div>
+          <div className="font-medium text-sm text-[var(--text-primary)] truncate mb-2">{title}</div>
           <div className="flex items-center justify-between">
             <span className="text-sm font-semibold text-[#FF6B35]">
               {model.is_free ? t("free") : formatPrice(model.base_price, locale)}
@@ -340,6 +428,7 @@ function GridCard({ model }: { model: Model }) {
 function ListCard({ model }: { model: Model }) {
   const t      = useTranslations("modelsPage");
   const locale = useLocale();
+  const title  = locale === "en" && model.title_en ? model.title_en : model.title;
   const designer = model.designer?.username
     ? `@${model.designer.username}`
     : model.designer?.full_name ?? t("designer");
@@ -349,12 +438,12 @@ function ListCard({ model }: { model: Model }) {
       <div className="bg-[var(--bg-primary)] border border-[var(--border)] rounded-2xl p-4 flex items-center gap-4 hover:border-[var(--border-strong)] transition-all">
         <div className="w-16 h-16 rounded-xl bg-[var(--bg-tertiary)] flex items-center justify-center shrink-0 overflow-hidden">
           {model.thumbnail_url
-            ? <img src={model.thumbnail_url} alt={model.title} className="w-full h-full object-cover" />
+            ? <img src={model.thumbnail_url} alt={title} className="w-full h-full object-cover" />
             : <ModelIcon />
           }
         </div>
         <div className="flex-1 min-w-0">
-          <div className="font-medium text-sm text-[var(--text-primary)] truncate">{model.title}</div>
+          <div className="font-medium text-sm text-[var(--text-primary)] truncate">{title}</div>
           <div className="text-xs text-[var(--text-tertiary)] mt-0.5">{designer} · {locale === "en" ? model.category?.name_en : model.category?.name_tr}</div>
           {model.rating_count > 0 && (
             <div className="flex items-center gap-1 mt-1">

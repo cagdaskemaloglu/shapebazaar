@@ -17,7 +17,7 @@ export async function GET() {
 
   const [modelsRes, partnersRes, ordersRes, usersRes, modelsForTest] = await Promise.all([
     admin.from("models")
-      .select("id,title,created_at,file_format,base_price,is_free,designer:profiles(full_name)")
+      .select("id,title,title_en,created_at,file_format,base_price,is_free,designer:profiles(full_name)")
       .eq("is_published", false)
       .order("created_at", { ascending: false }),
 

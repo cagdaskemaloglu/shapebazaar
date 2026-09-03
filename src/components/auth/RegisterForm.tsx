@@ -6,6 +6,7 @@ import { createClient } from "@/lib/supabase/client";
 import { getLocaleFromRegion } from "@/lib/region";
 import { Button } from "@/components/ui/Button";
 import { Input } from "@/components/ui/Input";
+import { useTranslations, useLocale } from "next-intl";
 
 const REGIONS = [
   { code: "TR", label: "🇹🇷 Türkiye" },
@@ -21,6 +22,8 @@ const REGIONS = [
 
 export function RegisterForm() {
   const router = useRouter();
+  const t      = useTranslations("auth");
+  const locale = useLocale();
   const [fullName, setFullName] = useState("");
   const [email,    setEmail]    = useState("");
   const [password, setPassword] = useState("");
@@ -32,7 +35,7 @@ export function RegisterForm() {
 
   async function handleRegister(e: React.FormEvent) {
     e.preventDefault();
-    if (password.length < 8) { setError("Şifre en az 8 karakter olmalıdır."); return; }
+    if (password.length < 8) { setError(t("minPassword")); return; }
     setLoading(true);
     setError("");
     const supabase = createClient();
@@ -45,7 +48,7 @@ export function RegisterForm() {
       },
     });
     if (error) {
-      setError(error.message === "User already registered" ? "Bu e-posta zaten kayıtlı." : "Kayıt sırasında hata oluştu.");
+      setError(error.message === "User already registered" ? t("alreadyRegistered") : t("registerError"));
       setLoading(false);
     } else {
       // profiles tablosuna region'ı da yaz
@@ -77,9 +80,9 @@ export function RegisterForm() {
             <path strokeLinecap="round" strokeLinejoin="round" d="M5 13l4 4L19 7" />
           </svg>
         </div>
-        <h3 className="font-medium text-[var(--text-primary)] mb-2">E-postanı kontrol et!</h3>
+        <h3 className="font-medium text-[var(--text-primary)] mb-2">{t("checkEmail")}</h3>
         <p className="text-sm text-[var(--text-secondary)]">
-          <strong>{email}</strong> adresine doğrulama bağlantısı gönderdik.
+          {t.rich("checkEmailDesc", { email, b: (chunks) => <strong>{chunks}</strong> })}
         </p>
       </div>
     );
@@ -94,27 +97,27 @@ export function RegisterForm() {
           <path fill="#FBBC05" d="M5.84 14.09c-.22-.66-.35-1.36-.35-2.09s.13-1.43.35-2.09V7.07H2.18C1.43 8.55 1 10.22 1 12s.43 3.45 1.18 4.93l3.66-2.84z"/>
           <path fill="#EA4335" d="M12 5.38c1.62 0 3.06.56 4.21 1.64l3.15-3.15C17.45 2.09 14.97 1 12 1 7.7 1 3.99 3.47 2.18 7.07l3.66 2.84c.87-2.6 3.3-4.53 6.16-4.53z"/>
         </svg>
-        {googleLoading ? "Yönlendiriliyor..." : "Google ile kayıt ol"}
+        {googleLoading ? t("redirecting") : t("googleRegister")}
       </Button>
 
       <div className="flex items-center gap-3">
         <div className="flex-1 h-px bg-[var(--border)]" />
-        <span className="text-xs text-[var(--text-tertiary)]">veya</span>
+        <span className="text-xs text-[var(--text-tertiary)]">{t("or")}</span>
         <div className="flex-1 h-px bg-[var(--border)]" />
       </div>
 
       <form onSubmit={handleRegister} className="flex flex-col gap-3">
         <Input
-          label="Ad Soyad"
+          label={t("fullName")}
           type="text"
-          placeholder="Ahmet Yılmaz"
+          placeholder={locale === "en" ? "John Doe" : "Ahmet Yılmaz"}
           value={fullName}
           onChange={(e) => setFullName(e.target.value)}
           icon={<User size={14} />}
           required
         />
         <Input
-          label="E-posta"
+          label={t("email")}
           type="email"
           placeholder="ornek@email.com"
           value={email}
@@ -123,7 +126,7 @@ export function RegisterForm() {
           required
         />
         <Input
-          label="Şifre"
+          label={t("password")}
           type="password"
           placeholder="En az 8 karakter"
           value={password}
@@ -156,15 +159,18 @@ export function RegisterForm() {
         )}
 
         <p className="text-[11px] text-[var(--text-tertiary)] leading-relaxed">
-          Üye olarak{" "}
-          <a href="/terms" className="text-[#FF6B35] hover:underline">Kullanım Koşulları</a>
-          {" "}ve{" "}
-          <a href="/privacy" className="text-[#FF6B35] hover:underline">Gizlilik Politikası</a>
-          'nı kabul etmiş olursunuz.
+          {t.rich("termsText", {
+            terms: (chunks) => (
+              <a href={`/${locale}/terms`} className="text-[#FF6B35] hover:underline">{chunks}</a>
+            ),
+            privacy: (chunks) => (
+              <a href={`/${locale}/privacy`} className="text-[#FF6B35] hover:underline">{chunks}</a>
+            ),
+          })}
         </p>
 
         <Button type="submit" className="w-full" disabled={loading}>
-          {loading ? "Kayıt yapılıyor..." : "Üye Ol"}
+          {loading ? t("registering") : t("registerBtn")}
         </Button>
       </form>
     </div>

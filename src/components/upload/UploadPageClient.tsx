@@ -16,7 +16,8 @@ import { cn } from "@/lib/utils";
 /* ── Types ── */
 type Step = "file" | "details" | "pricing" | "review";
 interface ModelMeta {
-  title: string; description: string; category: number | ""; tags: string;
+  title: string; titleEn: string; description: string; descriptionEn: string;
+  category: number | ""; tags: string;
   license: "standard" | "multi_print" | "open";
   basePrice: string; isFree: boolean;
   weightGrams: string; dimensionX: string; dimensionY: string; dimensionZ: string;
@@ -69,7 +70,7 @@ export function UploadPageClient() {
   const thumbnailDataUrlRef = useRef<string | null>(null);
 
   const [meta, setMeta] = useState<ModelMeta>({
-    title: "", description: "", category: "" as number | "", tags: "",
+    title: "", titleEn: "", description: "", descriptionEn: "", category: "" as number | "", tags: "",
     license: "standard", basePrice: "", isFree: false,
     weightGrams: "", dimensionX: "", dimensionY: "", dimensionZ: "",
   });
@@ -127,7 +128,9 @@ export function UploadPageClient() {
   }
   function canAdvance() {
     if (step === "file")    return !!file;
-    if (step === "details") return meta.title.trim().length > 2 && !!meta.category && meta.weightGrams.trim().length > 0;
+    if (step === "details") return meta.title.trim().length > 2 && meta.titleEn.trim().length > 2
+      && meta.description.trim().length > 0 && meta.descriptionEn.trim().length > 0
+      && !!meta.category && meta.weightGrams.trim().length > 0;
     if (step === "pricing") return meta.isFree || parseFloat(meta.basePrice) > 0;
     return true;
   }
@@ -184,7 +187,9 @@ export function UploadPageClient() {
       const model = await createModel({
         designer_id:  user.id,
         title:        meta.title,
+        title_en:     meta.titleEn,
         description:  meta.description,
+        description_en: meta.descriptionEn,
         ...(meta.category !== "" ? { category_id: meta.category } : {}),
         tags,
         file_url:     path,
@@ -252,7 +257,7 @@ export function UploadPageClient() {
                 setUploadDone(false); setFile(null); setStep("file");
                 setRotation({ x:0,y:0,z:0 }); setPhotos([]);
                 thumbnailDataUrlRef.current = null;
-                setMeta({ title:"",description:"",category:"" as number|"",tags:"",license:"standard",basePrice:"",isFree:false,weightGrams:"",dimensionX:"",dimensionY:"",dimensionZ:"" });
+                setMeta({ title:"",titleEn:"",description:"",descriptionEn:"",category:"" as number|"",tags:"",license:"standard",basePrice:"",isFree:false,weightGrams:"",dimensionX:"",dimensionY:"",dimensionZ:"" });
               }}
               className="px-5 py-2.5 rounded-xl bg-[#FF6B35] text-white text-sm font-medium hover:bg-[#e85e2a] transition-colors"
             >
@@ -449,19 +454,37 @@ export function UploadPageClient() {
           {step === "details" && (
             <div className="flex flex-col gap-4">
               <h2 className="font-medium text-[var(--text-primary)]">Model Detayları</h2>
-              <div>
-                <label className="text-xs text-[var(--text-tertiary)] block mb-1.5">Model Adı *</label>
-                <input type="text" placeholder="örn: Araç Organizeri Pro" value={meta.title}
-                  onChange={(e) => updateMeta("title", e.target.value)} maxLength={80}
-                  className="w-full h-10 px-3 text-sm rounded-xl border border-[var(--border)] bg-[var(--bg-secondary)] text-[var(--text-primary)] outline-none focus:border-[#FF6B35] transition-colors placeholder:text-[var(--text-tertiary)]" />
-                <div className="text-right text-[10px] text-[var(--text-tertiary)] mt-1">{meta.title.length}/80</div>
+              <div className="grid sm:grid-cols-2 gap-4">
+                <div>
+                  <label className="text-xs text-[var(--text-tertiary)] block mb-1.5">Model Adı (Türkçe) *</label>
+                  <input type="text" placeholder="örn: Araç Organizeri Pro" value={meta.title}
+                    onChange={(e) => updateMeta("title", e.target.value)} maxLength={80}
+                    className="w-full h-10 px-3 text-sm rounded-xl border border-[var(--border)] bg-[var(--bg-secondary)] text-[var(--text-primary)] outline-none focus:border-[#FF6B35] transition-colors placeholder:text-[var(--text-tertiary)]" />
+                  <div className="text-right text-[10px] text-[var(--text-tertiary)] mt-1">{meta.title.length}/80</div>
+                </div>
+                <div>
+                  <label className="text-xs text-[var(--text-tertiary)] block mb-1.5">Model Name (English) *</label>
+                  <input type="text" placeholder="e.g: Car Organizer Pro" value={meta.titleEn}
+                    onChange={(e) => updateMeta("titleEn", e.target.value)} maxLength={80}
+                    className="w-full h-10 px-3 text-sm rounded-xl border border-[var(--border)] bg-[var(--bg-secondary)] text-[var(--text-primary)] outline-none focus:border-[#FF6B35] transition-colors placeholder:text-[var(--text-tertiary)]" />
+                  <div className="text-right text-[10px] text-[var(--text-tertiary)] mt-1">{meta.titleEn.length}/80</div>
+                </div>
               </div>
-              <div>
-                <label className="text-xs text-[var(--text-tertiary)] block mb-1.5">Açıklama</label>
-                <textarea placeholder="Modelinizi tanımlayın…" value={meta.description}
-                  onChange={(e) => updateMeta("description", e.target.value)} rows={4} maxLength={1000}
-                  className="w-full px-3 py-2.5 text-sm rounded-xl border border-[var(--border)] bg-[var(--bg-secondary)] text-[var(--text-primary)] outline-none focus:border-[#FF6B35] transition-colors placeholder:text-[var(--text-tertiary)] resize-none" />
-                <div className="text-right text-[10px] text-[var(--text-tertiary)] mt-1">{meta.description.length}/1000</div>
+              <div className="grid sm:grid-cols-2 gap-4">
+                <div>
+                  <label className="text-xs text-[var(--text-tertiary)] block mb-1.5">Açıklama (Türkçe) *</label>
+                  <textarea placeholder="Modelinizi tanımlayın…" value={meta.description}
+                    onChange={(e) => updateMeta("description", e.target.value)} rows={4} maxLength={1000}
+                    className="w-full px-3 py-2.5 text-sm rounded-xl border border-[var(--border)] bg-[var(--bg-secondary)] text-[var(--text-primary)] outline-none focus:border-[#FF6B35] transition-colors placeholder:text-[var(--text-tertiary)] resize-none" />
+                  <div className="text-right text-[10px] text-[var(--text-tertiary)] mt-1">{meta.description.length}/1000</div>
+                </div>
+                <div>
+                  <label className="text-xs text-[var(--text-tertiary)] block mb-1.5">Description (English) *</label>
+                  <textarea placeholder="Describe your model…" value={meta.descriptionEn}
+                    onChange={(e) => updateMeta("descriptionEn", e.target.value)} rows={4} maxLength={1000}
+                    className="w-full px-3 py-2.5 text-sm rounded-xl border border-[var(--border)] bg-[var(--bg-secondary)] text-[var(--text-primary)] outline-none focus:border-[#FF6B35] transition-colors placeholder:text-[var(--text-tertiary)] resize-none" />
+                  <div className="text-right text-[10px] text-[var(--text-tertiary)] mt-1">{meta.descriptionEn.length}/1000</div>
+                </div>
               </div>
               <div>
                 <label className="text-xs text-[var(--text-tertiary)] block mb-1.5">Kategori *</label>
@@ -579,7 +602,8 @@ export function UploadPageClient() {
               <div className="bg-[var(--bg-secondary)] border border-[var(--border)] rounded-2xl overflow-hidden">
                 {[
                   { label: "Dosya",     value: file?.name ?? "—" },
-                  { label: "Model Adı", value: meta.title },
+                  { label: "Model Adı (TR)", value: meta.title },
+                  { label: "Model Name (EN)", value: meta.titleEn },
                   { label: "Kategori",  value: CATEGORIES.find(c => c.id === meta.category)?.name_tr ?? "—" },
                   { label: "Lisans",    value: LICENSES.find(l => l.value === meta.license)?.label ?? "—" },
                   { label: "Fiyat",     value: meta.isFree ? "Ücretsiz" : `₺ ${meta.basePrice}` },

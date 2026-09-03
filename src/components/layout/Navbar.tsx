@@ -182,7 +182,7 @@ export function Navbar({ user: initialUser }: NavbarProps) {
                 <button
                   onClick={() => setDropdownOpen((v) => !v)}
                   className="w-8 h-8 flex items-center justify-center rounded-full bg-[rgba(255,107,53,0.12)] text-[#FF6B35] transition-colors hover:bg-[rgba(255,107,53,0.2)]"
-                  aria-label="Profil menüsü"
+                  aria-label={t("profileMenu")}
                 >
                   <User size={14} />
                 </button>

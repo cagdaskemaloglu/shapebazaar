@@ -21,6 +21,7 @@ interface OrderItem {
 interface PendingModel {
   id: string;
   title: string;
+  title_en?: string | null;
   created_at: string;
   file_format: string;
   base_price: number;
@@ -402,6 +403,9 @@ export function AdminDashboardClient() {
                     </div>
                     <div className="flex-1 min-w-0">
                       <div className="font-medium text-sm text-[var(--text-primary)] truncate">{m.title}</div>
+                      {m.title_en && (
+                        <div className="text-xs text-[var(--text-tertiary)] truncate italic">EN: {m.title_en}</div>
+                      )}
                       <div className="text-xs text-[var(--text-tertiary)]">
                         {m.designer?.full_name ?? "—"} · {new Date(m.created_at).toLocaleDateString("tr-TR")}
                       </div>

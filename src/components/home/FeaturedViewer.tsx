@@ -26,6 +26,7 @@ const SCALES = ["50%", "75%", "100%", "150%", "Özel"];
 interface FeaturedModel {
   id: string;
   title: string;
+  title_en: string | null;
   base_price: number;
   is_free: boolean;
   avg_rating: number;
@@ -44,6 +45,7 @@ interface FeaturedModel {
 
 export function FeaturedViewer() {
   const t        = useTranslations("viewer");
+  const tModel   = useTranslations("modelDetail");
   const pathname = usePathname();
   const locale   = pathname.split("/")[1] || "tr";
 
@@ -61,7 +63,7 @@ export function FeaturedViewer() {
       const { data, error } = await supabase
         .from("models")
         .select(`
-          id, title, base_price, is_free,
+          id, title, title_en, base_price, is_free,
           avg_rating, rating_count,
           file_url, file_format, weight_grams,
           rotation_x, rotation_y, rotation_z,
@@ -106,7 +108,7 @@ export function FeaturedViewer() {
 
   const designerTag = model.designer?.username
     ? `@${model.designer.username}`
-    : model.designer?.full_name ?? "Tasarımcı";
+    : model.designer?.full_name ?? tModel("designer");
 
   const designPrice             = model.is_free ? 0 : model.base_price;
   const weightGrams             = model.weight_grams ?? 50;
@@ -139,7 +141,7 @@ export function FeaturedViewer() {
 
           {/* Config */}
           <div className="flex-1 p-5">
-            <div className="font-medium text-[var(--text-primary)] mb-1 truncate">{model.title}</div>
+            <div className="font-medium text-[var(--text-primary)] mb-1 truncate">{locale === "en" && model.title_en ? model.title_en : model.title}</div>
             <div className="flex items-center gap-1.5 text-xs text-[var(--text-tertiary)] mb-4">
               <span>{designerTag}</span>
               {model.rating_count > 0 && (
@@ -154,7 +156,7 @@ export function FeaturedViewer() {
 
             {/* Material */}
             <div className="mb-3">
-              <div className="text-[10px] font-semibold uppercase tracking-wider text-[var(--text-tertiary)] mb-1.5">Malzeme</div>
+              <div className="text-[10px] font-semibold uppercase tracking-wider text-[var(--text-tertiary)] mb-1.5">{t("material")}</div>
               <div className="flex gap-1.5 flex-wrap">
                 {MATERIALS.map((m) => (
                   <button
@@ -175,7 +177,7 @@ export function FeaturedViewer() {
             {/* Color */}
             <div className="mb-3">
               <div className="text-[10px] font-semibold uppercase tracking-wider text-[var(--text-tertiary)] mb-1.5">
-                Renk — {COLORS[colorIdx].name}
+                {t("color")} — {tModel(`colors.${COLORS[colorIdx].name}`)}
               </div>
               <div className="flex gap-2">
                 {COLORS.map((c, i) => (
@@ -193,7 +195,7 @@ export function FeaturedViewer() {
 
             {/* Scale */}
             <div className="mb-4">
-              <div className="text-[10px] font-semibold uppercase tracking-wider text-[var(--text-tertiary)] mb-1.5">Boyut</div>
+              <div className="text-[10px] font-semibold uppercase tracking-wider text-[var(--text-tertiary)] mb-1.5">{t("size")}</div>
               <div className="flex gap-1.5 flex-wrap">
                 {SCALES.map((s) => (
                   <button
@@ -205,7 +207,7 @@ export function FeaturedViewer() {
                         : "border-[var(--border)] text-[var(--text-secondary)]"
                     }`}
                   >
-                    {s}
+                    {s === "Özel" ? tModel("custom") : s}
                   </button>
                 ))}
               </div>
@@ -217,13 +219,13 @@ export function FeaturedViewer() {
                 <div className="text-xl font-semibold text-[var(--text-primary)]">
                   {formatPrice(totalPrice, locale)}
                 </div>
-                <div className="text-xs text-[var(--text-tertiary)] mt-0.5">3–5 iş günü · Kargo dahil</div>
+                <div className="text-xs text-[var(--text-tertiary)] mt-0.5">{t("delivery")}</div>
               </div>
               <a
                 href={`/${locale}/models/${model.id}`}
                 className="flex items-center gap-1.5 bg-[#FF6B35] text-white px-4 py-2 rounded-xl text-sm font-medium hover:bg-[#e85e2a] transition-colors"
               >
-                Yazdır →
+                {t("printBtn")}
               </a>
             </div>
           </div>

@@ -3,7 +3,9 @@ import { createClient } from "@/lib/supabase/client";
 export interface ModelInsert {
   designer_id: string;
   title: string;
+  title_en?: string;
   description?: string;
+  description_en?: string;
   category_id?: number;
   tags?: string[];
   file_url: string;
@@ -53,7 +55,7 @@ export async function fetchModels({
   let query = supabase
     .from("models")
     .select(`
-      id, title, base_price, is_free, thumbnail_url,
+      id, title, title_en, base_price, is_free, thumbnail_url,
       avg_rating, rating_count, print_count, created_at, tags,
       designer:profiles(id, full_name, username, avatar_url),
       category:categories(slug, name_tr)

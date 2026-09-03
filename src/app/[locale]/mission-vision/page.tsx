@@ -1,6 +1,6 @@
 import { Navbar } from "@/components/layout/Navbar";
 import { Footer } from "@/components/layout/Footer";
-import { useTranslations } from "next-intl";
+import { useTranslations, useLocale } from "next-intl";
 import { getTranslations } from "next-intl/server";
 import { Heart, Target, Zap, Users } from "lucide-react";
 
@@ -11,7 +11,8 @@ export async function generateMetadata({ params }: { params: Promise<{ locale: s
 }
 
 export default function MissionVisionPage() {
-  const t = useTranslations("mission");
+  const t      = useTranslations("mission");
+  const locale = useLocale();
 
   const values = [
     {
@@ -47,7 +48,7 @@ export default function MissionVisionPage() {
               {t("title")}
             </h1>
             <p className="text-xl text-slate-600 dark:text-slate-300">
-              Birliktebüyüyüyoruz. Adil kazanç. Sürdürülebilir gelecek.
+              {t("subtitle")}
             </p>
           </div>
         </section>
@@ -65,7 +66,7 @@ export default function MissionVisionPage() {
             </div>
             <div className="bg-gradient-to-br from-blue-500 to-blue-600 rounded-lg p-12 text-white flex items-center justify-center h-64">
               <p className="text-2xl font-bold text-center">
-                Her ideaya fiziksel biçim vermek
+                {t("missionVisual")}
               </p>
             </div>
           </div>
@@ -76,7 +77,7 @@ export default function MissionVisionPage() {
           <div className="grid md:grid-cols-2 gap-12 items-center">
             <div className="order-2 md:order-1 bg-gradient-to-br from-purple-500 to-purple-600 rounded-lg p-12 text-white flex items-center justify-center h-64">
               <p className="text-2xl font-bold text-center">
-                Merkezi olmayan, açık bir ağ
+                {t("visionVisual")}
               </p>
             </div>
             <div className="order-1 md:order-2">
@@ -98,7 +99,7 @@ export default function MissionVisionPage() {
                 {t("valuesTitle")}
               </h2>
               <p className="text-slate-600 dark:text-slate-300 text-lg">
-                ShapeBazaar'ı rehber eden ilkeler
+                {t("valuesSubtitle")}
               </p>
             </div>
 
@@ -129,16 +130,16 @@ export default function MissionVisionPage() {
         {/* CTA Section */}
         <section className="py-16 px-4 sm:px-6 lg:px-8 max-w-4xl mx-auto text-center">
           <h2 className="text-3xl font-bold mb-4 text-slate-900 dark:text-white">
-            Bu misyonun parçası olmak ister misin?
+            {t("ctaTitle")}
           </h2>
           <p className="text-slate-600 dark:text-slate-300 mb-8 text-lg">
-            Tasarımcı, üretici veya müşteri olarak bize katıl
+            {t("ctaSubtitle")}
           </p>
           <a
-            href="/become-partner"
+            href={`/${locale}/become-partner`}
             className="inline-block px-8 py-3 bg-blue-600 text-white font-semibold rounded-lg hover:bg-blue-700 transition"
           >
-            Partnerimiz ol
+            {t("ctaButton")}
           </a>
         </section>
       </main>

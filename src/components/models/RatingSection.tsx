@@ -2,6 +2,7 @@
 import { useState, useEffect } from "react";
 import { Star } from "lucide-react";
 import { createClient } from "@/lib/supabase/client";
+import { useTranslations, useLocale } from "next-intl";
 
 interface Rating {
   id: string;
@@ -12,6 +13,8 @@ interface Rating {
 }
 
 export function RatingSection({ modelId }: { modelId: string }) {
+  const t      = useTranslations("rating");
+  const locale = useLocale();
   const [ratings,    setRatings]    = useState<Rating[]>([]);
   const [userRating, setUserRating] = useState(0);
   const [hover,      setHover]      = useState(0);
@@ -65,12 +68,12 @@ export function RatingSection({ modelId }: { modelId: string }) {
 
   return (
     <div className="mt-8 border-t border-[var(--border)] pt-8">
-      <h2 className="text-base font-semibold text-[var(--text-primary)] mb-5">Değerlendirmeler</h2>
+      <h2 className="text-base font-semibold text-[var(--text-primary)] mb-5">{t("title")}</h2>
 
       {/* Submit rating */}
       {userId && !submitted && (
         <div className="bg-[var(--bg-secondary)] border border-[var(--border)] rounded-2xl p-5 mb-6">
-          <div className="text-sm font-medium text-[var(--text-primary)] mb-3">Bu modeli değerlendirin</div>
+          <div className="text-sm font-medium text-[var(--text-primary)] mb-3">{t("rateThis")}</div>
           <div className="flex gap-1 mb-3">
             {[1,2,3,4,5].map((s) => (
               <button
@@ -89,7 +92,7 @@ export function RatingSection({ modelId }: { modelId: string }) {
           </div>
           <textarea
             rows={2}
-            placeholder="Yorumunuz (isteğe bağlı)…"
+            placeholder={t("commentPlaceholder")}
             value={comment}
             onChange={(e) => setComment(e.target.value)}
             className="w-full px-3 py-2.5 text-sm rounded-xl border border-[var(--border)] bg-[var(--bg-primary)] text-[var(--text-primary)] outline-none focus:border-[#FF6B35] transition-colors placeholder:text-[var(--text-tertiary)] resize-none mb-3"
@@ -99,20 +102,20 @@ export function RatingSection({ modelId }: { modelId: string }) {
             disabled={loading || userRating === 0}
             className="px-4 py-2 text-sm bg-[#FF6B35] text-white rounded-xl hover:bg-[#e85e2a] disabled:opacity-40 transition-colors"
           >
-            {loading ? "Gönderiliyor…" : "Değerlendirmeyi Gönder"}
+            {loading ? t("submitting") : t("submit")}
           </button>
         </div>
       )}
 
       {submitted && (
         <div className="bg-[rgba(16,185,129,0.06)] border border-[rgba(16,185,129,0.2)] rounded-xl px-4 py-3 text-sm text-[#10B981] mb-6">
-          Değerlendirmeniz kaydedildi. Teşekkürler!
+          {t("success")}
         </div>
       )}
 
       {/* Rating list */}
       {ratings.length === 0 ? (
-        <p className="text-sm text-[var(--text-tertiary)]">Henüz değerlendirme yok. İlk değerlendirmeyi siz yapın!</p>
+        <p className="text-sm text-[var(--text-tertiary)]">{t("noRatings")}</p>
       ) : (
         <div className="flex flex-col gap-4">
           {ratings.map((r) => (
@@ -123,14 +126,14 @@ export function RatingSection({ modelId }: { modelId: string }) {
               <div className="flex-1">
                 <div className="flex items-center gap-2 mb-1">
                   <span className="text-sm font-medium text-[var(--text-primary)]">
-                    {r.user?.username ? `@${r.user.username}` : r.user?.full_name ?? "Kullanıcı"}
+                    {r.user?.username ? `@${r.user.username}` : r.user?.full_name ?? t("user")}
                   </span>
                   <div className="flex gap-0.5">
                     {[1,2,3,4,5].map((s) => (
                       <Star key={s} size={12} fill={r.rating >= s ? "#FBBF24" : "none"} className={r.rating >= s ? "text-amber-400" : "text-[var(--text-tertiary)]"} />
                     ))}
                   </div>
-                  <span className="text-xs text-[var(--text-tertiary)]">{new Date(r.created_at).toLocaleDateString("tr-TR")}</span>
+                  <span className="text-xs text-[var(--text-tertiary)]">{new Date(r.created_at).toLocaleDateString(locale === "en" ? "en-US" : "tr-TR")}</span>
                 </div>
                 {r.comment && <p className="text-sm text-[var(--text-secondary)] leading-relaxed">{r.comment}</p>}
               </div>

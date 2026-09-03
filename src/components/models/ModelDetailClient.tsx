@@ -12,6 +12,7 @@ import { createClient } from "@/lib/supabase/client";
 import { RatingSection } from "@/components/models/RatingSection";
 import { getModelPublicUrl } from "@/lib/storage";
 import { usePathname } from "next/navigation";
+import { useTranslations } from "next-intl";
 import {
   calcPrintCost,
   calcTotalPrice,
@@ -32,6 +33,13 @@ const COLORS = [
 ];
 const SCALES  = ["50%", "75%", "100%", "150%", "Özel"];
 const INFILLS = ["15% (Hafif)", "25% (Standart)", "40% (Sağlam)", "80% (Masif)"];
+// INFILLS değerleri hesaplama/cart için sabit kalır — sadece görünen etiket çevrilir
+const INFILL_LABEL_KEY: Record<string, string> = {
+  "15% (Hafif)":    "light",
+  "25% (Standart)": "standard",
+  "40% (Sağlam)":   "solid",
+  "80% (Masif)":    "dense",
+};
 
 type ViewerTab = "3d" | "photos";
 
@@ -44,7 +52,9 @@ interface ModelImage {
 interface DBModel {
   id: string;
   title: string;
+  title_en: string | null;
   description: string | null;
+  description_en: string | null;
   base_price: number;
   is_free: boolean;
   file_url: string;
@@ -76,6 +86,8 @@ interface DBModel {
 export function ModelDetailClient({ modelId }: { modelId: string }) {
   const pathname = usePathname();
   const locale   = pathname.split("/")[1] || "tr";
+  const t        = useTranslations("modelDetail");
+  const tFree    = useTranslations("modelsPage");
 
   const [model,    setModel]    = useState<DBModel | null>(null);
   const [loading,  setLoading]  = useState(true);
@@ -103,7 +115,7 @@ export function ModelDetailClient({ modelId }: { modelId: string }) {
       const { data, error } = await supabase
         .from("models")
         .select(`
-          id, title, description, base_price, is_free,
+          id, title, title_en, description, description_en, base_price, is_free,
           file_url, file_format, avg_rating, rating_count,
           print_count, view_count, license, created_at,
           weight_grams, dimension_x, dimension_y, dimension_z,
@@ -150,9 +162,9 @@ export function ModelDetailClient({ modelId }: { modelId: string }) {
     return (
       <div className="max-w-7xl mx-auto px-4 sm:px-6 py-20 text-center">
         <AlertCircle size={40} className="mx-auto mb-4 text-[var(--text-tertiary)] opacity-40" />
-        <h2 className="text-lg font-medium text-[var(--text-primary)] mb-2">Model bulunamadı</h2>
-        <p className="text-sm text-[var(--text-tertiary)] mb-4">Bu model mevcut değil veya yayından kaldırılmış.</p>
-        <a href="/models" className="text-sm text-[#FF6B35] hover:underline">← Modellere dön</a>
+        <h2 className="text-lg font-medium text-[var(--text-primary)] mb-2">{t("notFound")}</h2>
+        <p className="text-sm text-[var(--text-tertiary)] mb-4">{t("notFoundDesc")}</p>
+        <a href="/models" className="text-sm text-[#FF6B35] hover:underline">{t("backToModels")}</a>
       </div>
     );
   }
@@ -172,7 +184,10 @@ export function ModelDetailClient({ modelId }: { modelId: string }) {
   const designer     = model.designer;
   const designerName = designer?.username
     ? `@${designer.username}`
-    : designer?.full_name ?? "Tasarımcı";
+    : designer?.full_name ?? t("designer");
+
+  const displayTitle       = locale === "en" && model.title_en ? model.title_en : model.title;
+  const displayDescription = locale === "en" && model.description_en ? model.description_en : model.description;
 
   const modelRotation =
     model.rotation_x || model.rotation_y || model.rotation_z
@@ -203,11 +218,11 @@ export function ModelDetailClient({ modelId }: { modelId: string }) {
     <div className="max-w-7xl mx-auto px-4 sm:px-6 py-8">
       {/* Breadcrumb */}
       <div className="flex items-center gap-1.5 text-xs text-[var(--text-tertiary)] mb-6">
-        <a href="/" className="hover:text-[#FF6B35]">Ana Sayfa</a>
+        <a href="/" className="hover:text-[#FF6B35]">{t("home")}</a>
         <ChevronRight size={12} />
-        <a href="/models" className="hover:text-[#FF6B35]">Modeller</a>
+        <a href="/models" className="hover:text-[#FF6B35]">{t("models")}</a>
         <ChevronRight size={12} />
-        <span className="text-[var(--text-primary)] truncate max-w-[200px]">{model.title}</span>
+        <span className="text-[var(--text-primary)] truncate max-w-[200px]">{displayTitle}</span>
       </div>
 
       <div className="grid grid-cols-1 lg:grid-cols-2 gap-8">
@@ -234,7 +249,7 @@ export function ModelDetailClient({ modelId }: { modelId: string }) {
                   : "text-[var(--text-secondary)] hover:bg-[var(--bg-secondary)]"
               }`}
             >
-              <ImageIcon size={12} /> Fotoğraflar
+              <ImageIcon size={12} /> {t("photos")}
               {images.length > 0 && (
                 <span className={`text-[10px] px-1.5 py-0.5 rounded-full ${
                   viewerTab === "photos" ? "bg-white/20" : "bg-[var(--bg-tertiary)]"
@@ -264,7 +279,7 @@ export function ModelDetailClient({ modelId }: { modelId: string }) {
               {images.length === 0 ? (
                 <div className="h-full flex flex-col items-center justify-center text-[var(--text-tertiary)]">
                   <ImageIcon size={32} className="opacity-30 mb-2" />
-                  <p className="text-sm">Fotoğraf yok</p>
+                  <p className="text-sm">{t("noPhotos")}</p>
                 </div>
               ) : (
                 <div className="h-full flex flex-col">
@@ -274,7 +289,7 @@ export function ModelDetailClient({ modelId }: { modelId: string }) {
                   >
                     <img
                       src={images[0].url}
-                      alt={model.title}
+                      alt={displayTitle}
                       className="w-full h-full object-contain p-2"
                     />
                   </div>
@@ -323,7 +338,7 @@ export function ModelDetailClient({ modelId }: { modelId: string }) {
                 <Heart size={15} fill={liked ? "currentColor" : "none"} />
               </button>
               <button
-                onClick={() => navigator.share?.({ title: model.title, url: window.location.href })}
+                onClick={() => navigator.share?.({ title: displayTitle, url: window.location.href })}
                 className="w-9 h-9 rounded-xl border border-[var(--border)] flex items-center justify-center text-[var(--text-tertiary)] hover:bg-[var(--bg-secondary)] transition-all"
               >
                 <Share2 size={15} />
@@ -334,12 +349,12 @@ export function ModelDetailClient({ modelId }: { modelId: string }) {
           {/* Specs */}
           <div className="mt-4 grid grid-cols-3 gap-2">
             {[
-              { label: "Format",  value: model.file_format.toUpperCase() },
-              { label: "Baskı",   value: `${model.print_count}+` },
-              { label: "Lisans",  value: model.license === "standard" ? "Standart" : model.license === "open" ? "Açık" : "Çoklu" },
-              ...(model.weight_grams ? [{ label: "Ağırlık", value: `~${model.weight_grams}g` }] : []),
+              { label: t("format"),  value: model.file_format.toUpperCase() },
+              { label: t("prints"),  value: `${model.print_count}+` },
+              { label: t("license"), value: model.license === "standard" ? t("standard") : model.license === "open" ? t("open") : t("multi") },
+              ...(model.weight_grams ? [{ label: t("weight"), value: `~${model.weight_grams}g` }] : []),
               ...(model.dimension_x && model.dimension_y && model.dimension_z
-                ? [{ label: "Boyut", value: `${model.dimension_x}×${model.dimension_y}×${model.dimension_z}mm` }]
+                ? [{ label: t("dimensions"), value: `${model.dimension_x}×${model.dimension_y}×${model.dimension_z}mm` }]
                 : []),
             ].map((s) => (
               <div key={s.label} className="bg-[var(--bg-secondary)] border border-[var(--border)] rounded-xl p-3 text-center">
@@ -350,17 +365,17 @@ export function ModelDetailClient({ modelId }: { modelId: string }) {
           </div>
 
           {/* Description */}
-          {model.description && (
+          {displayDescription && (
             <div className="mt-4 bg-[var(--bg-secondary)] border border-[var(--border)] rounded-xl p-4">
-              <div className="text-xs font-semibold uppercase tracking-wider text-[var(--text-tertiary)] mb-2">Açıklama</div>
-              <p className="text-sm text-[var(--text-secondary)] leading-relaxed">{model.description}</p>
+              <div className="text-xs font-semibold uppercase tracking-wider text-[var(--text-tertiary)] mb-2">{t("description")}</div>
+              <p className="text-sm text-[var(--text-secondary)] leading-relaxed">{displayDescription}</p>
             </div>
           )}
         </div>
 
         {/* RIGHT — Config */}
         <div>
-          <h1 className="text-xl font-semibold text-[var(--text-primary)] mb-2">{model.title}</h1>
+          <h1 className="text-xl font-semibold text-[var(--text-primary)] mb-2">{displayTitle}</h1>
           <div className="flex items-center gap-3 mb-5">
             {model.rating_count > 0 ? (
               <>
@@ -373,33 +388,33 @@ export function ModelDetailClient({ modelId }: { modelId: string }) {
                   ))}
                 </div>
                 <span className="text-sm text-[var(--text-secondary)]">
-                  {Number(model.avg_rating).toFixed(1)} · {model.rating_count} değerlendirme
+                  {Number(model.avg_rating).toFixed(1)} · {model.rating_count} {t("reviews")}
                 </span>
               </>
             ) : (
-              <span className="text-sm text-[var(--text-tertiary)]">Henüz değerlendirme yok</span>
+              <span className="text-sm text-[var(--text-tertiary)]">{t("noRating")}</span>
             )}
             {model.category && (
               <span className="text-xs text-[var(--text-tertiary)] border border-[var(--border)] px-2 py-0.5 rounded-full ml-auto">
-                {model.category.name_tr}
+                {locale === "en" && model.category.name_en ? model.category.name_en : model.category.name_tr}
               </span>
             )}
           </div>
 
           <div className="flex flex-col gap-4">
-            <ConfigRow label="Malzeme">
+            <ConfigRow label={t("material")}>
               {MATERIALS.map((m) => (
                 <OptionBtn key={m} active={material === m} onClick={() => setMaterial(m)}>{m}</OptionBtn>
               ))}
             </ConfigRow>
 
-            <ConfigRow label={`Renk — ${COLORS[colorIdx].name}`}>
+            <ConfigRow label={`${t("color")} — ${t(`colors.${COLORS[colorIdx].name}`)}`}>
               <div className="flex gap-2.5">
                 {COLORS.map((c, i) => (
                   <button
                     key={c.hex}
                     onClick={() => setColorIdx(i)}
-                    title={c.name}
+                    title={t(`colors.${c.name}`)}
                     className={`w-7 h-7 rounded-full transition-all ${
                       colorIdx === i ? "ring-2 ring-[#FF6B35] ring-offset-2 ring-offset-[var(--bg-primary)]" : ""
                     } ${c.border ? "border border-[var(--border)]" : ""}`}
@@ -409,50 +424,52 @@ export function ModelDetailClient({ modelId }: { modelId: string }) {
               </div>
             </ConfigRow>
 
-            <ConfigRow label="Boyut">
+            <ConfigRow label={t("size")}>
               {SCALES.map((s) => (
-                <OptionBtn key={s} active={scale === s} onClick={() => setScale(s)}>{s}</OptionBtn>
+                <OptionBtn key={s} active={scale === s} onClick={() => setScale(s)}>{s === "Özel" ? t("custom") : s}</OptionBtn>
               ))}
             </ConfigRow>
 
-            <ConfigRow label="Dolgu Yoğunluğu">
+            <ConfigRow label={t("infill")}>
               {INFILLS.map((inf) => (
-                <OptionBtn key={inf} active={infill === inf} onClick={() => setInfill(inf)}>{inf}</OptionBtn>
+                <OptionBtn key={inf} active={infill === inf} onClick={() => setInfill(inf)}>
+                  {inf.split(" ")[0]} ({t(`infills.${INFILL_LABEL_KEY[inf]}`)})
+                </OptionBtn>
               ))}
             </ConfigRow>
 
             {/* Price breakdown */}
             <div className="bg-[var(--bg-secondary)] border border-[var(--border)] rounded-xl p-4 text-sm flex flex-col gap-1.5">
               <div className="flex justify-between text-[var(--text-secondary)]">
-                <span>Tasarım ücreti</span>
+                <span>{t("designPrice")}</span>
                 {model.is_free
-                  ? <span className="text-[#10B981]">Ücretsiz</span>
+                  ? <span className="text-[#10B981]">{tFree("free")}</span>
                   : <span>{formatPrice(designPrice, locale)}</span>
                 }
               </div>
               <div className="flex justify-between text-[var(--text-secondary)]">
-                <span>Baskı ({material} · {scale} · {infill.split(" ")[0]})</span>
+                <span>{t("printCost")} ({material} · {scale} · {infill.split(" ")[0]})</span>
                 <span>{formatPrice(printCost, locale)}</span>
               </div>
               <div className="flex justify-between text-[var(--text-secondary)]">
-                <span>Platform komisyonu (%10)</span>
+                <span>{t("platformFee")}</span>
                 <span>{formatPrice(platformFee, locale)}</span>
               </div>
               <div className="flex justify-between text-xs text-[var(--text-tertiary)]">
-                <span>Kargo sepette eklenir</span>
+                <span>{t("shippingNote")}</span>
                 <span>+{formatPrice(150, locale)}</span>
               </div>
               <div className="border-t border-[var(--border)] pt-1.5 flex justify-between font-semibold text-[var(--text-primary)]">
-                <span>Toplam</span>
+                <span>{t("total")}</span>
                 <span className="text-[#FF6B35]">{formatPrice(totalPrice, locale)}</span>
               </div>
             </div>
 
             <div className="flex gap-4">
               {[
-                { icon: Shield, text: "Güvenli Ödeme"   },
-                { icon: Truck,  text: "Tek Kargo"        },
-                { icon: Award,  text: "Kalite Garantisi" },
+                { icon: Shield, text: t("safePayment")   },
+                { icon: Truck,  text: t("singleShipping") },
+                { icon: Award,  text: t("quality") },
               ].map((b) => (
                 <div key={b.text} className="flex items-center gap-1.5 text-xs text-[var(--text-tertiary)]">
                   <b.icon size={13} className="text-[#10B981]" /> {b.text}
@@ -465,9 +482,9 @@ export function ModelDetailClient({ modelId }: { modelId: string }) {
               className="w-full h-11 flex items-center justify-center gap-2 bg-[#FF6B35] text-white rounded-xl font-medium text-sm hover:bg-[#e85e2a] transition-colors active:scale-95"
             >
               {addedToCart ? (
-                <><CheckCircle2 size={16} /> Sepete Eklendi!</>
+                <><CheckCircle2 size={16} /> {t("addedToCart")}</>
               ) : (
-                <><ShoppingCart size={16} /> Sepete Ekle — {formatPrice(totalPrice, locale)}</>
+                <><ShoppingCart size={16} /> {t("addToCart")} — {formatPrice(totalPrice, locale)}</>
               )}
             </button>
           </div>

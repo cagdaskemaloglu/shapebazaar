@@ -5,7 +5,8 @@
     "becomePartner": "Become a Partner",
     "designers": "Designers",
     "signIn": "Sign In",
-    "signUp": "Sign Up"
+    "signUp": "Sign Up",
+    "profileMenu": "Profile menu"
   },
   "hero": {
     "badge": "Print Farm Network — Turkey",
@@ -51,7 +52,11 @@
     "step3Title": "Pay & send",
     "step3Desc": "Secure Iyzico payment. Your nearest print partner gets the order immediately.",
     "step4Title": "Receive",
-    "step4Desc": "Delivered to your door in 3–5 business days. Track your order in real-time."
+    "step4Desc": "Delivered to your door in 3–5 business days. Track your order in real-time.",
+    "ctaTitle": "Ready to get started?",
+    "ctaSubtitle": "Upload your design or explore models from our community",
+    "uploadCta": "Upload Design",
+    "exploreCta": "Explore Models"
   },
   "roles": {
     "title": "Everyone wins",
@@ -121,9 +126,9 @@
     "hasAccount": "Already have an account?",
     "terms": "Terms of Service",
     "privacy": "Privacy Policy",
-    "termsText": "By signing up you agree to our {terms} and {privacy}.",
+    "termsText": "By signing up you agree to our <terms>Terms of Service</terms> and <privacy>Privacy Policy</privacy>.",
     "checkEmail": "Check your email!",
-    "checkEmailDesc": "We sent a verification link to {email}.",
+    "checkEmailDesc": "We sent a verification link to <b>{email}</b>.",
     "redirecting": "Redirecting...",
     "loggingIn": "Signing in...",
     "registering": "Signing up...",
@@ -157,7 +162,10 @@
       "rating": "Highest Rated"
     },
     "trend": "Trend",
-    "new": "New"
+    "new": "New",
+    "apply": "Apply",
+    "reset": "Reset",
+    "andUp": "+"
   },
   "modelDetail": {
     "home": "Home",
@@ -193,6 +201,11 @@
     "notFound": "Model not found",
     "notFoundDesc": "This model does not exist or has been removed.",
     "custom": "Custom",
+    "photos": "Photos",
+    "noPhotos": "No photos",
+    "dimensions": "Dimensions",
+    "free": "Free",
+    "singleShipping": "Single Shipping",
     "colors": {
       "Lacivert": "Navy",
       "Turuncu": "Orange",
@@ -333,7 +346,13 @@
     "shopNamePlaceholder": "e.g. TechPrint Istanbul",
     "shopCity": "Shop City",
     "shopDescription": "Shop Description",
-    "shopDescPlaceholder": "Introduce your 3D printing services…"
+    "shopDescPlaceholder": "Introduce your 3D printing services…",
+    "regionNote": "Your orders will go to print partners in this region.",
+    "shopCityPlaceholder": "Istanbul",
+    "prints": "prints",
+    "user": "User",
+    "usernameTaken": "This username is already taken. Please try a different one.",
+    "saveError": "Save error: {message}"
   },
   "payment": {
     "successTitle": "Payment successful!",
@@ -415,6 +434,18 @@
     "noRatings": "No reviews yet. Be the first to review!",
     "user": "User"
   },
+  "modelViewer": {
+    "loading": "Loading model…",
+    "errorFormat": "Unsupported format. Upload STL, OBJ or 3MF.",
+    "errorLoad": "Model could not be loaded. Please check the file.",
+    "retry": "Try again",
+    "waiting": "Waiting for 3D model",
+    "reset": "Reset",
+    "zoomIn": "Zoom in",
+    "zoomOut": "Zoom out",
+    "background": "Background",
+    "controlsHint": "🖱 Rotate · Pan · Zoom"
+  },
   "about": {
     "title": "About Us",
     "hero": "The ShapeBazaar Story",
@@ -438,7 +469,14 @@
     "value3": "Quality",
     "value3Desc": "High standards at every stage of design, production, and delivery.",
     "value4": "Innovation",
-    "value4Desc": "Making 3D printing technology accessible and economical."
+    "value4Desc": "Making 3D printing technology accessible and economical.",
+    "subtitle": "Growing together. Fair earnings. Sustainable future.",
+    "missionVisual": "Giving physical form to every idea",
+    "visionVisual": "A decentralized, open network",
+    "valuesSubtitle": "The principles that guide ShapeBazaar",
+    "ctaTitle": "Want to be part of this mission?",
+    "ctaSubtitle": "Join us as a designer, manufacturer, or customer",
+    "ctaButton": "Become our partner"
   },
   "blog": {
     "title": "Blog",
@@ -477,7 +515,10 @@
     "section4": "Cookies",
     "section4Content": "Our platform uses cookies to improve user experience.",
     "section5": "Your Rights",
-    "section5Content": "Under GDPR regulations, you have the right to access, correct, and delete your personal data."
+    "section5Content": "Under GDPR regulations, you have the right to access, correct, and delete your personal data.",
+    "contactTitle": "Have questions?",
+    "contactText": "If you have questions about our privacy policy,",
+    "contactLink": "contact us"
   },
   "terms": {
     "title": "Terms of Service",
@@ -492,7 +533,10 @@
     "section4": "Return Policy",
     "section4Content": "If there is a defect in the product within 30 days, replacement or refund is available.",
     "section5": "Limitation of Liability",
-    "section5Content": "ShapeBazaar cannot be held responsible for direct or indirect damages arising from its services."
+    "section5Content": "ShapeBazaar cannot be held responsible for direct or indirect damages arising from its services.",
+    "contactTitle": "Have questions?",
+    "contactText": "If you have questions about our terms of service,",
+    "contactLink": "contact us"
   },
   "cookies": {
     "title": "Cookie Policy",
@@ -505,7 +549,9 @@
     "section3": "Managing Cookies",
     "section3Content": "You can control cookies through your browser settings. However, this may affect platform functionality.",
     "section4": "Third-Party Cookies",
-    "section4Content": "Services like Google Analytics and Stripe may also use cookies."
+    "section4Content": "Services like Google Analytics and Stripe may also use cookies.",
+    "tipTitle": "Tip",
+    "tipText": "You can manage cookies through most browser settings. Visit your browser's help page for more information."
   },
   "cart": {
     "title": "Shopping Cart",
@@ -626,6 +672,7 @@
     "designers": "Designers",
     "notFound": "Designer not found",
     "backToDesigners": "← Back to Designers",
+    "designer": "Designer",
     "memberSince": "Member since",
     "publishedModels": "Published Models",
     "totalPrints": "Total Prints",
@@ -761,5 +808,13 @@
     "claim": "Claim",
     "markDone": "Mark Done ✓",
     "earning": "earnings"
+  },
+  "onboarding": {
+    "welcomeName": "Welcome, {name}! 👋",
+    "welcome": "Welcome! 👋",
+    "subtitle": "Choose your region so your orders reach the right print partners.",
+    "continueBtn": "Continue →",
+    "saving": "Saving…",
+    "laterNote": "You can change this later from Dashboard → Settings."
   }
 }

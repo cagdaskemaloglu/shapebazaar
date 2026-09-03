@@ -10,6 +10,7 @@ import { formatPrice } from "@/lib/utils";
 interface DBModel {
   id: string;
   title: string;
+  title_en: string | null;
   base_price: number;
   is_free: boolean;
   avg_rating: number;
@@ -45,7 +46,7 @@ export function ModelGrid() {
       const { data, error } = await supabase
         .from("models")
         .select(`
-          id, title, base_price, is_free,
+          id, title, title_en, base_price, is_free,
           avg_rating, rating_count, print_count,
           created_at, thumbnail_url,
           designer:profiles(username, full_name)
@@ -101,6 +102,7 @@ export function ModelGrid() {
           <div className="grid grid-cols-2 sm:grid-cols-3 lg:grid-cols-6 gap-4">
             {models.map((m) => {
               const badge       = getBadge(m);
+              const mTitle      = locale === "en" && m.title_en ? m.title_en : m.title;
               const designerTag = m.designer?.username
                 ? `@${m.designer.username}`
                 : m.designer?.full_name ?? t("designer");
@@ -114,7 +116,7 @@ export function ModelGrid() {
                       {m.thumbnail_url ? (
                         <img
                           src={m.thumbnail_url}
-                          alt={m.title}
+                          alt={mTitle}
                           className="w-full h-full object-cover group-hover:scale-105 transition-transform duration-300"
                         />
                       ) : (
@@ -136,7 +138,7 @@ export function ModelGrid() {
 
                     {/* Info */}
                     <div className="p-3.5">
-                      <div className="font-medium text-sm text-[var(--text-primary)] mb-1 truncate">{m.title}</div>
+                      <div className="font-medium text-sm text-[var(--text-primary)] mb-1 truncate">{mTitle}</div>
                       <div className="text-xs text-[var(--text-tertiary)] mb-3 truncate">{designerTag}</div>
                       <div className="flex items-center justify-between">
                         <span className="font-semibold text-[#FF6B35] text-sm">

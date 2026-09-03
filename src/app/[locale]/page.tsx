@@ -1,40 +1,45 @@
+import type { Metadata } from "next";
 import { Navbar } from "@/components/layout/Navbar";
 import { Footer } from "@/components/layout/Footer";
-import { HeroSection } from "@/components/home/HeroSection";
-import { FeaturedViewer } from "@/components/home/FeaturedViewer";
-import { ModelGrid } from "@/components/home/ModelGrid";
-import { HowItWorks } from "@/components/home/HowItWorks";
-import { RolesSection } from "@/components/home/RolesSection";
-import { ValuesSection } from "@/components/home/ValuesSection";
-import { ManifestoSection } from "@/components/home/ManifestoSection";
-import { createClient } from "@/lib/supabase/server";
+import { ModelsPageClient } from "@/components/models/ModelsPageClient";
 
-export default async function HomePage() {
-  // Server-side'da kullanıcının region'ını çek
-  const supabase = await createClient();
-  const { data: { user } } = await supabase.auth.getUser();
+export async function generateMetadata({
+  params,
+}: {
+  params: Promise<{ locale: string }>;
+}): Promise<Metadata> {
+  const { locale } = await params;
+  const isTR = locale === "tr";
+  return {
+    title: isTR ? "ShapeBazaar — 3D Modeller" : "ShapeBazaar — 3D Models",
+    description: isTR
+      ? "ShapeBazaar'da yüzlerce 3D baskı modeli keşfedin. Kategoriye, fiyata ve puana göre filtreleyin."
+      : "Browse hundreds of 3D print models on ShapeBazaar. Filter by category, price and rating.",
+    openGraph: {
+      title: isTR ? "ShapeBazaar — 3D Modeller" : "ShapeBazaar — 3D Models",
+      description: isTR
+        ? "ShapeBazaar'da yüzlerce 3D baskı modeli keşfedin."
+        : "Browse hundreds of 3D print models on ShapeBazaar.",
+      url: `https://www.shapebazaar.com/${locale}`,
+      siteName: "ShapeBazaar",
+      images: [{ url: "https://www.shapebazaar.com/logo.png", width: 800, height: 600 }],
+    },
+    alternates: {
+      canonical: `https://www.shapebazaar.com/${locale}`,
+      languages: {
+        "tr": "https://www.shapebazaar.com/tr",
+        "en": "https://www.shapebazaar.com/en",
+      },
+    },
+  };
+}
 
-  let userRegion = "TR";
-  if (user) {
-    const { data: profile } = await supabase
-      .from("profiles")
-      .select("region")
-      .eq("id", user.id)
-      .single();
-    userRegion = profile?.region ?? "TR";
-  }
-
+export default function HomePage() {
   return (
     <div className="min-h-screen flex flex-col">
       <Navbar />
       <main className="flex-1">
-        <HeroSection userRegion={userRegion} />
-        <FeaturedViewer />
-        <ModelGrid />
-        <HowItWorks />
-        <RolesSection />
-        <ValuesSection />
-        <ManifestoSection />
+        <ModelsPageClient />
       </main>
       <Footer />
     </div>

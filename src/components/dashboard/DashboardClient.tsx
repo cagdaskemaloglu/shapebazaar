@@ -80,7 +80,7 @@ export function DashboardClient({ user, profile: initialProfile }: { user: User;
   const [loadingOrders, setLoadingOrders] = useState(true);
   const [loadingModels, setLoadingModels] = useState(true);
 
-  const displayName   = profile?.full_name || user.email?.split("@")[0] || "Kullanıcı";
+  const displayName   = profile?.full_name || user.email?.split("@")[0] || t("user");
   const initials      = displayName.split(" ").map((n: string) => n[0]).join("").slice(0, 2).toUpperCase();
   const walletBalance = profile?.wallet_balance ?? 0;
 
@@ -301,7 +301,7 @@ function OverviewTab({ orders, models, walletBalance, loading, statusLabels, t, 
               </div>
               <div className="flex-1 min-w-0">
                 <div className="text-sm font-medium text-[var(--text-primary)] truncate">{m.title}</div>
-                <div className="text-xs text-[var(--text-tertiary)]">{m.print_count} baskı</div>
+                <div className="text-xs text-[var(--text-tertiary)]">{m.print_count} {t("prints")}</div>
               </div>
               <span className={`text-[11px] font-medium px-2 py-0.5 rounded-full ${m.is_published ? "bg-green-100 text-green-700 dark:bg-green-900/30 dark:text-green-400" : "bg-amber-100 text-amber-700 dark:bg-amber-900/30 dark:text-amber-400"}`}>
                 {m.is_published ? t("published") : t("inReview")}
@@ -391,7 +391,7 @@ function UploadsTab({ models, loading, onDelete, t, locale }: {
               </div>
               <div className="flex-1 min-w-0">
                 <div className="font-medium text-sm text-[var(--text-primary)] truncate">{m.title}</div>
-                <div className="text-xs text-[var(--text-tertiary)]">{new Date(m.created_at).toLocaleDateString(locale === "tr" ? "tr-TR" : "en-US")} · {m.print_count} baskı</div>
+                <div className="text-xs text-[var(--text-tertiary)]">{new Date(m.created_at).toLocaleDateString(locale === "tr" ? "tr-TR" : "en-US")} · {m.print_count} {t("prints")}</div>
               </div>
               <span className={`text-[11px] font-medium px-2.5 py-1 rounded-full shrink-0 ${m.is_published ? "bg-green-100 text-green-700 dark:bg-green-900/30 dark:text-green-400" : "bg-amber-100 text-amber-700 dark:bg-amber-900/30 dark:text-amber-400"}`}>
                 {m.is_published ? t("published") : t("inReview")}
@@ -573,7 +573,7 @@ function WalletTab({ balance, userId, t, locale }: {
       <div className="bg-[var(--bg-primary)] border border-[var(--border)] rounded-2xl p-5">
         <h2 className="text-sm font-semibold text-[var(--text-primary)] mb-4">{t("transactions")}</h2>
         {txLoading ? (
-          <div className="text-center py-8 text-[var(--text-tertiary)] text-sm">Yükleniyor…</div>
+          <div className="text-center py-8 text-[var(--text-tertiary)] text-sm">{t("loading")}</div>
         ) : transactions.length === 0 ? (
           <div className="text-center py-8 text-[var(--text-tertiary)] text-sm">{t("noTransactions")}</div>
         ) : (
@@ -678,9 +678,9 @@ function SettingsTab({ user, profile, t, locale, router, onProfileUpdate }: {
     if (error) {
       console.error("Profile update error:", error);
       if (error.code === "23505") {
-        alert("Bu kullanıcı adı zaten alınmış. Lütfen farklı bir kullanıcı adı deneyin.");
+        alert(t("usernameTaken"));
       } else {
-        alert("Kayıt hatası: " + error.message);
+        alert(t("saveError", { message: error.message }));
       }
       setSaving(false);
       return;
@@ -797,7 +797,7 @@ function SettingsTab({ user, profile, t, locale, router, onProfileUpdate }: {
             ))}
           </select>
           <p className="text-[10px] text-[var(--text-tertiary)] mt-1">
-            Siparişlerin bu bölgedeki yazıcı ortaklarına gider.
+            {t("regionNote")}
           </p>
         </div>
 
@@ -847,7 +847,7 @@ function SettingsTab({ user, profile, t, locale, router, onProfileUpdate }: {
               <input
                 value={shopCity}
                 onChange={(e) => setShopCity(e.target.value)}
-                placeholder="İstanbul"
+                placeholder={t("shopCityPlaceholder")}
                 className="w-full h-10 px-3 text-sm rounded-xl border border-[var(--border)] bg-[var(--bg-secondary)] text-[var(--text-primary)] outline-none focus:border-[#10B981] transition-colors"
               />
             </div>

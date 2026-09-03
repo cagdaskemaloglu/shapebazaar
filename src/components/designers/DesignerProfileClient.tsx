@@ -20,6 +20,7 @@ interface DesignerProfile {
 interface DesignerModel {
   id: string;
   title: string;
+  title_en: string | null;
   base_price: number;
   is_free: boolean;
   avg_rating: number;
@@ -59,7 +60,7 @@ export function DesignerProfileClient({ designerId }: { designerId: string }) {
 
       const { data: modelData } = await supabase
         .from("models")
-        .select("id, title, base_price, is_free, avg_rating, rating_count, print_count, thumbnail_url, file_format, created_at, category:categories(name_tr, name_en)")
+        .select("id, title, title_en, base_price, is_free, avg_rating, rating_count, print_count, thumbnail_url, file_format, created_at, category:categories(name_tr, name_en)")
         .eq("designer_id", designerId)
         .eq("is_published", true);
 
@@ -110,7 +111,7 @@ export function DesignerProfileClient({ designerId }: { designerId: string }) {
     );
   }
 
-  const displayName = designer.username ? `@${designer.username}` : designer.full_name ?? "Tasarımcı";
+  const displayName = designer.username ? `@${designer.username}` : designer.full_name ?? t("designer");
 
   return (
     <div className="max-w-5xl mx-auto px-4 sm:px-6 py-10">
@@ -143,7 +144,7 @@ export function DesignerProfileClient({ designerId }: { designerId: string }) {
             <p className="text-sm text-[var(--text-secondary)] leading-relaxed max-w-lg">{designer.bio}</p>
           )}
           <div className="text-xs text-[var(--text-tertiary)] mt-2">
-            Üye olma tarihi: {new Date(designer.created_at).toLocaleDateString("tr-TR", { year: "numeric", month: "long" })}
+            {t("memberSince")}: {new Date(designer.created_at).toLocaleDateString(locale === "en" ? "en-US" : "tr-TR", { year: "numeric", month: "long" })}
           </div>
         </div>
       </div>
@@ -201,7 +202,7 @@ export function DesignerProfileClient({ designerId }: { designerId: string }) {
                 <div className="bg-[var(--bg-primary)] border border-[var(--border)] rounded-2xl overflow-hidden hover:border-[var(--border-strong)] hover:shadow-sm transition-all">
                   <div className="h-36 bg-[var(--bg-tertiary)] flex items-center justify-center relative overflow-hidden">
                     {m.thumbnail_url ? (
-                      <img src={m.thumbnail_url} alt={m.title} className="w-full h-full object-cover group-hover:scale-105 transition-transform duration-300" />
+                      <img src={m.thumbnail_url} alt={locale === "en" && m.title_en ? m.title_en : m.title} className="w-full h-full object-cover group-hover:scale-105 transition-transform duration-300" />
                     ) : (
                       <svg width="32" height="32" viewBox="0 0 32 32" fill="none" className="text-[var(--text-tertiary)] opacity-30">
                         <path d="M16 3L29 10V22L16 29L3 22V10L16 3Z" stroke="currentColor" strokeWidth="1.2" strokeLinejoin="round"/>
@@ -214,7 +215,7 @@ export function DesignerProfileClient({ designerId }: { designerId: string }) {
                   </div>
                   <div className="p-3">
                     {m.category && <div className="text-xs text-[var(--text-tertiary)] mb-0.5">{locale === "en" ? m.category.name_en : m.category.name_tr}</div>}
-                    <div className="font-medium text-sm text-[var(--text-primary)] truncate mb-2">{m.title}</div>
+                    <div className="font-medium text-sm text-[var(--text-primary)] truncate mb-2">{locale === "en" && m.title_en ? m.title_en : m.title}</div>
                     <div className="flex items-center justify-between">
                       <span className="text-sm font-semibold text-[#FF6B35]">{m.is_free ? tFree("free") : formatPrice(m.base_price, locale)}</span>
                       {m.rating_count > 0 && (

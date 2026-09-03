@@ -5,9 +5,11 @@ import { Mail, Lock, Eye, EyeOff } from "lucide-react";
 import { createClient } from "@/lib/supabase/client";
 import { Button } from "@/components/ui/Button";
 import { Input } from "@/components/ui/Input";
+import { useTranslations } from "next-intl";
 
 export function LoginForm() {
   const router = useRouter();
+  const t = useTranslations("auth");
   const [email, setEmail] = useState("");
   const [password, setPassword] = useState("");
   const [showPass, setShowPass] = useState(false);
@@ -22,7 +24,7 @@ export function LoginForm() {
     const supabase = createClient();
     const { error } = await supabase.auth.signInWithPassword({ email, password });
     if (error) {
-      setError("E-posta veya şifre hatalı.");
+      setError(t("wrongCredentials"));
       setLoading(false);
     } else {
       router.push("/dashboard");
@@ -50,18 +52,18 @@ export function LoginForm() {
           <path fill="#FBBC05" d="M5.84 14.09c-.22-.66-.35-1.36-.35-2.09s.13-1.43.35-2.09V7.07H2.18C1.43 8.55 1 10.22 1 12s.43 3.45 1.18 4.93l3.66-2.84z"/>
           <path fill="#EA4335" d="M12 5.38c1.62 0 3.06.56 4.21 1.64l3.15-3.15C17.45 2.09 14.97 1 12 1 7.7 1 3.99 3.47 2.18 7.07l3.66 2.84c.87-2.6 3.3-4.53 6.16-4.53z"/>
         </svg>
-        {googleLoading ? "Yönlendiriliyor..." : "Google ile giriş yap"}
+        {googleLoading ? t("redirecting") : t("googleLogin")}
       </Button>
 
       <div className="flex items-center gap-3">
         <div className="flex-1 h-px bg-[var(--border)]" />
-        <span className="text-xs text-[var(--text-tertiary)]">veya</span>
+        <span className="text-xs text-[var(--text-tertiary)]">{t("or")}</span>
         <div className="flex-1 h-px bg-[var(--border)]" />
       </div>
 
       <form onSubmit={handleLogin} className="flex flex-col gap-3">
         <Input
-          label="E-posta"
+          label={t("email")}
           type="email"
           placeholder="ornek@email.com"
           value={email}
@@ -71,7 +73,7 @@ export function LoginForm() {
         />
         <div className="flex flex-col gap-1.5">
           <Input
-            label="Şifre"
+            label={t("password")}
             type={showPass ? "text" : "password"}
             placeholder="••••••••"
             value={password}
@@ -85,7 +87,7 @@ export function LoginForm() {
             className="self-end text-xs text-[var(--text-tertiary)] hover:text-[var(--text-secondary)] flex items-center gap-1"
           >
             {showPass ? <EyeOff size={11} /> : <Eye size={11} />}
-            {showPass ? "Gizle" : "Göster"}
+            {showPass ? t("hide") : t("show")}
           </button>
         </div>
 
@@ -97,12 +99,12 @@ export function LoginForm() {
 
         <div className="flex justify-end">
           <a href="/auth/forgot-password" className="text-xs text-[#FF6B35] hover:underline">
-            Şifremi unuttum
+            {t("forgotPassword")}
           </a>
         </div>
 
         <Button type="submit" className="w-full" disabled={loading}>
-          {loading ? "Giriş yapılıyor..." : "Giriş Yap"}
+          {loading ? t("loggingIn") : t("loginBtn")}
         </Button>
       </form>
     </div>

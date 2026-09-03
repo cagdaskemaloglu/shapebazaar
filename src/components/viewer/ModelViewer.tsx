@@ -7,6 +7,7 @@ import { STLLoader } from "three/addons/loaders/STLLoader.js";
 import { OBJLoader } from "three/addons/loaders/OBJLoader.js";
 import { ThreeMFLoader } from "three/addons/loaders/3MFLoader.js";
 import { RotateCcw, ZoomIn, ZoomOut, Sun } from "lucide-react";
+import { useTranslations } from "next-intl";
 
 interface ModelViewerProps {
   url?: string;
@@ -41,6 +42,7 @@ export function ModelViewer({
   onThumbnail,
   rotation,
 }: ModelViewerProps) {
+  const t = useTranslations("modelViewer");
   const mountRef    = useRef<HTMLDivElement>(null);
   const rendererRef = useRef<THREE.WebGLRenderer | null>(null);
   const sceneRef    = useRef<THREE.Scene | null>(null);
@@ -165,7 +167,7 @@ export function ModelViewer({
     }
 
     if (!sourceUrl || !format) {
-      setError("Desteklenmeyen format. STL, OBJ veya 3MF yükleyin.");
+      setError(t("errorFormat"));
       setStatus("error");
       return;
     }
@@ -268,17 +270,17 @@ export function ModelViewer({
       }
     } catch (e) {
       console.error(e);
-      setError("Model yüklenemedi. Dosyayı kontrol edin.");
+      setError(t("errorLoad"));
       setStatus("error");
     } finally {
       if (objectUrl) URL.revokeObjectURL(objectUrl);
     }
-  }, [url, file, rotation]);
+  }, [url, file, rotation, t]);
 
   useEffect(() => {
     if (!url && !file) return;
-    const t = setTimeout(() => loadModel(), 10);
-    return () => clearTimeout(t);
+    const timer = setTimeout(() => loadModel(), 10);
+    return () => clearTimeout(timer);
   }, [loadModel]);
 
   /* ── color update ── */
@@ -330,7 +332,7 @@ export function ModelViewer({
       {status === "loading" && (
         <div className="absolute inset-0 flex flex-col items-center justify-center bg-[var(--bg-secondary)]/80 backdrop-blur-sm rounded-2xl">
           <div className="w-10 h-10 border-2 border-[#FF6B35] border-t-transparent rounded-full animate-spin mb-3" />
-          <p className="text-sm text-[var(--text-secondary)]">Model yükleniyor…</p>
+          <p className="text-sm text-[var(--text-secondary)]">{t("loading")}</p>
         </div>
       )}
 
@@ -339,7 +341,7 @@ export function ModelViewer({
           <div className="text-3xl mb-3">⚠️</div>
           <p className="text-sm text-red-500 text-center max-w-[200px]">{error}</p>
           <button onClick={loadModel} className="mt-3 text-xs text-[#FF6B35] hover:underline">
-            Tekrar dene
+            {t("retry")}
           </button>
         </div>
       )}
@@ -350,7 +352,7 @@ export function ModelViewer({
             <path d="M16 3L29 10V22L16 29L3 22V10L16 3Z" stroke="currentColor" strokeWidth="1.2" strokeLinejoin="round"/>
             <path d="M16 3V29M3 10L16 17L29 10" stroke="currentColor" strokeWidth="0.8" strokeDasharray="3 2"/>
           </svg>
-          <p className="text-sm">3D model bekleniyor</p>
+          <p className="text-sm">{t("waiting")}</p>
           <p className="text-xs opacity-60 mt-1">STL · OBJ · 3MF</p>
         </div>
       )}
@@ -358,10 +360,10 @@ export function ModelViewer({
       {toolbar && status === "success" && (
         <div className="absolute bottom-4 left-1/2 -translate-x-1/2 flex items-center gap-1 bg-[var(--bg-primary)]/90 backdrop-blur border border-[var(--border)] rounded-xl px-2 py-1.5 shadow-sm">
           {[
-            { icon: RotateCcw, action: resetCamera,      tip: "Sıfırla"     },
-            { icon: ZoomIn,    action: () => zoom(0.5),  tip: "Yakınlaştır" },
-            { icon: ZoomOut,   action: () => zoom(-0.5), tip: "Uzaklaştır"  },
-            { icon: Sun,       action: toggleLight,      tip: "Arkaplan"    },
+            { icon: RotateCcw, action: resetCamera,      tip: t("reset")   },
+            { icon: ZoomIn,    action: () => zoom(0.5),  tip: t("zoomIn")  },
+            { icon: ZoomOut,   action: () => zoom(-0.5), tip: t("zoomOut") },
+            { icon: Sun,       action: toggleLight,      tip: t("background") },
           ].map(({ icon: Icon, action, tip }) => (
             <button key={tip} onClick={action} title={tip}
               className="w-7 h-7 flex items-center justify-center rounded-lg text-[var(--text-secondary)] hover:bg-[var(--bg-secondary)] hover:text-[var(--text-primary)] transition-colors">
@@ -379,7 +381,7 @@ export function ModelViewer({
 
       {status === "success" && (
         <div className="absolute top-3 right-3 text-[10px] text-[var(--text-tertiary)] bg-[var(--bg-primary)]/70 backdrop-blur px-2 py-1 rounded-lg">
-          🖱 Döndür · Kaydır · Yakınlaştır
+          {t("controlsHint")}
         </div>
       )}
     </div>

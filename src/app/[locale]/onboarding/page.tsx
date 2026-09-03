@@ -4,6 +4,7 @@ import { useRouter, usePathname } from "next/navigation";
 import { Globe, Check } from "lucide-react";
 import { getLocaleFromRegion } from "@/lib/region";
 import { createClient } from "@/lib/supabase/client";
+import { useTranslations } from "next-intl";
 
 const REGIONS = [
   { code: "TR",    label: "Türkiye",        flag: "🇹🇷" },
@@ -21,6 +22,7 @@ export default function OnboardingPage() {
   const router   = useRouter();
   const pathname = usePathname();
   const locale   = pathname.split("/")[1] || "tr";
+  const t        = useTranslations("onboarding");
 
   const [selected, setSelected] = useState("TR");
   const [saving,   setSaving]   = useState(false);
@@ -61,10 +63,10 @@ export default function OnboardingPage() {
             <span className="font-semibold text-[var(--text-primary)]">ShapeBazaar</span>
           </div>
           <h1 className="text-2xl font-semibold text-[var(--text-primary)] mb-2">
-            {userName ? `Hoş geldin, ${userName}! 👋` : "Hoş geldin! 👋"}
+            {userName ? t("welcomeName", { name: userName }) : t("welcome")}
           </h1>
           <p className="text-sm text-[var(--text-secondary)]">
-            Siparişlerin doğru bölgedeki yazıcı ortaklarına ulaşması için bölgeni seç.
+            {t("subtitle")}
           </p>
         </div>
 
@@ -96,13 +98,13 @@ export default function OnboardingPage() {
           className="w-full h-11 rounded-xl bg-[#FF6B35] text-white font-medium text-sm hover:bg-[#e85e2a] disabled:opacity-50 transition-colors flex items-center justify-center gap-2"
         >
           {saving
-            ? <><div className="w-4 h-4 border-2 border-white/40 border-t-white rounded-full animate-spin" /> Kaydediliyor…</>
-            : "Devam Et →"
+            ? <><div className="w-4 h-4 border-2 border-white/40 border-t-white rounded-full animate-spin" /> {t("saving")}</>
+            : t("continueBtn")
           }
         </button>
 
         <p className="text-center text-xs text-[var(--text-tertiary)] mt-4">
-          Daha sonra Dashboard → Ayarlar'dan değiştirebilirsin.
+          {t("laterNote")}
         </p>
       </div>
     </div>

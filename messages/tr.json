@@ -5,7 +5,8 @@
     "becomePartner": "Yazıcı Ortağı Ol",
     "designers": "Tasarımcılar",
     "signIn": "Giriş Yap",
-    "signUp": "Üye Ol"
+    "signUp": "Üye Ol",
+    "profileMenu": "Profil menüsü"
   },
   "hero": {
     "badge": "Print Farm Network — Türkiye",
@@ -40,6 +41,8 @@
     "designer": "Tasarımcı"
   },
   "howItWorks": {
+    "pageTitle": "Nasıl Çalışır?",
+    "pageSubtitle": "ShapeBazaar'da tasarımdan ürüne sadece 4 adımda ulaşırsınız.",
     "title": "Nasıl çalışır?",
     "subtitle": "4 adımda fikrinden ürüne",
     "step1Title": "Model seç",
@@ -49,7 +52,11 @@
     "step3Title": "Öde ve gönder",
     "step3Desc": "Güvenli İyzico ödeme. En yakın yazıcı ortağı siparişini hemen alır.",
     "step4Title": "Teslim al",
-    "step4Desc": "3–5 iş gününde kapına gelir. Sipariş durumunu anlık takip et."
+    "step4Desc": "3–5 iş gününde kapına gelir. Sipariş durumunu anlık takip et.",
+    "ctaTitle": "Başlamaya hazır mısın?",
+    "ctaSubtitle": "Tasarımını yükle veya topluluğumuzdaki modelleri keşfet",
+    "uploadCta": "Tasarım Yükle",
+    "exploreCta": "Modelleri Keşfet"
   },
   "roles": {
     "title": "Herkes kazanır",
@@ -105,6 +112,7 @@
     "designers": "Tasarımcılar",
     "notFound": "Tasarımcı bulunamadı",
     "backToDesigners": "← Tasarımcılara dön",
+    "designer": "Tasarımcı",
     "memberSince": "Üye olma tarihi",
     "publishedModels": "Yayınlanan Model",
     "totalPrints": "Toplam Baskı",
@@ -165,9 +173,9 @@
     "hasAccount": "Hesabın var mı?",
     "terms": "Kullanım Koşulları",
     "privacy": "Gizlilik Politikası",
-    "termsText": "Üye olarak {terms} ve {privacy}'nı kabul etmiş olursunuz.",
+    "termsText": "Üye olarak <terms>Kullanım Koşulları</terms> ve <privacy>Gizlilik Politikası</privacy>'nı kabul etmiş olursunuz.",
     "checkEmail": "E-postanı kontrol et!",
-    "checkEmailDesc": "{email} adresine doğrulama bağlantısı gönderdik.",
+    "checkEmailDesc": "<b>{email}</b> adresine doğrulama bağlantısı gönderdik.",
     "redirecting": "Yönlendiriliyor...",
     "loggingIn": "Giriş yapılıyor...",
     "registering": "Kayıt yapılıyor...",
@@ -201,7 +209,10 @@
       "rating": "En Yüksek Puan"
     },
     "trend": "Trend",
-    "new": "Yeni"
+    "new": "Yeni",
+    "apply": "Uygula",
+    "reset": "Sıfırla",
+    "andUp": "+"
   },
   "modelDetail": {
     "home": "Ana Sayfa",
@@ -237,6 +248,11 @@
     "notFound": "Model bulunamadı",
     "notFoundDesc": "Bu model mevcut değil veya yayından kaldırılmış.",
     "custom": "Özel",
+    "photos": "Fotoğraflar",
+    "noPhotos": "Fotoğraf yok",
+    "dimensions": "Boyut",
+    "free": "Ücretsiz",
+    "singleShipping": "Tek Kargo",
     "colors": {
       "Lacivert": "Lacivert",
       "Turuncu": "Turuncu",
@@ -377,7 +393,13 @@
     "shopNamePlaceholder": "örn: TechPrint İstanbul",
     "shopCity": "Dükkan Şehri",
     "shopDescription": "Dükkan Açıklaması",
-    "shopDescPlaceholder": "3D baskı hizmetlerinizi tanıtın…"
+    "shopDescPlaceholder": "3D baskı hizmetlerinizi tanıtın…",
+    "regionNote": "Siparişlerin bu bölgedeki yazıcı ortaklarına gider.",
+    "shopCityPlaceholder": "İstanbul",
+    "prints": "baskı",
+    "user": "Kullanıcı",
+    "usernameTaken": "Bu kullanıcı adı zaten alınmış. Lütfen farklı bir kullanıcı adı deneyin.",
+    "saveError": "Kayıt hatası: {message}"
   },
   "payment": {
     "successTitle": "Ödeme başarılı!",
@@ -540,6 +562,69 @@
     "noRatings": "Henüz değerlendirme yok. İlk değerlendirmeyi siz yapın!",
     "user": "Kullanıcı"
   },
+  "modelViewer": {
+    "loading": "Model yükleniyor…",
+    "errorFormat": "Desteklenmeyen format. STL, OBJ veya 3MF yükleyin.",
+    "errorLoad": "Model yüklenemedi. Dosyayı kontrol edin.",
+    "retry": "Tekrar dene",
+    "waiting": "3D model bekleniyor",
+    "reset": "Sıfırla",
+    "zoomIn": "Yakınlaştır",
+    "zoomOut": "Uzaklaştır",
+    "background": "Arkaplan",
+    "controlsHint": "🖱 Döndür · Kaydır · Yakınlaştır"
+  },
+  "privacy": {
+    "title": "Gizlilik Politikası",
+    "lastUpdated": "Son Güncelleme: Haziran 2024",
+    "intro": "ShapeBazaar (\"biz\", \"bize\" veya \"Şirket\") olarak gizliliğinize saygı duyuyoruz.",
+    "section1": "Topladığımız Bilgiler",
+    "section1Content": "Kayıt olduğunuzda ve hizmetlerimizi kullandığınızda; ad, e-posta adresi, telefon numarası, ödeme bilgileri, 3D tasarım dosyaları ve sipariş geçmişi gibi bilgileri topluyoruz.",
+    "section2": "Bilgilerin Kullanımı",
+    "section2Content": "Topladığımız verileri hizmetlerimizi sunmak, geliştirmek, analiz etmek ve yasal yükümlülüklere uymak amacıyla kullanıyoruz.",
+    "section3": "Veri Güvenliği",
+    "section3Content": "Verileriniz şifreli bağlantılar ve güvenli sunucularla korunur. Ancak hiçbir sistem %100 güvenli değildir.",
+    "section4": "Çerezler",
+    "section4Content": "Platformumuz kullanıcı deneyimini iyileştirmek için çerezler kullanır.",
+    "section5": "Haklarınız",
+    "section5Content": "KVKK/GDPR düzenlemeleri kapsamında kişisel verilerinize erişme, düzeltme ve silme hakkına sahipsiniz.",
+    "contactTitle": "Sorularınız mı var?",
+    "contactText": "Gizlilik politikamız hakkında sorunuz varsa,",
+    "contactLink": "bize yazın"
+  },
+  "terms": {
+    "title": "Kullanım Koşulları",
+    "lastUpdated": "Son Güncelleme: Haziran 2024",
+    "intro": "ShapeBazaar'ı kullanarak bu kullanım koşullarını kabul etmiş olursunuz.",
+    "section1": "Hizmet Tanımı",
+    "section1Content": "ShapeBazaar, 3D tasarımları basılı ürünlere dönüştüren bir platformdur. Tasarımcılar, üreticiler ve müşteriler bu ekosistem içinde işlem yapabilir.",
+    "section2": "Kullanıcı Sorumlulukları",
+    "section2Content": "Kullanıcılar, yükledikleri tasarımların telif haklarını ihlal etmediğinden ve platformu yasa dışı amaçlarla kullanmadıklarından sorumludur.",
+    "section3": "Ödeme ve Siparişler",
+    "section3Content": "Tüm ödemeler güvenli ödeme yöntemleri üzerinden yapılır. Onaylanan siparişler iptal edilemez.",
+    "section4": "İade Politikası",
+    "section4Content": "Üründe 30 gün içinde bir kusur tespit edilirse değişim veya iade yapılabilir.",
+    "section5": "Sorumluluğun Sınırlandırılması",
+    "section5Content": "ShapeBazaar, hizmetlerinden kaynaklanan doğrudan veya dolaylı zararlardan sorumlu tutulamaz.",
+    "contactTitle": "Sorularınız mı var?",
+    "contactText": "Kullanım koşulları hakkında sorunuz varsa,",
+    "contactLink": "bize yazın"
+  },
+  "cookies": {
+    "title": "Çerez Politikası",
+    "lastUpdated": "Son Güncelleme: Haziran 2024",
+    "intro": "ShapeBazaar, platformumuzu geliştirmek ve kullanıcı deneyimini iyileştirmek için çerezler kullanır.",
+    "section1": "Çerez Nedir?",
+    "section1Content": "Çerezler, tarayıcınız tarafından saklanan küçük metin dosyalarıdır. Tercihlerinizi ve kullanıcı seçimlerinizi hatırlamak için kullanılır.",
+    "section2": "Kullandığımız Çerez Türleri",
+    "section2Content": "Zorunlu çerezler: Doğru çalışması için. Analitik çerezler: Trafiği anlamak için. Pazarlama çerezleri: Reklam sunumunu optimize etmek için.",
+    "section3": "Çerezleri Yönetme",
+    "section3Content": "Çerezleri tarayıcı ayarlarınızdan kontrol edebilirsiniz. Ancak bu, platform işlevselliğini etkileyebilir.",
+    "section4": "Üçüncü Taraf Çerezleri",
+    "section4Content": "Google Analytics ve Stripe gibi hizmetler de çerez kullanabilir.",
+    "tipTitle": "İpucu",
+    "tipText": "Çoğu tarayıcı ayarlarından çerezleri yönetebilirsiniz. Daha fazla bilgi için tarayıcınızın yardım sayfasını ziyaret edin."
+  },
   "cart": {
     "header": {
       "title": "Sepetim",
@@ -638,12 +723,27 @@
     "value3": "Kalite",
     "value3Desc": "Tasarım, üretim ve teslimatın her aşamasında yüksek standartlar.",
     "value4": "Yenilikçilik",
-    "value4Desc": "3D baskı teknolojisini herkes için erişilebilir ve ekonomik hale getirmek."
+    "value4Desc": "3D baskı teknolojisini herkes için erişilebilir ve ekonomik hale getirmek.",
+    "subtitle": "Birlikte büyüyoruz. Adil kazanç. Sürdürülebilir gelecek.",
+    "missionVisual": "Her fikre fiziksel biçim vermek",
+    "visionVisual": "Merkezi olmayan, açık bir ağ",
+    "valuesSubtitle": "ShapeBazaar'ı rehber eden ilkeler",
+    "ctaTitle": "Bu misyonun parçası olmak ister misin?",
+    "ctaSubtitle": "Tasarımcı, üretici veya müşteri olarak bize katıl",
+    "ctaButton": "Partnerimiz ol"
   },
   "blog": {
     "title": "Blog",
     "subtitle": "En son haberler, rehberler ve başarı hikayeleri",
     "noContent": "Yazılar yakında burada. Bizi takip etmeyi unutmayın!",
     "readMore": "Devamını Oku"
+  },
+  "onboarding": {
+    "welcomeName": "Hoş geldin, {name}! 👋",
+    "welcome": "Hoş geldin! 👋",
+    "subtitle": "Siparişlerin doğru bölgedeki yazıcı ortaklarına ulaşması için bölgeni seç.",
+    "continueBtn": "Devam Et →",
+    "saving": "Kaydediliyor…",
+    "laterNote": "Daha sonra Dashboard → Ayarlar'dan değiştirebilirsin."
   }
 }

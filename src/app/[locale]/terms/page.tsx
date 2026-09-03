@@ -1,13 +1,14 @@
 import { Navbar } from "@/components/layout/Navbar";
 import { Footer } from "@/components/layout/Footer";
-import { useTranslations } from "next-intl";
+import { useTranslations, useLocale } from "next-intl";
 
 export const metadata = {
   title: "Terms of Service | ShapeBazaar",
 };
 
 export default function TermsPage() {
-  const t = useTranslations("terms");
+  const t      = useTranslations("terms");
+  const locale = useLocale();
 
   return (
     <div className="min-h-screen flex flex-col">
@@ -84,14 +85,14 @@ export default function TermsPage() {
 
             {/* Contact */}
             <div className="bg-amber-50 dark:bg-amber-900/20 rounded-lg p-6 mt-12">
-              <h3 className="font-bold mb-2">Sorularınız mı var?</h3>
+              <h3 className="font-bold mb-2">{t("contactTitle")}</h3>
               <p className="text-slate-600 dark:text-slate-300">
-                Kullanım koşulları hakkında sorunuz varsa,{" "}
+                {t("contactText")}{" "}
                 <a
-                  href="/contact"
+                  href={`/${locale}/contact`}
                   className="text-blue-600 dark:text-blue-400 font-semibold hover:underline"
                 >
-                  bize yazın
+                  {t("contactLink")}
                 </a>
                 .
               </p>
