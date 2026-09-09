@@ -48,7 +48,12 @@ jobs:
           SUPABASE_PROJECT_REF: ${{ secrets.SUPABASE_PROJECT_REF }}
 
       - name: Push migrations
-        run: supabase db push
+        # NOT: `supabase db push` bazı CLI sürümlerinde CI'da (terminal
+        # olmadığı için) bir onay istemi bekleyip başarısız olabiliyor
+        # (bilinen bir sorun: supabase/cli#2238). `yes |` ile bu onayı
+        # önden veriyoruz. --debug, hata durumunda log'da gerçek sebebi
+        # görebilmek için.
+        run: yes | supabase db push --debug
         env:
           SUPABASE_ACCESS_TOKEN: ${{ secrets.SUPABASE_ACCESS_TOKEN }}
           SUPABASE_DB_PASSWORD: ${{ secrets.SUPABASE_DB_PASSWORD }}
