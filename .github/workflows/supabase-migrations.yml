@@ -41,6 +41,17 @@ jobs:
         with:
           version: latest
 
+      - name: Debug secret length (şifrenin kendisini asla göstermez)
+        # Sadece karakter sayısını yazdırır — kopyalarken başında/sonunda
+        # boşluk/satır sonu kalıp kalmadığını anlamak için. Gerçek şifre
+        # asla log'a yazılmaz.
+        run: |
+          echo "SUPABASE_DB_PASSWORD uzunluğu: ${#SUPABASE_DB_PASSWORD} karakter"
+          echo "SUPABASE_PROJECT_REF uzunluğu: ${#SUPABASE_PROJECT_REF} karakter"
+        env:
+          SUPABASE_DB_PASSWORD: ${{ secrets.SUPABASE_DB_PASSWORD }}
+          SUPABASE_PROJECT_REF: ${{ secrets.SUPABASE_PROJECT_REF }}
+
       - name: Link Supabase project
         run: supabase link --project-ref "$SUPABASE_PROJECT_REF"
         env:
