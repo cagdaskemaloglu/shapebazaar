@@ -106,7 +106,7 @@ export function Navbar({ user: initialUser }: NavbarProps) {
     : t("becomePartner");
 
   const links = [
-    { href: `/${locale}/models`,         label: t("models")      },
+    { href: `/${locale}`,                label: t("models")      },
     { href: `/${locale}/how-it-works`,   label: t("howItWorks")  },
     { href: `/${locale}/become-partner`, label: partnerLabel,     partner: isPartner },
     { href: `/${locale}/designers`,      label: t("designers")   },

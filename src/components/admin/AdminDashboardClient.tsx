@@ -4,6 +4,7 @@ import { Navbar } from "@/components/layout/Navbar";
 import { Footer } from "@/components/layout/Footer";
 import { createClient } from "@/lib/supabase/client";
 import { formatPrice } from "@/lib/utils";
+import { useTranslations } from "next-intl";
 import {
   Package, Users, Upload, CheckCircle, XCircle,
   Eye, FlaskConical, ChevronDown, ChevronUp, Plus
@@ -68,8 +69,8 @@ const STATUS_COLORS: Record<string, string> = {
 };
 
 const STATUS_LABELS: Record<string, string> = {
-  pending: "Bekliyor", paid: "Ödendi", in_print: "Baskıda",
-  printed: "Basıldı", shipped: "Kargoda", delivered: "Teslim", cancelled: "İptal",
+  pending: "pending", paid: "paid", in_print: "inPrint",
+  printed: "printed", shipped: "shipped", delivered: "delivered", cancelled: "cancelled",
 };
 
 const MATERIALS = ["PLA", "PETG", "ABS", "TPU", "Resin"];
@@ -82,6 +83,8 @@ const COLORS = [
 ];
 
 export function AdminDashboardClient() {
+  const t     = useTranslations("admin");
+  const tFree = useTranslations("modelsPage");
   const [tab,             setTab]             = useState<"models" | "partners" | "orders" | "reports" | "withdrawals" | "test">("models");
   const [pendingModels,   setPendingModels]   = useState<PendingModel[]>([]);
   const [pendingPartners, setPendingPartners] = useState<PendingPartner[]>([]);
@@ -155,7 +158,7 @@ export function AdminDashboardClient() {
       method: "POST", headers: { "Content-Type": "application/json" },
       body: JSON.stringify({ modelIds: [modelId] }),
     });
-    if (!res.ok) { alert("Model onaylanamadı."); return; }
+    if (!res.ok) { alert(t("modelApproveFailed")); return; }
     await fetch("/api/email/model-approved", {
       method: "POST", headers: { "Content-Type": "application/json" },
       body: JSON.stringify({ modelId, modelTitle: pendingModels.find((m) => m.id === modelId)?.title }),
@@ -172,7 +175,7 @@ export function AdminDashboardClient() {
       method: "POST", headers: { "Content-Type": "application/json" },
       body: JSON.stringify({ modelIds: ids }),
     });
-    if (!res.ok) { alert("Modeller onaylanamadı."); setBulkLoading(false); return; }
+    if (!res.ok) { alert(t("modelsApproveFailed")); setBulkLoading(false); return; }
     for (const id of ids) {
       await fetch("/api/email/model-approved", {
         method: "POST", headers: { "Content-Type": "application/json" },
@@ -186,14 +189,14 @@ export function AdminDashboardClient() {
 
   async function bulkRejectModels() {
     if (selectedModels.size === 0) return;
-    if (!confirm(`${selectedModels.size} modeli reddet?`)) return;
+    if (!confirm(t("confirmBulkReject", { count: selectedModels.size }))) return;
     setBulkLoading(true);
     const ids = Array.from(selectedModels);
     const res = await fetch("/api/admin/models/reject", {
       method: "POST", headers: { "Content-Type": "application/json" },
       body: JSON.stringify({ modelIds: ids }),
     });
-    if (!res.ok) { alert("Modeller reddedilemedi."); setBulkLoading(false); return; }
+    if (!res.ok) { alert(t("modelsRejectFailed")); setBulkLoading(false); return; }
     setPendingModels((prev) => prev.filter((m) => !selectedModels.has(m.id)));
     setSelectedModels(new Set());
     setBulkLoading(false);
@@ -204,7 +207,7 @@ export function AdminDashboardClient() {
       method: "POST", headers: { "Content-Type": "application/json" },
       body: JSON.stringify({ modelIds: [modelId] }),
     });
-    if (!res.ok) { alert("Model reddedilemedi."); return; }
+    if (!res.ok) { alert(t("modelRejectFailed")); return; }
     setPendingModels((prev) => prev.filter((m) => m.id !== modelId));
   }
 
@@ -213,7 +216,7 @@ export function AdminDashboardClient() {
       method: "POST", headers: { "Content-Type": "application/json" },
       body: JSON.stringify({ userId }),
     });
-    if (!res.ok) { alert("Ortak onaylanamadı."); return; }
+    if (!res.ok) { alert(t("partnerApproveFailed")); return; }
     await fetch("/api/email/partner-approved", {
       method: "POST", headers: { "Content-Type": "application/json" },
       body: JSON.stringify({ userId }),
@@ -226,7 +229,7 @@ export function AdminDashboardClient() {
       method: "POST", headers: { "Content-Type": "application/json" },
       body: JSON.stringify({ userId }),
     });
-    if (!res.ok) { alert("Başvuru reddedilemedi."); return; }
+    if (!res.ok) { alert(t("partnerRejectFailed")); return; }
     setPendingPartners((prev) => prev.filter((p) => p.id !== userId));
   }
 
@@ -234,14 +237,14 @@ export function AdminDashboardClient() {
     let trackingNumber = "";
     let cargoCompany = "";
     if (status === "shipped") {
-      trackingNumber = prompt("Kargo takip numarası:") ?? "";
-      cargoCompany   = prompt("Kargo firması (opsiyonel):") ?? "";
+      trackingNumber = prompt(t("trackingPrompt")) ?? "";
+      cargoCompany   = prompt(t("cargoCompanyPrompt")) ?? "";
     }
     const res = await fetch("/api/admin/orders/status", {
       method: "POST", headers: { "Content-Type": "application/json" },
       body: JSON.stringify({ orderId, status, trackingNumber, cargoCompany }),
     });
-    if (!res.ok) { alert("Sipariş durumu güncellenemedi."); return; }
+    if (!res.ok) { alert(t("orderStatusFailed")); return; }
     if (status === "shipped") {
       await fetch("/api/email/order-shipped", {
         method: "POST", headers: { "Content-Type": "application/json" },
@@ -291,15 +294,15 @@ export function AdminDashboardClient() {
     <div className="min-h-screen flex flex-col">
       <Navbar />
       <div className="max-w-6xl mx-auto w-full px-4 sm:px-6 py-8 flex-1">
-        <h1 className="text-2xl font-semibold text-[var(--text-primary)] mb-6">Admin Paneli</h1>
+        <h1 className="text-2xl font-semibold text-[var(--text-primary)] mb-6">{t("title")}</h1>
 
         {/* Stats */}
         <div className="grid grid-cols-2 lg:grid-cols-4 gap-3 mb-8">
           {[
-            { label: "Kullanıcı",      value: stats.totalUsers,           icon: Users,   color: "orange" },
-            { label: "Bekleyen model", value: pendingModels.length,        icon: Upload,  color: "orange" },
-            { label: "Toplam sipariş", value: stats.totalOrders,           icon: Package, color: "green"  },
-            { label: "Toplam gelir",   value: formatPrice(stats.revenue),  icon: Package, color: "green"  },
+            { label: t("totalUsers"),    value: stats.totalUsers,           icon: Users,   color: "orange" },
+            { label: t("pendingModels"), value: pendingModels.length,        icon: Upload,  color: "orange" },
+            { label: t("totalOrders"),   value: stats.totalOrders,           icon: Package, color: "green"  },
+            { label: t("totalRevenue"),  value: formatPrice(stats.revenue),  icon: Package, color: "green"  },
           ].map((s) => {
             const Icon = s.icon;
             return (
@@ -317,11 +320,11 @@ export function AdminDashboardClient() {
         {/* Tabs */}
         <div className="flex gap-1 border border-[var(--border)] rounded-xl p-1 mb-6 w-fit flex-wrap">
           {[
-            { id: "models",      label: `Model Onayı (${pendingModels.length})`        },
-            { id: "partners",    label: `Ortak Başvuruları (${pendingPartners.length})` },
-            { id: "orders",      label: `Siparişler (${orders.length})`                },
-            { id: "withdrawals", label: `💸 Çekim Talepleri (${withdrawals.filter(w => w.status === "pending").length})` },
-            { id: "reports",     label: "📊 Raporlar"                                  },
+            { id: "models",      label: `${t("modelApproval")} (${pendingModels.length})`        },
+            { id: "partners",    label: `${t("partnerApps")} (${pendingPartners.length})` },
+            { id: "orders",      label: `${t("orders")} (${orders.length})`                },
+            { id: "withdrawals", label: `${t("withdrawalRequests")} (${withdrawals.filter(w => w.status === "pending").length})` },
+            { id: "reports",     label: t("reportsTab")                                  },
             { id: "test",        label: "🧪 Test Siparişi", highlight: true            },
           ].map((t) => (
             <button key={t.id} onClick={() => setTab(t.id as any)}
@@ -338,7 +341,7 @@ export function AdminDashboardClient() {
         </div>
 
         {loading ? (
-          <div className="text-center py-16 text-sm text-[var(--text-tertiary)]">Yükleniyor…</div>
+          <div className="text-center py-16 text-sm text-[var(--text-tertiary)]">{t("loading")}</div>
         ) : (
           <>
             {/* MODEL ONAYI */}
@@ -349,7 +352,7 @@ export function AdminDashboardClient() {
                   <input
                     value={modelSearch}
                     onChange={(e) => setModelSearch(e.target.value)}
-                    placeholder="Model veya tasarımcı ara…"
+                    placeholder={t("searchModels")}
                     className="h-9 px-3 text-sm rounded-xl border border-[var(--border)] bg-[var(--bg-secondary)] text-[var(--text-primary)] outline-none focus:border-[#FF6B35] flex-1 min-w-[200px]"
                   />
                   <button
@@ -359,25 +362,25 @@ export function AdminDashboardClient() {
                     ).map(m => m.id)))}
                     className="h-9 px-3 text-xs rounded-xl border border-[var(--border)] text-[var(--text-secondary)] hover:bg-[var(--bg-secondary)] transition-colors whitespace-nowrap"
                   >
-                    Tümünü Seç
+                    {t("selectAll")}
                   </button>
                   {selectedModels.size > 0 && (
                     <>
-                      <span className="text-xs text-[var(--text-tertiary)] whitespace-nowrap">{selectedModels.size} seçili</span>
+                      <span className="text-xs text-[var(--text-tertiary)] whitespace-nowrap">{t("selected", { count: selectedModels.size })}</span>
                       <button onClick={bulkApproveModels} disabled={bulkLoading}
                         className="h-9 px-3 text-xs rounded-xl bg-[rgba(16,185,129,0.1)] text-[#10B981] hover:bg-[rgba(16,185,129,0.2)] disabled:opacity-50 transition-colors font-medium whitespace-nowrap">
-                        {bulkLoading ? "İşleniyor…" : "✓ Hepsini Onayla"}
+                        {bulkLoading ? t("processing") : t("approveAll")}
                       </button>
                       <button onClick={bulkRejectModels} disabled={bulkLoading}
                         className="h-9 px-3 text-xs rounded-xl bg-red-100 text-red-600 dark:bg-red-900/30 dark:text-red-400 hover:opacity-80 disabled:opacity-50 transition-colors font-medium whitespace-nowrap">
-                        ✕ Hepsini Reddet
+                        {t("rejectAll")}
                       </button>
                     </>
                   )}
                 </div>
 
                 {pendingModels.length === 0 ? (
-                  <div className="text-center py-16 text-sm text-[var(--text-tertiary)]">Bekleyen model yok.</div>
+                  <div className="text-center py-16 text-sm text-[var(--text-tertiary)]">{t("noModels")}</div>
                 ) : pendingModels
                     .filter((m) => !modelSearch ||
                       m.title.toLowerCase().includes(modelSearch.toLowerCase()) ||
@@ -410,7 +413,7 @@ export function AdminDashboardClient() {
                         {m.designer?.full_name ?? "—"} · {new Date(m.created_at).toLocaleDateString("tr-TR")}
                       </div>
                     </div>
-                    <div className="text-sm font-semibold text-[#FF6B35] shrink-0">{m.is_free ? "Ücretsiz" : formatPrice(m.base_price)}</div>
+                    <div className="text-sm font-semibold text-[#FF6B35] shrink-0">{m.is_free ? tFree("free") : formatPrice(m.base_price)}</div>
                     <div className="flex gap-2 shrink-0">
                       <a href={`/tr/models/${m.id}`} target="_blank"
                         className="w-8 h-8 flex items-center justify-center rounded-lg border border-[var(--border)] text-[var(--text-tertiary)] hover:bg-[var(--bg-secondary)] transition-colors">
@@ -434,7 +437,7 @@ export function AdminDashboardClient() {
             {tab === "partners" && (
               <div className="flex flex-col gap-3">
                 {pendingPartners.length === 0 ? (
-                  <div className="text-center py-16 text-sm text-[var(--text-tertiary)]">Bekleyen başvuru yok.</div>
+                  <div className="text-center py-16 text-sm text-[var(--text-tertiary)]">{t("noPartners")}</div>
                 ) : pendingPartners.map((p) => (
                   <div key={p.id} className="bg-[var(--bg-primary)] border border-[var(--border)] rounded-2xl p-4 flex items-center gap-4">
                     <div className="w-10 h-10 rounded-full bg-[rgba(255,107,53,0.1)] flex items-center justify-center text-[#FF6B35] font-semibold shrink-0">
@@ -450,11 +453,11 @@ export function AdminDashboardClient() {
                     <div className="flex gap-2 shrink-0">
                       <button onClick={() => approvePartner(p.id)}
                         className="px-3 py-1.5 text-xs rounded-lg bg-[rgba(16,185,129,0.1)] text-[#10B981] hover:bg-[rgba(16,185,129,0.2)] transition-colors">
-                        Onayla
+                        {t("approve")}
                       </button>
                       <button onClick={() => rejectPartner(p.id)}
                         className="px-3 py-1.5 text-xs rounded-lg bg-red-50 text-red-500 hover:bg-red-100 dark:bg-red-950/20 transition-colors">
-                        Reddet
+                        {t("reject")}
                       </button>
                     </div>
                   </div>
@@ -470,7 +473,7 @@ export function AdminDashboardClient() {
                   <input
                     value={orderSearch}
                     onChange={(e) => setOrderSearch(e.target.value)}
-                    placeholder="Alıcı adı veya sipariş no ara…"
+                    placeholder={t("searchOrders")}
                     className="h-9 px-3 text-sm rounded-xl border border-[var(--border)] bg-[var(--bg-secondary)] text-[var(--text-primary)] outline-none focus:border-[#FF6B35] flex-1 min-w-[200px]"
                   />
                   <select
@@ -480,21 +483,16 @@ export function AdminDashboardClient() {
                   >
                     {["all","pending","paid","in_print","shipped","delivered","cancelled"].map((s) => (
                       <option key={s} value={s}>
-                        {s === "all" ? "Tüm Durumlar" :
-                         s === "pending" ? "Bekliyor" :
-                         s === "paid" ? "Ödendi" :
-                         s === "in_print" ? "Baskıda" :
-                         s === "shipped" ? "Kargoda" :
-                         s === "delivered" ? "Teslim Edildi" : "İptal"}
+                        {s === "all" ? t("allStatuses") : t(`status.${STATUS_LABELS[s]}`)}
                       </option>
                     ))}
                   </select>
                   <span className="text-xs text-[var(--text-tertiary)]">
-                    {orders.filter(o =>
+                    {t("results", { count: orders.filter(o =>
                       (orderStatusFilter === "all" || o.status === orderStatusFilter) &&
                       (!orderSearch || o.recipient_name?.toLowerCase().includes(orderSearch.toLowerCase()) ||
                        o.id.slice(0,8).toLowerCase().includes(orderSearch.toLowerCase()))
-                    ).length} sonuç
+                    ).length })}
                   </span>
                 </div>
 
@@ -503,7 +501,7 @@ export function AdminDashboardClient() {
                   (!orderSearch || o.recipient_name?.toLowerCase().includes(orderSearch.toLowerCase()) ||
                    o.id.slice(0,8).toLowerCase().includes(orderSearch.toLowerCase()))
                 ).length === 0 ? (
-                  <div className="text-center py-16 text-sm text-[var(--text-tertiary)]">Sipariş bulunamadı.</div>
+                  <div className="text-center py-16 text-sm text-[var(--text-tertiary)]">{t("noOrders")}</div>
                 ) : orders
                     .filter(o =>
                       (orderStatusFilter === "all" || o.status === orderStatusFilter) &&
@@ -519,13 +517,13 @@ export function AdminDashboardClient() {
                           <div className="font-medium text-sm text-[var(--text-primary)] truncate">
                             {o.items.length > 0
                               ? o.items.map((i) => i.model_title).join(", ")
-                              : `Sipariş #${o.id.slice(0, 8)}`
+                              : t("orderNumber", { id: o.id.slice(0, 8) })
                             }
                           </div>
                           <div className="text-xs text-[var(--text-tertiary)]">
                             {o.buyer?.full_name ?? "—"} · {new Date(o.created_at).toLocaleDateString("tr-TR")}
                             {o.city ? ` · ${o.city}` : ""}
-                            {o.items.length > 0 ? ` · ${o.items.length} ürün` : ""}
+                            {o.items.length > 0 ? ` · ${t("items", { count: o.items.length })}` : ""}
                           </div>
                         </div>
 
@@ -533,7 +531,7 @@ export function AdminDashboardClient() {
 
                         <div className="flex items-center gap-2 shrink-0">
                           <span className={`text-[11px] font-medium px-2.5 py-1 rounded-full ${STATUS_COLORS[o.status] ?? "bg-gray-100 text-gray-600"}`}>
-                            {STATUS_LABELS[o.status] ?? o.status}
+                            {STATUS_LABELS[o.status] ? t(`status.${STATUS_LABELS[o.status]}`) : o.status}
                           </span>
 
                           {/* Print job durumu */}
@@ -549,10 +547,10 @@ export function AdminDashboardClient() {
                               defaultValue=""
                               className="text-xs h-8 px-2 rounded-lg border border-[var(--border)] bg-[var(--bg-secondary)] text-[var(--text-primary)] outline-none cursor-pointer shrink-0"
                             >
-                              <option value="">Güncelle</option>
-                              <option value="shipped">Kargoya Ver</option>
-                              <option value="delivered">Teslim Edildi</option>
-                              <option value="cancelled">İptal Et</option>
+                              <option value="">{t("update")}</option>
+                              <option value="shipped">{t("ship")}</option>
+                              <option value="delivered">{t("deliver")}</option>
+                              <option value="cancelled">{t("cancel")}</option>
                             </select>
                           )}
 
@@ -566,7 +564,7 @@ export function AdminDashboardClient() {
                       {/* Genişletilmiş detay */}
                       {isExp && o.items.length > 0 && (
                         <div className="border-t border-[var(--border)] px-4 pb-4 pt-3 flex flex-col gap-2">
-                          <div className="text-xs font-semibold uppercase tracking-wider text-[var(--text-tertiary)] mb-1">Sipariş Kalemleri</div>
+                          <div className="text-xs font-semibold uppercase tracking-wider text-[var(--text-tertiary)] mb-1">{t("orderItems")}</div>
                           {o.items.map((item) => (
                             <div key={item.id} className="flex items-center gap-3 bg-[var(--bg-secondary)] rounded-xl px-3 py-2.5">
                               <div className="flex-1 min-w-0">
@@ -592,7 +590,7 @@ export function AdminDashboardClient() {
             {tab === "withdrawals" && (
               <div className="flex flex-col gap-3">
                 {withdrawals.length === 0 ? (
-                  <div className="text-center py-16 text-sm text-[var(--text-tertiary)]">Henüz çekim talebi yok.</div>
+                  <div className="text-center py-16 text-sm text-[var(--text-tertiary)]">{t("noWithdrawals")}</div>
                 ) : withdrawals.map((w) => {
                   const STATUS_COLORS: Record<string, string> = {
                     pending:  "bg-yellow-100 text-yellow-700 dark:bg-yellow-900/30 dark:text-yellow-400",
@@ -607,8 +605,7 @@ export function AdminDashboardClient() {
                           <div className="flex items-center gap-2 mb-1">
                             <span className="font-semibold text-[#FF6B35]">{formatPrice(w.amount)}</span>
                             <span className={`text-xs font-medium px-2 py-0.5 rounded-full ${STATUS_COLORS[w.status]}`}>
-                              {w.status === "pending" ? "Beklemede" : w.status === "approved" ? "Onaylandı" :
-                               w.status === "rejected" ? "Reddedildi" : "Ödendi"}
+                              {t(`wStatus.${w.status}`)}
                             </span>
                           </div>
                           <div className="text-sm text-[var(--text-secondary)]">{w.full_name}</div>
@@ -617,7 +614,7 @@ export function AdminDashboardClient() {
                             {(w.user as any)?.full_name} · {new Date(w.created_at).toLocaleDateString("tr-TR")}
                           </div>
                           {w.admin_note && (
-                            <div className="text-xs text-red-500 mt-1">Not: {w.admin_note}</div>
+                            <div className="text-xs text-red-500 mt-1">{t("note", { note: w.admin_note })}</div>
                           )}
                         </div>
 
@@ -629,26 +626,26 @@ export function AdminDashboardClient() {
                                   method: "POST", headers: { "Content-Type": "application/json" },
                                   body: JSON.stringify({ id: w.id, status: "paid" }),
                                 });
-                                if (!res.ok) { alert("Güncellenemedi."); return; }
+                                if (!res.ok) { alert(t("updateFailed")); return; }
                                 setWithdrawals((prev) => prev.map((x) => x.id === w.id ? { ...x, status: "paid" } : x));
                               }}
                               className="h-8 px-3 text-xs rounded-xl bg-[rgba(16,185,129,0.1)] text-[#10B981] hover:bg-[rgba(16,185,129,0.2)] transition-colors font-medium"
                             >
-                              ✓ Ödendi
+                              {t("markPaid")}
                             </button>
                             <button
                               onClick={async () => {
-                                const note = prompt("Red nedeni (isteğe bağlı):");
+                                const note = prompt(t("rejectionReasonPrompt"));
                                 const res = await fetch("/api/admin/withdrawals/update", {
                                   method: "POST", headers: { "Content-Type": "application/json" },
                                   body: JSON.stringify({ id: w.id, status: "rejected", adminNote: note ?? null }),
                                 });
-                                if (!res.ok) { alert("Güncellenemedi."); return; }
+                                if (!res.ok) { alert(t("updateFailed")); return; }
                                 setWithdrawals((prev) => prev.map((x) => x.id === w.id ? { ...x, status: "rejected", admin_note: note ?? null } : x));
                               }}
                               className="h-8 px-3 text-xs rounded-xl bg-red-50 text-red-600 dark:bg-red-950/20 hover:opacity-80 transition-colors font-medium"
                             >
-                              ✕ Reddet
+                              ✕ {t("reject")}
                             </button>
                           </div>
                         )}
@@ -662,15 +659,15 @@ export function AdminDashboardClient() {
             {/* RAPORLAR */}
             {tab === "reports" && (
               <div className="flex flex-col gap-6">
-                <h2 className="text-base font-semibold text-[var(--text-primary)]">📊 Platform Raporları</h2>
+                <h2 className="text-base font-semibold text-[var(--text-primary)]">{t("reportsTitle")}</h2>
 
                 {/* Gelir özeti */}
                 <div className="grid grid-cols-2 sm:grid-cols-4 gap-3">
                   {[
-                    { label: "Toplam Gelir",    value: formatPrice(stats.revenue),           color: "orange" },
-                    { label: "Toplam Sipariş",  value: stats.totalOrders,                    color: "green"  },
-                    { label: "Toplam Kullanıcı",value: stats.totalUsers,                     color: "blue"   },
-                    { label: "Ort. Sipariş",    value: stats.totalOrders > 0 ? formatPrice(stats.revenue / stats.totalOrders) : "—", color: "purple" },
+                    { label: t("totalRevenue"), value: formatPrice(stats.revenue),           color: "orange" },
+                    { label: t("totalOrders"),  value: stats.totalOrders,                    color: "green"  },
+                    { label: t("totalUsers"),   value: stats.totalUsers,                     color: "blue"   },
+                    { label: t("avgOrder"),     value: stats.totalOrders > 0 ? formatPrice(stats.revenue / stats.totalOrders) : "—", color: "purple" },
                   ].map((s) => (
                     <div key={s.label} className="bg-[var(--bg-primary)] border border-[var(--border)] rounded-2xl p-4">
                       <div className={`text-xl font-semibold mb-1 ${
@@ -685,21 +682,21 @@ export function AdminDashboardClient() {
 
                 {/* Sipariş durumu dağılımı */}
                 <div className="bg-[var(--bg-primary)] border border-[var(--border)] rounded-2xl p-5">
-                  <h3 className="text-sm font-medium text-[var(--text-primary)] mb-4">Sipariş Durumu Dağılımı</h3>
+                  <h3 className="text-sm font-medium text-[var(--text-primary)] mb-4">{t("orderStatusDistribution")}</h3>
                   <div className="flex flex-col gap-2">
                     {[
-                      { status: "pending",   label: "Bekliyor",      color: "bg-gray-400"    },
-                      { status: "paid",      label: "Ödendi",        color: "bg-blue-400"    },
-                      { status: "in_print",  label: "Baskıda",       color: "bg-purple-400"  },
-                      { status: "shipped",   label: "Kargoda",       color: "bg-yellow-400"  },
-                      { status: "delivered", label: "Teslim Edildi", color: "bg-[#10B981]"   },
-                      { status: "cancelled", label: "İptal",         color: "bg-red-400"     },
-                    ].map(({ status, label, color }) => {
+                      { status: "pending",   labelKey: "pending",   color: "bg-gray-400"    },
+                      { status: "paid",      labelKey: "paid",      color: "bg-blue-400"    },
+                      { status: "in_print",  labelKey: "inPrint",   color: "bg-purple-400"  },
+                      { status: "shipped",   labelKey: "shipped",   color: "bg-yellow-400"  },
+                      { status: "delivered", labelKey: "delivered", color: "bg-[#10B981]"   },
+                      { status: "cancelled", labelKey: "cancelled", color: "bg-red-400"     },
+                    ].map(({ status, labelKey, color }) => {
                       const count = orders.filter(o => o.status === status).length;
                       const pct   = orders.length > 0 ? Math.round((count / orders.length) * 100) : 0;
                       return (
                         <div key={status} className="flex items-center gap-3">
-                          <div className="w-24 text-xs text-[var(--text-tertiary)] shrink-0">{label}</div>
+                          <div className="w-24 text-xs text-[var(--text-tertiary)] shrink-0">{t(`status.${labelKey}`)}</div>
                           <div className="flex-1 h-2 bg-[var(--bg-secondary)] rounded-full overflow-hidden">
                             <div className={`h-full ${color} rounded-full transition-all`} style={{ width: `${pct}%` }} />
                           </div>
@@ -712,7 +709,7 @@ export function AdminDashboardClient() {
 
                 {/* Son siparişler özeti */}
                 <div className="bg-[var(--bg-primary)] border border-[var(--border)] rounded-2xl p-5">
-                  <h3 className="text-sm font-medium text-[var(--text-primary)] mb-4">Son 5 Sipariş</h3>
+                  <h3 className="text-sm font-medium text-[var(--text-primary)] mb-4">{t("last5Orders")}</h3>
                   <div className="flex flex-col divide-y divide-[var(--border)]">
                     {orders.slice(0, 5).map((o) => (
                       <div key={o.id} className="flex items-center justify-between py-2.5">

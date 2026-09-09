@@ -2,6 +2,7 @@ import type { Metadata } from "next";
 import { Navbar } from "@/components/layout/Navbar";
 import { Footer } from "@/components/layout/Footer";
 import { ModelsPageClient } from "@/components/models/ModelsPageClient";
+import { permanentRedirect } from "next/navigation";
 
 export async function generateMetadata({
   params,
@@ -34,14 +35,17 @@ export async function generateMetadata({
   };
 }
 
-export default function ModelsPage() {
-  return (
-    <div className="min-h-screen flex flex-col">
-      <Navbar />
-      <main className="flex-1">
-        <ModelsPageClient />
-      </main>
-      <Footer />
-    </div>
-  );
+
+
+// /models artık anasayfayla birebir aynı içeriği gösteriyordu (model
+// listeleme/filtreleme). Duplicate content ve kafa karışıklığını önlemek
+// için kalıcı olarak anasayfaya yönlendiriyoruz. /models/[id] (model detay
+// sayfası) bundan etkilenmez, sadece bu liste sayfası yönlendiriliyor.
+export default async function ModelsPage({
+  params,
+}: {
+  params: Promise<{ locale: string }>;
+}) {
+  const { locale } = await params;
+  permanentRedirect(`/${locale}`);
 }

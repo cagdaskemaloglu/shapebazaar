@@ -4,7 +4,7 @@ import Link from "next/link";
 import { Star, TrendingUp, Sparkles, Box } from "lucide-react";
 import { useTranslations } from "next-intl";
 import { usePathname } from "next/navigation";
-import { createClient } from "@/lib/supabase/client";
+import { fetchModels } from "@/lib/models";
 import { formatPrice } from "@/lib/utils";
 
 interface DBModel {
@@ -41,23 +41,16 @@ export function ModelGrid() {
   const [loading, setLoading] = useState(true);
 
   useEffect(() => {
-    async function fetchModels() {
-      const supabase = createClient();
-      const { data, error } = await supabase
-        .from("models")
-        .select(`
-          id, title, title_en, base_price, is_free,
-          avg_rating, rating_count, print_count,
-          created_at, thumbnail_url,
-          designer:profiles(username, full_name)
-        `)
-        .order("print_count", { ascending: false })
-        .limit(6);
-
-      if (!error && data) setModels(data as unknown as DBModel[]);
+    async function loadModels() {
+      try {
+        const { data } = await fetchModels({ sort: "popular", limit: 6 });
+        setModels(data as unknown as DBModel[]);
+      } catch (e) {
+        console.error(e);
+      }
       setLoading(false);
     }
-    fetchModels();
+    loadModels();
   }, []);
 
   return (

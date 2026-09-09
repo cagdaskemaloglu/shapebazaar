@@ -5,11 +5,12 @@ import { Mail, Lock, Eye, EyeOff } from "lucide-react";
 import { createClient } from "@/lib/supabase/client";
 import { Button } from "@/components/ui/Button";
 import { Input } from "@/components/ui/Input";
-import { useTranslations } from "next-intl";
+import { useTranslations, useLocale } from "next-intl";
 
 export function LoginForm() {
   const router = useRouter();
   const t = useTranslations("auth");
+  const locale = useLocale();
   const [email, setEmail] = useState("");
   const [password, setPassword] = useState("");
   const [showPass, setShowPass] = useState(false);
@@ -98,7 +99,7 @@ export function LoginForm() {
         )}
 
         <div className="flex justify-end">
-          <a href="/auth/forgot-password" className="text-xs text-[#FF6B35] hover:underline">
+          <a href={`/${locale}/auth/forgot-password`} className="text-xs text-[#FF6B35] hover:underline">
             {t("forgotPassword")}
           </a>
         </div>

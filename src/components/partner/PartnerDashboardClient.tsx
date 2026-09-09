@@ -139,12 +139,12 @@ export function PartnerDashboardClient({ userId }: { userId: string }) {
       const res  = await fetch(`/api/partner/download?jobId=${jobId}`);
       const data = await res.json();
       if (!res.ok) {
-        setDownloadError((prev) => ({ ...prev, [jobId]: data.error ?? "İndirme hatası" }));
+        setDownloadError((prev) => ({ ...prev, [jobId]: data.error ?? t("downloadError") }));
         return;
       }
       setDownloadFiles((prev) => ({ ...prev, [jobId]: data.files ?? [] }));
     } catch {
-      setDownloadError((prev) => ({ ...prev, [jobId]: "İndirme linkleri alınamadı. Lütfen tekrar deneyin." }));
+      setDownloadError((prev) => ({ ...prev, [jobId]: t("downloadLinksError") }));
     } finally {
       setDownloading(null);
     }
@@ -456,7 +456,7 @@ export function PartnerDashboardClient({ userId }: { userId: string }) {
                                     <button
                                       onClick={() => triggerDownload(file.url, file.filename)}
                                       className="shrink-0 w-7 h-7 flex items-center justify-center rounded-lg bg-[var(--bg-tertiary)] text-[var(--text-primary)] hover:opacity-80 transition-colors"
-                                      title={`${file.filename} indir`}
+                                      title={t("downloadTitle", { filename: file.filename })}
                                     >
                                       <Download size={13} />
                                     </button>

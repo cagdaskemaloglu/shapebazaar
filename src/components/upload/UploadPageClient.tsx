@@ -12,6 +12,7 @@ import {
 } from "lucide-react";
 import { ModelViewer } from "@/components/viewer/ModelViewer";
 import { cn } from "@/lib/utils";
+import { useTranslations, useLocale } from "next-intl";
 
 /* ── Types ── */
 type Step = "file" | "details" | "pricing" | "review";
@@ -37,10 +38,10 @@ const CATEGORIES = [
   { id: 7, name_tr: "Araç & Gereç",   name_en: "Tools & Hardware"},
   { id: 8, name_tr: "Takı & Aksesuar",name_en: "Jewelry"         },
 ];
-const LICENSES = [
-  { value: "standard",    label: "Standart",    desc: "Alıcı yalnızca 1 baskı alabilir.",    icon: Lock   },
-  { value: "multi_print", label: "Çoklu Baskı", desc: "Alıcı birden fazla baskı alabilir.",  icon: Layers },
-  { value: "open",        label: "Açık",         desc: "Herkes ücretsiz olarak indirebilir.", icon: Globe  },
+const LICENSE_META = [
+  { value: "standard",    icon: Lock   },
+  { value: "multi_print", icon: Layers },
+  { value: "open",        icon: Globe  },
 ] as const;
 const ACCEPTED_FORMATS = {
   "model/stl": [".stl"], "text/plain": [".stl", ".obj"],
@@ -49,14 +50,24 @@ const ACCEPTED_FORMATS = {
   "application/vnd.ms-package.3dmanufacturing": [".3mf"],
 };
 const MAX_SIZE_MB = 50;
-const STEPS: { id: Step; label: string }[] = [
-  { id: "file",    label: "Dosya"    },
-  { id: "details", label: "Detaylar" },
-  { id: "pricing", label: "Fiyat"    },
-  { id: "review",  label: "İncele"   },
-];
+const STEP_IDS: Step[] = ["file", "details", "pricing", "review"];
 
 export function UploadPageClient() {
+  const t      = useTranslations("upload");
+  const locale = useLocale();
+
+  const STEPS = [
+    { id: "file"    as Step, label: t("stepFile")    },
+    { id: "details" as Step, label: t("stepDetails") },
+    { id: "pricing" as Step, label: t("stepPricing") },
+    { id: "review"  as Step, label: t("stepReview")  },
+  ];
+  const LICENSES = [
+    { ...LICENSE_META[0], label: t("licenseStandard"), desc: t("licenseStandardDesc") },
+    { ...LICENSE_META[1], label: t("licenseMulti"),     desc: t("licenseMultiDesc")    },
+    { ...LICENSE_META[2], label: t("licenseOpen"),      desc: t("licenseOpenDesc")     },
+  ];
+
   const [step, setStep]             = useState<Step>("file");
   const [file, setFile]             = useState<File | null>(null);
   const [fileError, setFileError]   = useState("");
@@ -86,8 +97,8 @@ export function UploadPageClient() {
     if (rejected.length > 0) {
       const err = rejected[0].errors[0];
       setFileError(err.code === "file-too-large"
-        ? `Dosya çok büyük. Maksimum ${MAX_SIZE_MB} MB.`
-        : "Geçersiz format. STL, OBJ veya 3MF yükleyin.");
+        ? t("fileTooBig", { size: MAX_SIZE_MB })
+        : t("invalidFormat"));
       return;
     }
     if (accepted[0]) {
@@ -166,7 +177,7 @@ export function UploadPageClient() {
     try {
       const supabase = createClient();
       const { data: { user } } = await supabase.auth.getUser();
-      if (!user) { window.location.href = "/tr/auth/login?redirect=/tr/upload"; return; }
+      if (!user) { window.location.href = `/${locale}/auth/login?redirect=/${locale}/upload`; return; }
 
       const modelId = `${Date.now()}-${Math.random().toString(36).slice(2, 9)}`;
       const { path, format } = await uploadModelFile(file, user.id, modelId);
@@ -227,7 +238,7 @@ export function UploadPageClient() {
       setUploadDone(true);
     } catch (err) {
       console.error(err);
-      alert("Yükleme sırasında hata oluştu. Lütfen tekrar deneyin.");
+      alert(t("uploadFailed"));
     } finally {
       setUploading(false);
     }
@@ -244,13 +255,13 @@ export function UploadPageClient() {
           <div className="w-16 h-16 rounded-full bg-[rgba(16,185,129,0.1)] flex items-center justify-center mx-auto mb-5">
             <CheckCircle size={32} className="text-[#10B981]" />
           </div>
-          <h2 className="text-xl font-semibold text-[var(--text-primary)] mb-2">Model yüklendi!</h2>
+          <h2 className="text-xl font-semibold text-[var(--text-primary)] mb-2">{t("uploadSuccess")}</h2>
           <p className="text-sm text-[var(--text-secondary)] mb-6">
-            <strong>{meta.title}</strong> başarıyla yüklendi ve inceleme kuyruğuna alındı.
+            {t.rich("uploadSuccessDesc", { title: meta.title, b: (chunks) => <strong>{chunks}</strong> })}
           </p>
           <div className="flex gap-3 justify-center">
-            <a href="/dashboard" className="px-5 py-2.5 rounded-xl border border-[var(--border)] text-sm text-[var(--text-primary)] hover:bg-[var(--bg-secondary)] transition-colors">
-              Dashboard'a git
+            <a href={`/${locale}/dashboard`} className="px-5 py-2.5 rounded-xl border border-[var(--border)] text-sm text-[var(--text-primary)] hover:bg-[var(--bg-secondary)] transition-colors">
+              {t("goToDashboard")}
             </a>
             <button
               onClick={() => {
@@ -261,7 +272,7 @@ export function UploadPageClient() {
               }}
               className="px-5 py-2.5 rounded-xl bg-[#FF6B35] text-white text-sm font-medium hover:bg-[#e85e2a] transition-colors"
             >
-              Yeni model yükle
+              {t("uploadAnother")}
             </button>
           </div>
         </div>
@@ -272,8 +283,8 @@ export function UploadPageClient() {
   return (
     <div className="max-w-5xl mx-auto px-4 sm:px-6 py-10">
       <div className="mb-8">
-        <h1 className="text-2xl font-semibold text-[var(--text-primary)]">Model Yükle</h1>
-        <p className="text-sm text-[var(--text-tertiary)] mt-1">STL, OBJ veya 3MF dosyanızı yükleyin, yapılandırın ve yayınlayın.</p>
+        <h1 className="text-2xl font-semibold text-[var(--text-primary)]">{t("pageTitle")}</h1>
+        <p className="text-sm text-[var(--text-tertiary)] mt-1">{t("pageSubtitle")}</p>
       </div>
 
       {/* Step indicator */}
@@ -313,9 +324,9 @@ export function UploadPageClient() {
           {file && (
             <div className="bg-[var(--bg-secondary)] border border-[var(--border)] rounded-xl p-4">
               <div className="flex items-center justify-between mb-3">
-                <div className="text-xs font-semibold uppercase tracking-wider text-[var(--text-tertiary)]">Görüntü Açısı</div>
+                <div className="text-xs font-semibold uppercase tracking-wider text-[var(--text-tertiary)]">{t("viewAngle")}</div>
                 <button onClick={resetRotation} className="flex items-center gap-1 text-xs text-[var(--text-tertiary)] hover:text-[#FF6B35] transition-colors">
-                  <RotateCcw size={11} /> Sıfırla
+                  <RotateCcw size={11} /> {t("reset")}
                 </button>
               </div>
               <div className="flex flex-col gap-2.5">
@@ -335,7 +346,7 @@ export function UploadPageClient() {
                 ))}
               </div>
               <p className="text-[11px] text-[var(--text-tertiary)] mt-3 leading-relaxed">
-                Modeli doğru görünen açıya getirin. Bu görüntü thumbnail olarak kaydedilecek.
+                {t("rotateHint")}
               </p>
             </div>
           )}
@@ -345,7 +356,7 @@ export function UploadPageClient() {
             <div className="bg-[var(--bg-secondary)] border border-[var(--border)] rounded-xl p-4">
               <div className="flex items-center justify-between mb-3">
                 <div className="text-xs font-semibold uppercase tracking-wider text-[var(--text-tertiary)]">
-                  Model Fotoğrafları
+                  {t("modelPhotos")}
                 </div>
                 <span className="text-xs text-[var(--text-tertiary)]">{photos.length}/{MAX_PHOTOS}</span>
               </div>
@@ -368,7 +379,7 @@ export function UploadPageClient() {
                 {photos.length < MAX_PHOTOS && (
                   <label className="w-24 h-24 rounded-xl border-2 border-dashed border-[var(--border)] flex flex-col items-center justify-center gap-1.5 cursor-pointer hover:border-[#FF6B35] hover:bg-[rgba(255,107,53,0.04)] transition-all">
                     <ImagePlus size={20} className="text-[var(--text-tertiary)]" />
-                    <span className="text-[10px] text-[var(--text-tertiary)]">Ekle</span>
+                    <span className="text-[10px] text-[var(--text-tertiary)]">{t("addPhoto")}</span>
                     <input
                       type="file"
                       accept="image/jpeg,image/png,image/webp"
@@ -381,7 +392,7 @@ export function UploadPageClient() {
               </div>
 
               <p className="text-[11px] text-[var(--text-tertiary)] mt-3">
-                Baskı sonucu veya tasarım görselleri ekleyebilirsiniz. JPEG, PNG, WebP · Maks. 3 fotoğraf.
+                {t("photoHint")}
               </p>
             </div>
           )}
@@ -411,8 +422,8 @@ export function UploadPageClient() {
           {step === "file" && (
             <div className="flex flex-col gap-4">
               <div>
-                <h2 className="font-medium text-[var(--text-primary)] mb-1">Dosya Seç</h2>
-                <p className="text-sm text-[var(--text-tertiary)]">STL, OBJ veya 3MF · Maks. {MAX_SIZE_MB} MB</p>
+                <h2 className="font-medium text-[var(--text-primary)] mb-1">{t("selectFile")}</h2>
+                <p className="text-sm text-[var(--text-tertiary)]">{t("selectFileSub", { size: MAX_SIZE_MB })}</p>
               </div>
               <div
                 {...getRootProps()}
@@ -430,12 +441,12 @@ export function UploadPageClient() {
                 </div>
                 {file ? (
                   <><p className="font-medium text-sm text-[var(--text-primary)] mb-1">{file.name}</p>
-                  <p className="text-xs text-[var(--text-tertiary)]">{fileSizeMB} MB — Değiştirmek için tıkla</p></>
+                  <p className="text-xs text-[var(--text-tertiary)]">{fileSizeMB} MB — {t("changeFile")}</p></>
                 ) : isDragActive ? (
-                  <p className="font-medium text-sm text-[#FF6B35]">Bırak!</p>
+                  <p className="font-medium text-sm text-[#FF6B35]">{t("dropHere")}</p>
                 ) : (
-                  <><p className="font-medium text-sm text-[var(--text-primary)] mb-1">Dosyayı sürükle veya tıkla</p>
-                  <p className="text-xs text-[var(--text-tertiary)]">.stl · .obj · .3mf — Maks. {MAX_SIZE_MB} MB</p></>
+                  <><p className="font-medium text-sm text-[var(--text-primary)] mb-1">{t("dragOrClick")}</p>
+                  <p className="text-xs text-[var(--text-tertiary)]">{t("fileHintFormats", { size: MAX_SIZE_MB })}</p></>
                 )}
               </div>
               {fileError && (
@@ -445,7 +456,7 @@ export function UploadPageClient() {
               )}
               <div className="bg-[rgba(255,107,53,0.04)] border border-[rgba(255,107,53,0.15)] rounded-xl px-4 py-3 flex gap-2 text-xs text-[var(--text-secondary)]">
                 <Info size={14} className="text-[#FF6B35] shrink-0 mt-0.5" />
-                <span>Model yüklendikten sonra solda 3D önizleme, açı ayarları ve fotoğraf yükleme alanı görünecektir.</span>
+                <span>{t("fileStepHint")}</span>
               </div>
             </div>
           )}
@@ -453,17 +464,17 @@ export function UploadPageClient() {
           {/* STEP: DETAILS */}
           {step === "details" && (
             <div className="flex flex-col gap-4">
-              <h2 className="font-medium text-[var(--text-primary)]">Model Detayları</h2>
+              <h2 className="font-medium text-[var(--text-primary)]">{t("modelDetailsTitle")}</h2>
               <div className="grid sm:grid-cols-2 gap-4">
                 <div>
-                  <label className="text-xs text-[var(--text-tertiary)] block mb-1.5">Model Adı (Türkçe) *</label>
+                  <label className="text-xs text-[var(--text-tertiary)] block mb-1.5">{t("titleTr")} *</label>
                   <input type="text" placeholder="örn: Araç Organizeri Pro" value={meta.title}
                     onChange={(e) => updateMeta("title", e.target.value)} maxLength={80}
                     className="w-full h-10 px-3 text-sm rounded-xl border border-[var(--border)] bg-[var(--bg-secondary)] text-[var(--text-primary)] outline-none focus:border-[#FF6B35] transition-colors placeholder:text-[var(--text-tertiary)]" />
                   <div className="text-right text-[10px] text-[var(--text-tertiary)] mt-1">{meta.title.length}/80</div>
                 </div>
                 <div>
-                  <label className="text-xs text-[var(--text-tertiary)] block mb-1.5">Model Name (English) *</label>
+                  <label className="text-xs text-[var(--text-tertiary)] block mb-1.5">{t("titleEn")} *</label>
                   <input type="text" placeholder="e.g: Car Organizer Pro" value={meta.titleEn}
                     onChange={(e) => updateMeta("titleEn", e.target.value)} maxLength={80}
                     className="w-full h-10 px-3 text-sm rounded-xl border border-[var(--border)] bg-[var(--bg-secondary)] text-[var(--text-primary)] outline-none focus:border-[#FF6B35] transition-colors placeholder:text-[var(--text-tertiary)]" />
@@ -472,14 +483,14 @@ export function UploadPageClient() {
               </div>
               <div className="grid sm:grid-cols-2 gap-4">
                 <div>
-                  <label className="text-xs text-[var(--text-tertiary)] block mb-1.5">Açıklama (Türkçe) *</label>
+                  <label className="text-xs text-[var(--text-tertiary)] block mb-1.5">{t("descTr")} *</label>
                   <textarea placeholder="Modelinizi tanımlayın…" value={meta.description}
                     onChange={(e) => updateMeta("description", e.target.value)} rows={4} maxLength={1000}
                     className="w-full px-3 py-2.5 text-sm rounded-xl border border-[var(--border)] bg-[var(--bg-secondary)] text-[var(--text-primary)] outline-none focus:border-[#FF6B35] transition-colors placeholder:text-[var(--text-tertiary)] resize-none" />
                   <div className="text-right text-[10px] text-[var(--text-tertiary)] mt-1">{meta.description.length}/1000</div>
                 </div>
                 <div>
-                  <label className="text-xs text-[var(--text-tertiary)] block mb-1.5">Description (English) *</label>
+                  <label className="text-xs text-[var(--text-tertiary)] block mb-1.5">{t("descEn")} *</label>
                   <textarea placeholder="Describe your model…" value={meta.descriptionEn}
                     onChange={(e) => updateMeta("descriptionEn", e.target.value)} rows={4} maxLength={1000}
                     className="w-full px-3 py-2.5 text-sm rounded-xl border border-[var(--border)] bg-[var(--bg-secondary)] text-[var(--text-primary)] outline-none focus:border-[#FF6B35] transition-colors placeholder:text-[var(--text-tertiary)] resize-none" />
@@ -487,39 +498,39 @@ export function UploadPageClient() {
                 </div>
               </div>
               <div>
-                <label className="text-xs text-[var(--text-tertiary)] block mb-1.5">Kategori *</label>
+                <label className="text-xs text-[var(--text-tertiary)] block mb-1.5">{t("category")} *</label>
                 <select value={meta.category} onChange={(e) => updateMeta("category", e.target.value ? Number(e.target.value) : "")}
                   className="w-full h-10 px-3 text-sm rounded-xl border border-[var(--border)] bg-[var(--bg-secondary)] text-[var(--text-primary)] outline-none focus:border-[#FF6B35] transition-colors cursor-pointer">
-                  <option value="">Kategori seç...</option>
-                  {CATEGORIES.map((c) => <option key={c.id} value={c.id}>{c.name_tr}</option>)}
+                  <option value="">{t("selectCategory")}</option>
+                  {CATEGORIES.map((c) => <option key={c.id} value={c.id}>{locale === "en" ? c.name_en : c.name_tr}</option>)}
                 </select>
               </div>
               <div>
                 <label className="text-xs text-[var(--text-tertiary)] block mb-1.5 flex items-center gap-1">
-                  <Tag size={11} /> Etiketler
+                  <Tag size={11} /> {t("tags")}
                 </label>
-                <input type="text" placeholder="raf, organizasyon, mutfak (virgülle ayır)" value={meta.tags}
+                <input type="text" placeholder={t("tagsPlaceholder")} value={meta.tags}
                   onChange={(e) => updateMeta("tags", e.target.value)}
                   className="w-full h-10 px-3 text-sm rounded-xl border border-[var(--border)] bg-[var(--bg-secondary)] text-[var(--text-primary)] outline-none focus:border-[#FF6B35] transition-colors placeholder:text-[var(--text-tertiary)]" />
               </div>
               <div>
                 <label className="text-xs text-[var(--text-tertiary)] block mb-1.5">
-                  Tahmini Ağırlık (gram) <span className="text-red-400">*</span>
+                  {t("estimatedWeight")} <span className="text-red-400">*</span>
                 </label>
                 <input type="number" placeholder="örn: 45" min="1" value={meta.weightGrams}
                   onChange={(e) => updateMeta("weightGrams", e.target.value)}
                   className="w-full h-10 px-3 text-sm rounded-xl border border-[var(--border)] bg-[var(--bg-secondary)] text-[var(--text-primary)] outline-none focus:border-[#FF6B35] transition-colors placeholder:text-[var(--text-tertiary)]" />
-                <p className="text-xs text-[var(--text-tertiary)] mt-1">%100 boyutta tahmini baskı ağırlığı</p>
+                <p className="text-xs text-[var(--text-tertiary)] mt-1">{t("weightHint")}</p>
               </div>
               <div>
                 <label className="text-xs text-[var(--text-tertiary)] block mb-1.5">
-                  Boyutlar (mm) — <span className="font-normal">opsiyonel</span>
+                  {t("dimensions")} <span className="font-normal">{t("optional")}</span>
                 </label>
                 <div className="grid grid-cols-3 gap-2">
                   {[
-                    { key: "dimensionX", placeholder: "X (en)" },
-                    { key: "dimensionY", placeholder: "Y (boy)" },
-                    { key: "dimensionZ", placeholder: "Z (yükseklik)" },
+                    { key: "dimensionX", placeholder: locale === "en" ? "X (width)"  : "X (en)" },
+                    { key: "dimensionY", placeholder: locale === "en" ? "Y (length)" : "Y (boy)" },
+                    { key: "dimensionZ", placeholder: locale === "en" ? "Z (height)" : "Z (yükseklik)" },
                   ].map((d) => (
                     <input key={d.key} type="number" placeholder={d.placeholder} min="0"
                       value={(meta as any)[d.key]} onChange={(e) => updateMeta(d.key as any, e.target.value)}
@@ -533,9 +544,9 @@ export function UploadPageClient() {
           {/* STEP: PRICING */}
           {step === "pricing" && (
             <div className="flex flex-col gap-5">
-              <h2 className="font-medium text-[var(--text-primary)]">Lisans & Fiyatlandırma</h2>
+              <h2 className="font-medium text-[var(--text-primary)]">{t("licensePricingTitle")}</h2>
               <div>
-                <label className="text-xs text-[var(--text-tertiary)] block mb-2">Lisans Türü</label>
+                <label className="text-xs text-[var(--text-tertiary)] block mb-2">{t("licenseType")}</label>
                 <div className="flex flex-col gap-2">
                   {LICENSES.map((lic) => {
                     const Icon = lic.icon;
@@ -560,11 +571,11 @@ export function UploadPageClient() {
                 </div>
               </div>
               <div>
-                <label className="text-xs text-[var(--text-tertiary)] block mb-2">Fiyat</label>
+                <label className="text-xs text-[var(--text-tertiary)] block mb-2">{t("priceLabel")}</label>
                 <label className="flex items-center gap-2.5 mb-3 cursor-pointer">
                   <input type="checkbox" checked={meta.isFree}
                     onChange={(e) => updateMeta("isFree", e.target.checked)} className="w-4 h-4 accent-[#FF6B35]" />
-                  <span className="text-sm text-[var(--text-primary)]">Ücretsiz yayınla</span>
+                  <span className="text-sm text-[var(--text-primary)]">{t("publishFree")}</span>
                 </label>
                 {!meta.isFree && (
                   <div className="relative">
@@ -577,17 +588,17 @@ export function UploadPageClient() {
               </div>
               {!meta.isFree && parseFloat(meta.basePrice) > 0 && (
                 <div className="bg-[rgba(16,185,129,0.06)] border border-[rgba(16,185,129,0.2)] rounded-xl p-4">
-                  <div className="text-xs font-semibold text-[#10B981] mb-2">Kazanç tahmini (her satış)</div>
+                  <div className="text-xs font-semibold text-[#10B981] mb-2">{t("earningEstimate")}</div>
                   <div className="flex justify-between text-sm mb-1">
-                    <span className="text-[var(--text-secondary)]">Model fiyatı</span>
+                    <span className="text-[var(--text-secondary)]">{t("modelPriceRow")}</span>
                     <span>₺ {parseFloat(meta.basePrice).toFixed(0)}</span>
                   </div>
                   <div className="flex justify-between text-sm mb-1">
-                    <span className="text-[var(--text-secondary)]">Platform komisyonu (%10)</span>
+                    <span className="text-[var(--text-secondary)]">{t("platformFee")}</span>
                     <span className="text-red-400">- ₺ {(parseFloat(meta.basePrice) * 0.1).toFixed(0)}</span>
                   </div>
                   <div className="flex justify-between text-sm font-semibold border-t border-[rgba(16,185,129,0.2)] pt-2 mt-2">
-                    <span>Kazancınız</span>
+                    <span>{t("yourEarning")}</span>
                     <span className="text-[#10B981]">₺ {(parseFloat(meta.basePrice) * 0.9).toFixed(0)}</span>
                   </div>
                 </div>
@@ -598,38 +609,38 @@ export function UploadPageClient() {
           {/* STEP: REVIEW */}
           {step === "review" && (
             <div className="flex flex-col gap-4">
-              <h2 className="font-medium text-[var(--text-primary)]">İnceleyip Yayınla</h2>
+              <h2 className="font-medium text-[var(--text-primary)]">{t("reviewPublishTitle")}</h2>
               <div className="bg-[var(--bg-secondary)] border border-[var(--border)] rounded-2xl overflow-hidden">
                 {[
-                  { label: "Dosya",     value: file?.name ?? "—" },
-                  { label: "Model Adı (TR)", value: meta.title },
-                  { label: "Model Name (EN)", value: meta.titleEn },
-                  { label: "Kategori",  value: CATEGORIES.find(c => c.id === meta.category)?.name_tr ?? "—" },
-                  { label: "Lisans",    value: LICENSES.find(l => l.value === meta.license)?.label ?? "—" },
-                  { label: "Fiyat",     value: meta.isFree ? "Ücretsiz" : `₺ ${meta.basePrice}` },
-                  { label: "Ağırlık",   value: meta.weightGrams ? `${meta.weightGrams} gram` : "—" },
-                  { label: "Rotasyon",  value: `X:${formatRad(rotation.x)} Y:${formatRad(rotation.y)} Z:${formatRad(rotation.z)}` },
-                  { label: "Fotoğraf",  value: photos.length > 0 ? `${photos.length} fotoğraf` : "Yok" },
-                  { label: "Thumbnail", value: thumbnailDataUrlRef.current ? "✓ Hazır" : "Henüz yüklenmedi" },
+                  { label: t("fileLabel"),  value: file?.name ?? "—" },
+                  { label: t("titleTr"), value: meta.title },
+                  { label: t("titleEn"), value: meta.titleEn },
+                  { label: t("category"),  value: (locale === "en" ? CATEGORIES.find(c => c.id === meta.category)?.name_en : CATEGORIES.find(c => c.id === meta.category)?.name_tr) ?? "—" },
+                  { label: t("licenseLabel"),    value: LICENSES.find(l => l.value === meta.license)?.label ?? "—" },
+                  { label: t("priceLabel"),     value: meta.isFree ? t("publishFree") : `₺ ${meta.basePrice}` },
+                  { label: t("weightLabel"),   value: meta.weightGrams ? t("grams", { n: meta.weightGrams }) : "—" },
+                  { label: t("rotationLabel"),  value: `X:${formatRad(rotation.x)} Y:${formatRad(rotation.y)} Z:${formatRad(rotation.z)}` },
+                  { label: t("photoLabel"),  value: photos.length > 0 ? t("photoCount", { n: photos.length }) : t("none") },
+                  { label: t("thumbnailLabel"), value: thumbnailDataUrlRef.current ? t("ready") : t("notUploaded") },
                 ].map((row, i) => (
                   <div key={row.label} className={cn("flex items-center gap-3 px-4 py-3", i !== 0 && "border-t border-[var(--border)]")}>
                     <span className="text-xs text-[var(--text-tertiary)] w-24 shrink-0">{row.label}</span>
                     <span className={cn("text-sm truncate",
-                      row.label === "Thumbnail" && thumbnailDataUrlRef.current ? "text-[#10B981]" : "text-[var(--text-primary)]"
+                      row.label === t("thumbnailLabel") && thumbnailDataUrlRef.current ? "text-[#10B981]" : "text-[var(--text-primary)]"
                     )}>{row.value}</span>
                   </div>
                 ))}
               </div>
               <div className="bg-amber-50 dark:bg-amber-950/20 border border-amber-200 dark:border-amber-900 rounded-xl px-4 py-3 flex gap-2 text-xs text-amber-700 dark:text-amber-400">
                 <Info size={14} className="shrink-0 mt-0.5" />
-                <span>Modeliniz yayınlanmadan önce ekibimiz tarafından incelenecektir. Bu işlem genellikle 24 saat sürer.</span>
+                <span>{t("reviewNotice")}</span>
               </div>
               <button onClick={handlePublish} disabled={uploading}
                 className="w-full h-11 rounded-xl bg-[#FF6B35] text-white text-sm font-medium hover:bg-[#e85e2a] disabled:opacity-60 transition-all flex items-center justify-center gap-2">
                 {uploading ? (
-                  <><div className="w-4 h-4 border-2 border-white/40 border-t-white rounded-full animate-spin" /> Yükleniyor…</>
+                  <><div className="w-4 h-4 border-2 border-white/40 border-t-white rounded-full animate-spin" /> {t("publishing")}</>
                 ) : (
-                  <><Upload size={16} /> Yayınla</>
+                  <><Upload size={16} /> {t("publish")}</>
                 )}
               </button>
             </div>
@@ -641,12 +652,12 @@ export function UploadPageClient() {
               {step !== "file" && (
                 <button onClick={prevStep}
                   className="flex-1 h-10 rounded-xl border border-[var(--border)] text-sm text-[var(--text-secondary)] hover:bg-[var(--bg-secondary)] transition-colors">
-                  ← Geri
+                  {t("back")}
                 </button>
               )}
               <button onClick={nextStep} disabled={!canAdvance()}
                 className="flex-1 h-10 rounded-xl bg-[#FF6B35] text-white text-sm font-medium hover:bg-[#e85e2a] disabled:opacity-40 disabled:cursor-not-allowed transition-all">
-                {step === "pricing" ? "İncele →" : "Devam →"}
+                {step === "pricing" ? t("reviewBtn") : t("next")}
               </button>
             </div>
           )}

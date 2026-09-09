@@ -9,7 +9,7 @@ import {
   LayoutDashboard, Package, Upload, Printer,
   Wallet, Settings, LogOut, ChevronRight,
   CheckCircle, Clock, ExternalLink, Trash2,
-  Camera, Store, BarChart2, TrendingUp, Star, DollarSign
+  Camera, Store, BarChart2, TrendingUp, Star, DollarSign, Pencil
 } from "lucide-react";
 import { createClient } from "@/lib/supabase/client";
 import { uploadAvatar } from "@/lib/storage";
@@ -398,6 +398,9 @@ function UploadsTab({ models, loading, onDelete, t, locale }: {
               </span>
               <span className="text-sm font-semibold text-[#FF6B35] shrink-0">{m.is_free ? formatPrice(0) : formatPrice(m.base_price)}</span>
               <div className="flex gap-1">
+                <a href={`/${locale}/models/${m.id}/edit`} className="w-8 h-8 flex items-center justify-center rounded-lg text-[var(--text-tertiary)] hover:bg-[var(--bg-secondary)] transition-colors" title={t("edit")}>
+                  <Pencil size={14} />
+                </a>
                 <a href={`/${locale}/models/${m.id}`} className="w-8 h-8 flex items-center justify-center rounded-lg text-[var(--text-tertiary)] hover:bg-[var(--bg-secondary)] transition-colors" title={t("view")}>
                   <ExternalLink size={14} />
                 </a>

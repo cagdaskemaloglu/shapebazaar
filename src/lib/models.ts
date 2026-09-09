@@ -36,35 +36,53 @@ export async function createModel(data: ModelInsert) {
   return model;
 }
 
-/** Fetch published models with optional filters */
-export async function fetchModels({
-  category,
-  search,
-  sort = "popular",
-  limit = 24,
-  offset = 0,
-}: {
-  category?: string;
+/** Yayınlanmış modelleri filtreye göre getirir. Ortak select alanları,
+ *  bu fonksiyonu kullanan tüm bileşenlerin (liste, grid, viewer, profil)
+ *  ihtiyaç duyabileceği alanların birleşimidir — küçük ölçekli bir
+ *  pazaryeri için bunun performans maliyeti ihmal edilebilir düzeydedir. */
+export interface FetchModelsOptions {
   search?: string;
+  categoryId?: number | null;
+  designerId?: string;
+  priceMin?: number;
+  priceMax?: number;
   sort?: "popular" | "newest" | "price_asc" | "price_desc" | "rating";
   limit?: number;
   offset?: number;
-} = {}) {
+  withCount?: boolean;
+}
+
+const MODEL_LIST_SELECT = `
+  id, title, title_en, description, base_price, is_free,
+  thumbnail_url, file_url, file_format,
+  avg_rating, rating_count, print_count, created_at, tags,
+  weight_grams, dimension_x, dimension_y, dimension_z,
+  rotation_x, rotation_y, rotation_z,
+  designer:profiles(id, full_name, username, avatar_url),
+  category:categories(id, slug, name_tr, name_en)
+`;
+
+export async function fetchModels(opts: FetchModelsOptions = {}) {
+  const {
+    search, categoryId, designerId, priceMin, priceMax,
+    sort = "popular", limit = 24, offset = 0, withCount = false,
+  } = opts;
+
   const supabase = createClient();
 
   let query = supabase
     .from("models")
-    .select(`
-      id, title, title_en, base_price, is_free, thumbnail_url,
-      avg_rating, rating_count, print_count, created_at, tags,
-      designer:profiles(id, full_name, username, avatar_url),
-      category:categories(slug, name_tr)
-    `)
+    .select(MODEL_LIST_SELECT, withCount ? { count: "exact" } : undefined)
     .eq("is_published", true);
 
-  if (search) {
-    query = query.ilike("title", `%${search}%`);
+  if (search?.trim()) {
+    const q = search.trim();
+    query = query.or(`title.ilike.%${q}%,title_en.ilike.%${q}%`);
   }
+  if (categoryId != null) query = query.eq("category_id", categoryId);
+  if (designerId)         query = query.eq("designer_id", designerId);
+  if (priceMin != null && priceMin > 0) query = query.gte("base_price", priceMin);
+  if (priceMax != null)                 query = query.lte("base_price", priceMax);
 
   if (sort === "popular")    query = query.order("print_count", { ascending: false });
   if (sort === "newest")     query = query.order("created_at",  { ascending: false });
@@ -72,9 +90,9 @@ export async function fetchModels({
   if (sort === "price_desc") query = query.order("base_price",  { ascending: false });
   if (sort === "rating")     query = query.order("avg_rating",  { ascending: false });
 
-  const { data, error } = await query.range(offset, offset + limit - 1);
+  const { data, error, count } = await query.range(offset, offset + limit - 1);
   if (error) throw error;
-  return data ?? [];
+  return { data: data ?? [], count: count ?? 0 };
 }
 
 /** Fetch single model by id */

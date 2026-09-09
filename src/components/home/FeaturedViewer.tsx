@@ -3,7 +3,7 @@ import { useState, useEffect } from "react";
 import { Star } from "lucide-react";
 import { formatPrice } from "@/lib/utils";
 import { ModelViewer } from "@/components/viewer/ModelViewer";
-import { createClient } from "@/lib/supabase/client";
+import { fetchModels } from "@/lib/models";
 import { getModelPublicUrl } from "@/lib/storage";
 import { useTranslations } from "next-intl";
 import { usePathname } from "next/navigation";
@@ -59,24 +59,15 @@ export function FeaturedViewer() {
 
   useEffect(() => {
     async function fetchRandom() {
-      const supabase = createClient();
-      const { data, error } = await supabase
-        .from("models")
-        .select(`
-          id, title, title_en, base_price, is_free,
-          avg_rating, rating_count,
-          file_url, file_format, weight_grams,
-          rotation_x, rotation_y, rotation_z,
-          designer:profiles(username, full_name)
-        `)
-        .order("print_count", { ascending: false })
-        .limit(20);
-
-      if (error || !data || data.length === 0) { setLoading(false); return; }
-
-      const picked = data[Math.floor(Math.random() * data.length)] as unknown as FeaturedModel;
-      setModel(picked);
-      setModelUrl(getModelPublicUrl(picked.file_url));
+      try {
+        const { data } = await fetchModels({ sort: "popular", limit: 20 });
+        if (data.length === 0) { setLoading(false); return; }
+        const picked = data[Math.floor(Math.random() * data.length)] as unknown as FeaturedModel;
+        setModel(picked);
+        setModelUrl(getModelPublicUrl(picked.file_url));
+      } catch (e) {
+        console.error(e);
+      }
       setLoading(false);
     }
     fetchRandom();

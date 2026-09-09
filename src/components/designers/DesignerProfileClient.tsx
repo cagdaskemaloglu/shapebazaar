@@ -4,6 +4,7 @@ import { useTranslations } from "next-intl";
 import { usePathname } from "next/navigation";
 import Link from "next/link";
 import { createClient } from "@/lib/supabase/client";
+import { fetchModels } from "@/lib/models";
 import { Star, Package, MapPin, AlertCircle, TrendingUp } from "lucide-react";
 import { formatPrice } from "@/lib/utils";
 
@@ -58,13 +59,12 @@ export function DesignerProfileClient({ designerId }: { designerId: string }) {
       if (error || !profile) { setNotFound(true); setLoading(false); return; }
       setDesigner(profile as DesignerProfile);
 
-      const { data: modelData } = await supabase
-        .from("models")
-        .select("id, title, title_en, base_price, is_free, avg_rating, rating_count, print_count, thumbnail_url, file_format, created_at, category:categories(name_tr, name_en)")
-        .eq("designer_id", designerId)
-        .eq("is_published", true);
-
-      setModels((modelData ?? []) as unknown as DesignerModel[]);
+      try {
+        const { data: modelData } = await fetchModels({ designerId, limit: 500 });
+        setModels(modelData as unknown as DesignerModel[]);
+      } catch (e) {
+        console.error(e);
+      }
       setLoading(false);
     }
     load();

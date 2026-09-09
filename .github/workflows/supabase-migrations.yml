@@ -1,0 +1,54 @@
+name: Supabase Migrations
+
+# NEDEN: Bu proje şu ana kadar migration'ları elle (SQL Editor'den) uyguluyordu.
+# Bu workflow, main branch'e her push'ta supabase/migrations/ klasöründeki
+# henüz uygulanmamış dosyaları otomatik olarak canlı veritabanına uygular.
+#
+# KURULUM (bir kere yapılması gerekiyor):
+# 1. Supabase Dashboard → Account → Access Tokens → yeni bir token oluştur.
+# 2. GitHub repo → Settings → Secrets and variables → Actions → şu 3 secret'ı ekle:
+#      SUPABASE_ACCESS_TOKEN   → 1. adımda oluşturduğun token
+#      SUPABASE_PROJECT_REF    → Supabase proje URL'indeki referans kodu
+#                                 (https://xxxxxxxx.supabase.co adresindeki "xxxxxxxx")
+#      SUPABASE_DB_PASSWORD    → Supabase Dashboard → Settings → Database
+#                                 sayfasındaki veritabanı şifresi
+# 3. Bu dosyayı .github/workflows/ altına koyup main'e push'ladığında
+#    otomatik çalışmaya başlar. İlk çalıştırmada "supabase link" adımı
+#    projenin migration geçmişini Supabase ile senkronize eder.
+#
+# NOT: Bu workflow SADECE veritabanı şemasını günceller — Next.js uygulamasının
+# kendisini deploy etmez (o iş hâlâ Vercel'in otomatik deploy'unda). Migration'ın
+# uygulama koduyla aynı anda/sırayla gitmesi için: önce bu workflow'un migration'ı
+# uygulaması, SONRA Vercel deploy'unun tamamlanması gerekiyorsa, Vercel projesinde
+# "Ignored Build Step" ayarını kullanarak veya bu workflow'u deploy'dan önce
+# tetiklenecek şekilde sıralayabilirsiniz. Basit kurulumlarda genelde migration'lar
+# geriye dönük uyumlu olduğu için (yeni kolon eklemek gibi) sıralama kritik değildir.
+
+on:
+  push:
+    branches: [main]
+    paths:
+      - "supabase/migrations/**"
+  workflow_dispatch: {} # Elle tetiklemek istersen: Actions sekmesinden "Run workflow"
+
+jobs:
+  migrate:
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/checkout@v4
+
+      - uses: supabase/setup-cli@v1
+        with:
+          version: latest
+
+      - name: Link Supabase project
+        run: supabase link --project-ref "$SUPABASE_PROJECT_REF"
+        env:
+          SUPABASE_ACCESS_TOKEN: ${{ secrets.SUPABASE_ACCESS_TOKEN }}
+          SUPABASE_PROJECT_REF: ${{ secrets.SUPABASE_PROJECT_REF }}
+
+      - name: Push migrations
+        run: supabase db push
+        env:
+          SUPABASE_ACCESS_TOKEN: ${{ secrets.SUPABASE_ACCESS_TOKEN }}
+          SUPABASE_DB_PASSWORD: ${{ secrets.SUPABASE_DB_PASSWORD }}

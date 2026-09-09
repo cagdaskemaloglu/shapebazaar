@@ -22,6 +22,8 @@ export function RatingSection({ modelId }: { modelId: string }) {
   const [loading,    setLoading]    = useState(false);
   const [submitted,  setSubmitted]  = useState(false);
   const [userId,     setUserId]     = useState<string | null>(null);
+  const [canRate,    setCanRate]    = useState(false);
+  const [error,      setError]      = useState("");
 
   useEffect(() => {
     fetchRatings();
@@ -32,15 +34,27 @@ export function RatingSection({ modelId }: { modelId: string }) {
     const supabase = createClient();
     const { data: { user } } = await supabase.auth.getUser();
     setUserId(user?.id ?? null);
-    if (user) {
-      const { data } = await supabase
-        .from("model_ratings")
-        .select("rating")
-        .eq("model_id", modelId)
-        .eq("user_id", user.id)
-        .single();
-      if (data) { setUserRating(data.rating); setSubmitted(true); }
-    }
+    if (!user) return;
+
+    const { data } = await supabase
+      .from("model_ratings")
+      .select("rating")
+      .eq("model_id", modelId)
+      .eq("user_id", user.id)
+      .single();
+    if (data) { setUserRating(data.rating); setSubmitted(true); return; }
+
+    // Satın alma / teslimat şartı: bu modeli içeren, kargolanmış ya da
+    // teslim edilmiş bir siparişi var mı? (RLS de aynı şartı zorunlu kılıyor,
+    // burada sadece formu göstermeden önce erken bir kontrol yapıyoruz.)
+    const { data: purchased } = await supabase
+      .from("order_items")
+      .select("id, orders!inner(status, buyer_id)")
+      .eq("model_id", modelId)
+      .eq("orders.buyer_id", user.id)
+      .in("orders.status", ["shipped", "delivered"])
+      .limit(1);
+    setCanRate((purchased?.length ?? 0) > 0);
   }
 
   async function fetchRatings() {
@@ -57,13 +71,18 @@ export function RatingSection({ modelId }: { modelId: string }) {
   async function submitRating() {
     if (!userId || userRating === 0) return;
     setLoading(true);
+    setError("");
     const supabase = createClient();
-    await supabase.from("model_ratings").upsert({
+    const { error: upsertError } = await supabase.from("model_ratings").upsert({
       model_id: modelId, user_id: userId, rating: userRating, comment: comment || null,
     }, { onConflict: "model_id,user_id" });
-    setSubmitted(true);
+    if (upsertError) {
+      setError(t("purchaseRequired"));
+    } else {
+      setSubmitted(true);
+      fetchRatings();
+    }
     setLoading(false);
-    fetchRatings();
   }
 
   return (
@@ -71,7 +90,7 @@ export function RatingSection({ modelId }: { modelId: string }) {
       <h2 className="text-base font-semibold text-[var(--text-primary)] mb-5">{t("title")}</h2>
 
       {/* Submit rating */}
-      {userId && !submitted && (
+      {userId && canRate && !submitted && (
         <div className="bg-[var(--bg-secondary)] border border-[var(--border)] rounded-2xl p-5 mb-6">
           <div className="text-sm font-medium text-[var(--text-primary)] mb-3">{t("rateThis")}</div>
           <div className="flex gap-1 mb-3">
@@ -97,6 +116,11 @@ export function RatingSection({ modelId }: { modelId: string }) {
             onChange={(e) => setComment(e.target.value)}
             className="w-full px-3 py-2.5 text-sm rounded-xl border border-[var(--border)] bg-[var(--bg-primary)] text-[var(--text-primary)] outline-none focus:border-[#FF6B35] transition-colors placeholder:text-[var(--text-tertiary)] resize-none mb-3"
           />
+          {error && (
+            <p className="text-xs text-red-500 bg-red-50 dark:bg-red-950/30 border border-red-200 dark:border-red-900 rounded-lg px-3 py-2 mb-3">
+              {error}
+            </p>
+          )}
           <button
             onClick={submitRating}
             disabled={loading || userRating === 0}
@@ -104,6 +128,12 @@ export function RatingSection({ modelId }: { modelId: string }) {
           >
             {loading ? t("submitting") : t("submit")}
           </button>
+        </div>
+      )}
+
+      {userId && !canRate && !submitted && (
+        <div className="bg-[var(--bg-secondary)] border border-[var(--border)] rounded-xl px-4 py-3 text-sm text-[var(--text-tertiary)] mb-6">
+          {t("purchaseRequired")}
         </div>
       )}
 

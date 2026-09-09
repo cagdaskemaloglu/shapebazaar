@@ -3,6 +3,7 @@ import { useState, useEffect, useCallback, useRef } from "react";
 import { Search, Star, TrendingUp, Sparkles, Grid3X3, List, ChevronDown } from "lucide-react";
 import { useTranslations, useLocale } from "next-intl";
 import { createClient } from "@/lib/supabase/client";
+import { fetchModels as fetchModelsApi } from "@/lib/models";
 import { formatPrice } from "@/lib/utils";
 
 const SORT_VALUES = ["popular", "newest", "price_asc", "price_desc", "rating"];
@@ -85,47 +86,22 @@ export function ModelsPageClient() {
       });
   }, []);
 
-  const fetchModels = useCallback(async () => {
+  const loadModels = useCallback(async () => {
     setLoading(true);
-    const supabase = createClient();
-
-    let query = supabase
-      .from("models")
-      .select(`
-        id, title, title_en, base_price, is_free, thumbnail_url,
-        avg_rating, rating_count, print_count, created_at, file_format,
-        designer:profiles(full_name, username),
-        category:categories(name_tr, name_en)
-      `, { count: "exact" })
-      .eq("is_published", true);
-
-    if (search.trim()) {
-      const q = search.trim();
-      query = query.or(`title.ilike.%${q}%,title_en.ilike.%${q}%`);
-    }
-    if (categoryId !== null) {
-      query = query.eq("category_id", categoryId);
-    }
-    if (priceMin > 0) {
-      query = query.gte("base_price", priceMin);
-    }
-    if (priceMax < MAX_PRICE) {
-      query = query.lte("base_price", priceMax);
-    }
-
-    if (sort === "popular")    query = query.order("print_count", { ascending: false });
-    if (sort === "newest")     query = query.order("created_at",  { ascending: false });
-    if (sort === "price_asc")  query = query.order("base_price",  { ascending: true  });
-    if (sort === "price_desc") query = query.order("base_price",  { ascending: false });
-    if (sort === "rating")     query = query.order("avg_rating",  { ascending: false });
-
-    const from = (page - 1) * PAGE_SIZE;
-    const to   = from + PAGE_SIZE - 1;
-    const { data, count, error } = await query.range(from, to);
-
-    if (!error) {
-      setModels((data ?? []) as unknown as Model[]);
-      setTotal(count ?? 0);
+    try {
+      const { data, count } = await fetchModelsApi({
+        search, categoryId,
+        priceMin: priceMin > 0 ? priceMin : undefined,
+        priceMax: priceMax < MAX_PRICE ? priceMax : undefined,
+        sort: sort as "popular" | "newest" | "price_asc" | "price_desc" | "rating",
+        limit: PAGE_SIZE,
+        offset: (page - 1) * PAGE_SIZE,
+        withCount: true,
+      });
+      setModels(data as unknown as Model[]);
+      setTotal(count);
+    } catch (e) {
+      console.error(e);
     }
     setLoading(false);
   }, [search, categoryId, sort, page, priceMin, priceMax]);
@@ -134,9 +110,9 @@ export function ModelsPageClient() {
   useEffect(() => { setPage(1); }, [search, categoryId, sort, priceMin, priceMax]);
 
   useEffect(() => {
-    const timer = setTimeout(fetchModels, 300);
+    const timer = setTimeout(loadModels, 300);
     return () => clearTimeout(timer);
-  }, [fetchModels]);
+  }, [loadModels]);
 
   return (
     <div className="max-w-7xl mx-auto px-4 sm:px-6 py-8">
