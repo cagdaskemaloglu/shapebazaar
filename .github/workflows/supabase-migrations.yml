@@ -13,23 +13,31 @@ name: Supabase Migrations
 #      SUPABASE_DB_PASSWORD    → Supabase Dashboard → Settings → Database
 #                                 sayfasındaki veritabanı şifresi
 # 3. Bu dosyayı .github/workflows/ altına koyup main'e push'ladığında
-#    otomatik çalışmaya başlar. İlk çalıştırmada "supabase link" adımı
-#    projenin migration geçmişini Supabase ile senkronize eder.
+#    otomatik çalışmaya başlar.
+#
+# ONARIM MODU (repair): Eğer bazı migration'lar daha önce ELLE (SQL Editor'den)
+# uygulandıysa, Supabase CLI'nin bundan haberi olmaz ve o migration'ları tekrar
+# çalıştırmaya çalışıp "relation already exists" hatası verir. Bunu düzeltmek için:
+# Actions → Supabase Migrations → "Run workflow" → "repair_versions" alanına,
+# zaten elle uygulanmış migration dosyalarının numara önekini virgülle ayırarak
+# yazın (örn: 001,002,003,004) → çalıştırın. Bu SADECE CLI'nin takip defterini
+# günceller, SQL'i tekrar ÇALIŞTIRMAZ — veriye dokunmaz. Sonraki normal push'larda
+# (repair_versions boş) sadece gerçekten yeni migration'lar uygulanır.
 #
 # NOT: Bu workflow SADECE veritabanı şemasını günceller — Next.js uygulamasının
-# kendisini deploy etmez (o iş hâlâ Vercel'in otomatik deploy'unda). Migration'ın
-# uygulama koduyla aynı anda/sırayla gitmesi için: önce bu workflow'un migration'ı
-# uygulaması, SONRA Vercel deploy'unun tamamlanması gerekiyorsa, Vercel projesinde
-# "Ignored Build Step" ayarını kullanarak veya bu workflow'u deploy'dan önce
-# tetiklenecek şekilde sıralayabilirsiniz. Basit kurulumlarda genelde migration'lar
-# geriye dönük uyumlu olduğu için (yeni kolon eklemek gibi) sıralama kritik değildir.
+# kendisini deploy etmez (o iş hâlâ Vercel'in otomatik deploy'unda).
 
 on:
   push:
     branches: [main]
     paths:
       - "supabase/migrations/**"
-  workflow_dispatch: {} # Elle tetiklemek istersen: Actions sekmesinden "Run workflow"
+  workflow_dispatch:
+    inputs:
+      repair_versions:
+        description: 'Sadece onarım için: elle uygulanmış migration numaraları, virgülle ayrılmış (örn: 001,002,003,004). Boş bırakırsanız normal migration push çalışır.'
+        required: false
+        default: ""
 
 jobs:
   migrate:
@@ -41,22 +49,23 @@ jobs:
         with:
           version: latest
 
-      - name: Debug secret length (şifrenin kendisini asla göstermez)
-        # Sadece karakter sayısını yazdırır — kopyalarken başında/sonunda
-        # boşluk/satır sonu kalıp kalmadığını anlamak için. Gerçek şifre
-        # asla log'a yazılmaz.
-        run: |
-          echo "SUPABASE_DB_PASSWORD uzunluğu: ${#SUPABASE_DB_PASSWORD} karakter"
-          echo "SUPABASE_PROJECT_REF uzunluğu: ${#SUPABASE_PROJECT_REF} karakter"
-        env:
-          SUPABASE_DB_PASSWORD: ${{ secrets.SUPABASE_DB_PASSWORD }}
-          SUPABASE_PROJECT_REF: ${{ secrets.SUPABASE_PROJECT_REF }}
-
       - name: Link Supabase project
         run: supabase link --project-ref "$SUPABASE_PROJECT_REF"
         env:
           SUPABASE_ACCESS_TOKEN: ${{ secrets.SUPABASE_ACCESS_TOKEN }}
           SUPABASE_PROJECT_REF: ${{ secrets.SUPABASE_PROJECT_REF }}
+
+      - name: Repair migration history (sadece elle tetiklenip repair_versions doldurulduğunda)
+        if: ${{ github.event_name == 'workflow_dispatch' && github.event.inputs.repair_versions != '' }}
+        run: |
+          IFS=',' read -ra VERSIONS <<< "${{ github.event.inputs.repair_versions }}"
+          for v in "${VERSIONS[@]}"; do
+            echo "Onarılıyor: $v → applied olarak işaretleniyor"
+            supabase migration repair --status applied "$v"
+          done
+        env:
+          SUPABASE_ACCESS_TOKEN: ${{ secrets.SUPABASE_ACCESS_TOKEN }}
+          SUPABASE_DB_PASSWORD: ${{ secrets.SUPABASE_DB_PASSWORD }}
 
       - name: Push migrations
         # NOT: `supabase db push` bazı CLI sürümlerinde CI'da (terminal
@@ -64,6 +73,7 @@ jobs:
         # (bilinen bir sorun: supabase/cli#2238). `yes |` ile bu onayı
         # önden veriyoruz. --debug, hata durumunda log'da gerçek sebebi
         # görebilmek için.
+        if: ${{ !(github.event_name == 'workflow_dispatch' && github.event.inputs.repair_versions != '') }}
         run: yes | supabase db push --debug
         env:
           SUPABASE_ACCESS_TOKEN: ${{ secrets.SUPABASE_ACCESS_TOKEN }}
