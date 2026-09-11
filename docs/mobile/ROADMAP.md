@@ -12,18 +12,19 @@
 - [x] Bonus: `CATEGORIES`/`MATERIALS`/`COLORS`/`SCALES`/`INFILLS` sabitleri ve temel domain tipleri (`Model`/`Order`/`CartItem`) de `packages/shared`'a taşındı (Adım 9, erken tamamlandı)
 
 ## Faz 1 — Expo İskeleti & Tasarım Sistemi
-- [ ] `apps/mobile/` içinde `npx create-expo-app@latest` ile proje kuruldu (TypeScript template)
-- [ ] Expo Router ile temel navigasyon iskeleti: Tab bar (Ana Sayfa / Ara / Sepet / Siparişlerim / Profil)
-- [ ] NativeWind kuruldu, web'deki renk paleti (`#FF6B35`, `#10B981`, `#1E293B`, `#F8FAFC`) tema olarak tanımlandı
-- [ ] `apps/mobile/CLAUDE.md` oluşturuldu (bkz. ayrı dosya — zaten hazır)
-- [ ] EAS hesabı/projesi bağlandı (`eas init`), ileride build almak için
+- [x] `apps/mobile/` proje iskeleti elle oluşturuldu (Claude'un sandbox'ında network erişimi olmadığı için `npx create-expo-app` çalıştırılamadı — Expo SDK 57 + Expo Router + NativeWind konvansiyonlarına göre dosyalar elle yazıldı). **Sizin yapmanız gereken:** `npm install` sonrası `npx expo install --fix` çalıştırarak sürümleri Expo'nun kendi uyumluluk kontrolünden geçirin.
+- [x] Expo Router ile temel navigasyon iskeleti: Tab bar (Ana Sayfa / Ara / Sepet / Siparişlerim / Profil) — şimdilik markalı placeholder ekranlar
+- [x] NativeWind kuruldu, web'deki renk paleti (`#FF6B35`, `#10B981`, `#1E293B`, `#F8FAFC`) `tailwind.config.js`'de `brand.*` olarak tanımlandı
+- [x] `apps/mobile/CLAUDE.md` oluşturuldu
+- [ ] **Eksik — sizin tamamlamanız gerekiyor:** `assets/icon.png`, `assets/splash.png`, `assets/adaptive-icon.png` gerçek görsel dosyaları (Claude görsel üretemez/yükleyemez, `app.json` şu an bunlara referans veriyor ama dosyalar yok — ilk build'de hata verir)
+- [ ] EAS hesabı/projesi bağlandı (`eas init`), ileride build almak için — interaktif giriş gerektirdiği için sizin terminalinizde yapılmalı
 
 ## Faz 2 — Auth & i18n
-- [ ] Supabase client kurulumu (AsyncStorage ile session persistence)
-- [ ] Giriş / Kayıt / Şifremi Unuttum ekranları (web'deki `LoginForm`/`RegisterForm`/`ForgotPasswordForm` akışlarının mobil karşılığı)
-- [ ] Google OAuth (expo-auth-session + deep link)
-- [ ] i18next kurulumu, `messages/*.json`'dan alıcı-kapsamındaki namespace'ler taşındı: `nav`, `auth`, `modelsPage`, `modelDetail`, `cart`, `rating`, `hero`, `howItWorks` (gerekli olanlar)
-- [ ] Dil değiştirme (TR/EN) çalışıyor, cihaz diline göre varsayılan seçiliyor
+- [x] Supabase client kurulumu (`lib/supabase.ts`, AsyncStorage ile session persistence + `react-native-url-polyfill`)
+- [x] Giriş / Kayıt / Şifremi Unuttum / Şifre Sıfırlama ekranları (`app/auth/*.tsx`) — web'deki `LoginForm`/`RegisterForm`/`ForgotPasswordForm`/`ResetPasswordForm` akışlarının mobil karşılığı, `lib/auth/AuthProvider.tsx` üzerinden
+- [x] Google OAuth eklendi (`AuthProvider.signInWithGoogle`, expo-auth-session + expo-web-browser) — **ama test edilmedi.** Kendi Google Cloud Console OAuth client'ınızı oluşturup Supabase Dashboard → Authentication → URL Configuration'a `shapebazaar://` şemasını eklemeniz, sonra gerçek cihazda denemeniz gerekiyor. Bu entegrasyon Expo+Supabase ekosisteminde bilinen kırılganlıklara sahip — ilk denemede çalışmayabilir.
+- [x] i18next kurulumu (`lib/i18n/`), `nav` ve `auth` namespace'leri web'den birebir aynı anahtar isimleriyle taşındı. `modelsPage`/`modelDetail`/`cart`/`rating`/`hero`/`howItWorks` bilerek taşınmadı — o ekranlar henüz yazılmadığı için (Faz 3/4/6'da, ilgili ekran yazılırken taşınacak, CLAUDE.md'deki kural gereği)
+- [x] Dil değiştirme çalışıyor — `expo-localization` ile cihaz diline bakılıyor, `tr`/`en` dışında bir şey gelirse `tr`'ye düşülüyor
 
 ## Faz 3 — Browse & Model Detayı
 - [ ] `packages/shared/src/queries/fetchModels.ts` — web'deki merkezi `fetchModels()` fonksiyonunun mobile'dan da çağrılabilir hâli (Supabase client dışarıdan inject edilir)
