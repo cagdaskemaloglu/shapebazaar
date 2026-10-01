@@ -56,6 +56,8 @@ export default function TabsLayout() {
       />
       {/* Ürün detayı: sekme çubuğunda görünmez ama çubuk ekranda kalır */}
       <Tabs.Screen name="models/[id]" options={{ href: null }} />
+      {/* Sipariş detayı: aynı şekilde sekme çubuğu görünür kalır */}
+      <Tabs.Screen name="order/[id]" options={{ href: null }} />
     </Tabs>
   );
 }

@@ -57,8 +57,16 @@ export function AuthProvider({ children }: { children: ReactNode }) {
   //   exp://**           (Expo Go ile geliştirme)
   //   shapebazaar://**   (development build / mağaza sürümü)
   // Ayrıca `__DEV__`'de aşağıdaki redirectTo değeri konsola yazılır.
+  // Android + Expo Go'da loopback hilesi çalışmaz (exp:// bağlantısını Expo Go açar): `npx expo start --tunnel` kullan.
   async function signInWithGoogle() {
-    const redirectTo = makeRedirectUri({ path: "auth/callback" });
+    let redirectTo = makeRedirectUri({ path: "auth/callback" });
+
+    // Expo Go'da adres `exp://192.168.x.x:8081/--/...` olur. Supabase Auth, host'u bir IP olan
+    // (loopback hariç) redirect adreslerini allow-list'e BAKMADAN reddeder ve kullanıcıyı Site URL'ine
+    // (web sitesi) gönderir. Loopback ise kabul edilir. iOS'ta oturum penceresi yalnızca URL
+    // şemasına (`exp`) bakar, host'a değil — bu yüzden dev'de host'u 127.0.0.1 yapıyoruz.
+    // (Mağaza/dev-client sürümlerinde adres `shapebazaar://auth/callback`, bu satır etkisiz.)
+    redirectTo = redirectTo.replace(/^(exp:\/\/)(?:\d{1,3}\.){3}\d{1,3}/, "$1127.0.0.1");
     if (__DEV__) console.log("[auth] Google redirectTo:", redirectTo);
 
     const { data, error } = await supabase.auth.signInWithOAuth({
@@ -73,6 +81,11 @@ export function AuthProvider({ children }: { children: ReactNode }) {
     if (result.type !== "success" || !result.url) {
       // Kullanıcı pencereyi kapattı (cancel/dismiss) — hata değil
       const closedByUser = result.type === "cancel" || result.type === "dismiss";
+      // Geliştirme sırasında: pencere web sitesinde takılıp elle kapatıldıysa, sebep neredeyse her
+      // zaman redirectTo'nun Supabase allow-list'iyle eşleşmemesidir — adresi ekranda göster.
+      if (__DEV__ && closedByUser) {
+        return { error: `[dev] Oturum açılmadı (pencere elle kapatıldı veya redirect reddedildi). redirectTo: ${redirectTo}`, signedIn: false };
+      }
       return { error: closedByUser ? null : "Giriş tamamlanamadı.", signedIn: false };
     }
 

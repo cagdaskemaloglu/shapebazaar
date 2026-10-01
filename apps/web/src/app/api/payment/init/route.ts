@@ -1,5 +1,6 @@
 import { NextRequest, NextResponse } from "next/server";
 import { createRequestClient } from "@/lib/supabase/requestClient";
+import { createAdminClient } from "@/lib/supabase/admin";
 import { createCheckoutForm, SITE_URL } from "@/lib/iyzico";
 
 export async function POST(req: NextRequest) {
@@ -79,8 +80,11 @@ export async function POST(req: NextRequest) {
       return NextResponse.json({ error: iyzData.errorMessage ?? "İyzico hatası" }, { status: 400 });
     }
 
-    // Siparişi kaydet
-    const { data: order, error: orderErr } = await supabase
+    // Siparişi kaydet. Kullanıcı yukarıda doğrulandı (cookie/Bearer); yazmalar admin client ile
+    // yapılır — `order_items` için hiç INSERT policy yok (006) ve `orders` için de kullanıcıya
+    // INSERT/UPDATE hakkı vermek alıcının status/total_amount'u kendi eliyle yazmasına izin verir.
+    const admin = createAdminClient();
+    const { data: order, error: orderErr } = await admin
       .from("orders")
       .insert({
         buyer_id:       user.id,
@@ -104,7 +108,7 @@ export async function POST(req: NextRequest) {
     }
 
     // Order items
-    await supabase.from("order_items").insert(
+    const { error: itemsErr } = await admin.from("order_items").insert(
       items.map((item: any) => ({
         order_id:      order.id,
         model_id:      item.modelId,
@@ -119,6 +123,13 @@ export async function POST(req: NextRequest) {
         item_total:    item.itemTotal,
       }))
     );
+
+    if (itemsErr) {
+      // Kalemsiz sipariş kalmasın (tasarımcı kazancı/puan şartı order_items'a bağlı)
+      console.error("Order items insert error:", itemsErr);
+      await admin.from("orders").delete().eq("id", order.id);
+      return NextResponse.json({ error: "Sipariş oluşturulamadı" }, { status: 500 });
+    }
 
     return NextResponse.json({
       checkoutFormContent: iyzData.checkoutFormContent,

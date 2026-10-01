@@ -1,7 +1,7 @@
 # ShapeBazaar Mobile — Yol Haritası (v1: Sadece Alıcı)
 
 > Her faz, kendinden önceki fazın üzerine inşa edilecek şekilde sıralandı.
-> **Son güncelleme:** Faz 5 kodu tamam; ilk cihaz testinden çıkan hatalar düzeltildi (aşağıdaki "Faz 5.1"). Ödeme testi web deploy'u sonrası yapılacak.
+> **Son güncelleme:** Faz 5 cihazda doğrulandı (Google girişi + iyzico test ödemesi çalıştı). Faz 6 kodu yazıldı, cihazda test bekliyor.
 
 ## Faz 0 — Monorepo Geçişi ✅ TAMAMLANDI
 📄 Ayrıntılı adımlar: `MONOREPO_MIGRATION.md`
@@ -71,12 +71,17 @@
 - [x] **Ara sekmesi gerçek ekran oldu:** arama (debounce), kategori, fiyat, sıralama, toplam sonuç sayısı, sonsuz kaydırma, filtreleri temizle. Ortak `ModelCard` + `lib/modelFilters.ts` (Ana sayfa da kullanıyor; tek kalan son kart artık tam genişliğe yayılmıyor).
 - [x] `fetchModels` arama metnindeki `, ( ) % * \` karakterleri sorguyu bozmasın diye temizleniyor (`packages/shared`).
 - [x] Ödeme hata ekranı artık 401'i ("sunucu token'ı kabul etmedi") yerel "oturum yok"tan ayırıyor ve hata kodu gösteriyor (`NO_SESSION`, `HTTP_401`, `NETWORK`…).
-- [ ] **Web deploy:** `payment/init` Bearer destekli sürümü Vercel'e yayınlanmalı; `HTTP_401` görülüyorsa ilk şüpheli bu.
+- [ ] **Web deploy:** `payment/init` Bearer destekli sürümü Vercel'e yayınlanmalı. İlk cihaz testinde `HTTP_401` alındı. Ödeme ekranı artık oturumu yenileyip tekrar dener ve kodu ayırır: `HTTP_401_SERVER` = token Supabase'de geçerli ama sunucu reddediyor (eski deploy / farklı Supabase projesi env'i), `HTTP_401_TOKEN` = oturum gerçekten geçersiz.
+- [x] **Google girişi — kök neden:** Supabase Auth, host'u IP olan (loopback hariç) redirect adreslerini allow-list'e bakmadan reddedip Site URL'ine düşürür. Expo Go adresi `exp://192.168.x.x:8081/...` olduğu için `exp://**` bile işe yaramıyordu. Dev'de redirectTo host'u `127.0.0.1`'e çevrildi (iOS'ta yeterli); Android/Expo Go için `npx expo start --tunnel`. Mağaza/dev-client sürümü `shapebazaar://` kullandığı için etkilenmez. Cihazda test bekliyor.
 
-## Faz 6 — Siparişler & Takip (başlanmadı)
-- [ ] Sipariş listesi (durum rozetleri)
-- [ ] Sipariş detayı: kargo takip no, ürün kalemleri, toplam tutar
-- [ ] Pull-to-refresh ile durum güncelleme
+## Faz 6 — Siparişler & Takip ✅ KOD TAMAMLANDI, CİHAZDA TEST BEKLİYOR
+- [x] `packages/shared/src/queries/orders.ts`: `fetchMyOrders` (sadece ödemesi alınmış, yani `paid_at` dolu siparişler — vazgeçilen/başarısız ödemelerin `pending`/`cancelled` kayıtları listelenmez), `fetchOrderDetail`, `OrderStatus` tipleri
+- [x] `app/(tabs)/orders.tsx`: durum rozetli liste, pull-to-refresh, sonsuz kaydırma, sekmeye her dönüşte sessiz yenileme, boş/hata/giriş-yok durumları
+- [x] `app/(tabs)/order/[id].tsx` (gizli sekme, alt çubuk görünür kalır): zaman çizelgesi, iptal/iade bilgisi, kalemler + ara toplam/kargo/toplam, teslimat adresi, kargo firması + takip no (basılı tutarak kopyalanır)
+- [x] "Teslim Aldım" butonu (`shipped` durumunda) → `POST /api/orders/confirm-delivery`; web route'u `createRequestClient` ile Bearer destekli yapıldı. Ortak yardımcı: `lib/api.ts` (`apiPost`, 401'de oturum yenileyip tekrar dener)
+- [x] **Güvenlik/veri düzeltmesi:** `payment/init` `orders` + `order_items` yazmalarını admin client ile yapıyor (kullanıcı client'ıyla `order_items` INSERT'ü RLS'te policy olmadığı için sessizce reddediliyor olabilirdi; kalemsiz sipariş = tasarımcı kazancı/puan şartı çalışmaz). `007_orders_rls_hardening.sql`: alıcının `orders` üzerindeki INSERT/UPDATE politikaları kaldırılıyor (önceden kendi siparişinin status/total_amount'unu değiştirebiliyordu). **Sıra: önce web deploy, sonra migration.**
+- [ ] Cihazda test: ödeme sonrası sipariş listede görünüyor mu, kalemler dolu mu, detay/zaman çizelgesi, (admin panelinden `shipped` yapılmış bir siparişle) "Teslim Aldım" ve cüzdan kazançları
+- [ ] Faz 3'ten kalan: satın alma şartıyla puan verme testi
 
 ## Faz 7 — Push Bildirimleri (başlanmadı, opsiyonel hızlandırma)
 - [ ] Expo push token kaydı

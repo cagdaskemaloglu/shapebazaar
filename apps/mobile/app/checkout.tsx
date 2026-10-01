@@ -93,38 +93,54 @@ export default function CheckoutScreen() {
         if (!session) return fail(t("payment.sessionExpired"), "NO_SESSION", true);
 
         // Gövde, web'deki CartDrawer.handlePayment ile birebir aynı şekilde.
-        const res = await fetch(`${WEB_BASE_URL}/api/payment/init`, {
-          method: "POST",
-          signal: controller.signal,
-          headers: {
-            "Content-Type": "application/json",
-            Authorization: `Bearer ${session.access_token}`,
-          },
-          body: JSON.stringify({
-            items: items.map((i) => ({
-              modelId: i.modelId,
-              modelTitle: i.modelTitle,
-              material: i.material,
-              colorName: i.colorName,
-              colorHex: i.colorHex,
-              scale: i.scale,
-              infill: i.infill,
-              designPrice: i.designPrice,
-              printCost: i.printCost,
-              itemTotal: i.itemTotal,
-            })),
-            subtotal: subtotal(),
-            shipping: shipping(),
-            grandTotal: grandTotal(),
-            platformFee: grandTotal() * 0.1,
-            address,
-          }),
+        const payload = JSON.stringify({
+          items: items.map((i) => ({
+            modelId: i.modelId,
+            modelTitle: i.modelTitle,
+            material: i.material,
+            colorName: i.colorName,
+            colorHex: i.colorHex,
+            scale: i.scale,
+            infill: i.infill,
+            designPrice: i.designPrice,
+            printCost: i.printCost,
+            itemTotal: i.itemTotal,
+          })),
+          subtotal: subtotal(),
+          shipping: shipping(),
+          grandTotal: grandTotal(),
+          platformFee: grandTotal() * 0.1,
+          address,
         });
 
+        const send = (accessToken: string) =>
+          fetch(`${WEB_BASE_URL}/api/payment/init`, {
+            method: "POST",
+            signal: controller.signal,
+            headers: {
+              "Content-Type": "application/json",
+              Authorization: `Bearer ${accessToken}`,
+            },
+            body: payload,
+          });
+
+        let res = await send(session.access_token);
+
+        // 401: token süresi dolmuş olabilir → oturumu yenileyip bir kez daha dene
+        if (res.status === 401) {
+          const { data: refreshed } = await supabase.auth.refreshSession();
+          if (refreshed.session) res = await send(refreshed.session.access_token);
+        }
+
+        // Hâlâ 401: sorun token'da mı, sunucuda mı? Token'ı doğrudan Supabase'e doğrulatarak ayırıyoruz.
+        if (res.status === 401) {
+          const { data: check } = await supabase.auth.getUser();
+          return check.user
+            ? fail(t("payment.serverAuthError"), "HTTP_401_SERVER")  // token geçerli, sunucu kabul etmiyor
+            : fail(t("payment.sessionExpired"), "HTTP_401_TOKEN", true); // oturum gerçekten geçersiz
+        }
+
         const data = await res.json().catch(() => ({}));
-        // 401: uygulamada oturum var ama SUNUCU token'ı kabul etmedi (genelde web'in
-        // Bearer destekli sürümü deploy edilmemiştir). "Oturum doldu" demek yanıltıcı.
-        if (res.status === 401) return fail(t("payment.serverAuthError"), "HTTP_401");
         if (!res.ok || data.error || !data.checkoutFormContent) {
           console.warn("[checkout] init failed:", res.status, data?.error);
           return fail(t("payment.initError"), `HTTP_${res.status}`);

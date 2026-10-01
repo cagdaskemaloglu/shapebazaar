@@ -1,5 +1,5 @@
 import { NextRequest, NextResponse } from "next/server";
-import { createClient } from "@/lib/supabase/server";
+import { createRequestClient } from "@/lib/supabase/requestClient";
 import { createAdminClient } from "@/lib/supabase/admin";
 
 const PRINTER_EARNING_RATE = 0.15;
@@ -19,8 +19,8 @@ export async function POST(req: NextRequest) {
     return NextResponse.json({ error: "orderId gerekli" }, { status: 400 });
   }
 
-  const userClient = await createClient();
-  const { data: { user } } = await userClient.auth.getUser();
+  // Web: cookie, mobil uygulama: Authorization: Bearer <access_token>
+  const { user } = await createRequestClient(req);
   if (!user) {
     return NextResponse.json({ error: "Giriş yapmanız gerekiyor" }, { status: 401 });
   }
