@@ -16,7 +16,9 @@ export default function RootLayout() {
           <Stack.Screen name="auth/register" options={{ presentation: "modal" }} />
           <Stack.Screen name="auth/forgot-password" options={{ presentation: "modal" }} />
           <Stack.Screen name="auth/reset-password" options={{ presentation: "modal" }} />
-          {/* Faz 3+'ta buraya eklenecek: models/[id], cart/checkout vb. */}
+          <Stack.Screen name="checkout" options={{ presentation: "fullScreenModal", gestureEnabled: false }} />
+          <Stack.Screen name="payment/success" options={{ gestureEnabled: false }} />
+          <Stack.Screen name="payment/failed" options={{ gestureEnabled: false }} />
         </Stack>
       </AuthProvider>
     </SafeAreaProvider>

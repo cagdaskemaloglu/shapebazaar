@@ -48,18 +48,6 @@ export interface Model {
   category?: Category | null;
 }
 
-export interface CartItem {
-  modelId: string;
-  modelTitle: string;
-  material: string;
-  colorName: string;
-  colorHex: string;
-  scale: string;
-  infill: string;
-  designPrice: number;
-  printCost: number;
-  itemTotal: number;
-}
 
 export type OrderStatus =
   | "pending" | "paid" | "in_print" | "printed"

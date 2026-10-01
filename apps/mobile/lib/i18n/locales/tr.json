@@ -65,5 +65,103 @@
     "loggedOutDesc": "Siparişlerini görmek ve hesabını yönetmek için giriş yap.",
     "welcome": "Hoş geldin",
     "signOut": "Çıkış Yap"
+  },
+  "home": {
+    "searchPlaceholder": "Model ara…",
+    "free": "Ücretsiz",
+    "noResults": "Model bulunamadı."
+  },
+  "modelDetail": {
+    "notFound": "Model bulunamadı",
+    "designer": "Tasarımcı",
+    "free": "Ücretsiz",
+    "description": "Açıklama",
+    "loadingModel": "3D model yükleniyor…",
+    "viewerError": "3D model yüklenemedi.",
+    "material": "Malzeme",
+    "color": "Renk",
+    "colors": {
+      "Lacivert": "Lacivert",
+      "Turuncu": "Turuncu",
+      "Yeşil": "Yeşil",
+      "Beyaz": "Beyaz",
+      "Kırmızı": "Kırmızı",
+      "Sarı": "Sarı"
+    },
+    "size": "Boyut",
+    "custom": "Özel",
+    "infill": "Dolgu Yoğunluğu",
+    "infills": {
+      "light": "Hafif",
+      "standard": "Standart",
+      "solid": "Sağlam",
+      "dense": "Masif"
+    },
+    "designPrice": "Tasarım ücreti",
+    "printCost": "Baskı",
+    "platformFee": "Platform komisyonu (%10)",
+    "total": "Toplam",
+    "addToCart": "Sepete Ekle",
+    "addedToCart": "Sepete eklendi!"
+  },
+  "cart": {
+    "emptyTitle": "Sepetin boş",
+    "emptyDesc": "Modellere göz atıp bir tanesini sepete ekleyerek başla.",
+    "address": "Teslimat Adresi",
+    "fullName": "Ad Soyad",
+    "phone": "Telefon",
+    "city": "Şehir",
+    "district": "İlçe",
+    "addressLine": "Adres",
+    "subtotal": "Ara Toplam",
+    "shipping": "Kargo",
+    "total": "Toplam",
+    "checkout": "Ödemeye Geç",
+    "cancel": "Vazgeç",
+    "loginRequiredTitle": "Giriş gerekli",
+    "loginRequiredDesc": "Siparişi tamamlamak için giriş yapmalısın.",
+    "requiredFields": "Ad soyad, şehir ve adres alanları zorunlu."
+  },
+  "rating": {
+    "title": "Değerlendirmeler",
+    "rateThis": "Bu modeli değerlendirin",
+    "commentPlaceholder": "Yorumunuz (isteğe bağlı)…",
+    "submit": "Değerlendirmeyi Gönder",
+    "submitting": "Gönderiliyor…",
+    "success": "Değerlendirmeniz kaydedildi. Teşekkürler!",
+    "noRatings": "Henüz değerlendirme yok. İlk değerlendirmeyi siz yapın!",
+    "user": "Kullanıcı",
+    "purchaseRequired": "Bu modeli satın alıp teslim aldıktan sonra değerlendirebilirsiniz."
+  },
+  "payment": {
+    "title": "Ödeme",
+    "preparing": "Ödeme hazırlanıyor…",
+    "successTitle": "Ödeme başarılı!",
+    "successDesc": "Siparişin alındı ve baskı kuyruğuna eklendi.",
+    "orderNo": "Sipariş No:",
+    "successInfo": "En yakın yazıcı ortağı siparişini alacak. Durum güncellemelerini e-posta ve siparişlerim sekmesinden takip edebilirsin.",
+    "viewOrders": "Siparişlerimi gör",
+    "backToModels": "Modellere dön",
+    "failedTitle": "Ödeme başarısız",
+    "failedDesc": "Ödeme işlemi tamamlanamadı. Kart bilgilerini kontrol edip tekrar deneyebilirsin.",
+    "tryAgain": "Tekrar dene",
+    "backToCart": "Sepete dön",
+    "retry": "Tekrar dene",
+    "cancelTitle": "Ödemeden çıkılsın mı?",
+    "cancelDesc": "Ödemeyi tamamlamadan çıkarsan ücret alınmaz, sepetin korunur.",
+    "cancelConfirm": "Çık",
+    "keepPaying": "Ödemeye devam et",
+    "initError": "Ödeme başlatılamadı. Lütfen tekrar dene.",
+    "connectionError": "Bağlantı hatası. İnternetini kontrol edip tekrar dene.",
+    "sessionExpired": "Oturumun sona ermiş. Lütfen tekrar giriş yap.",
+    "serverAuthError": "Sunucu oturumunu doğrulayamadı. Çıkış yapıp tekrar giriş yapmayı dene.",
+    "errorCode": "Hata kodu: {{code}}"
+  },
+  "search": {
+    "results": "{{n}} model bulundu",
+    "clear": "Filtreleri temizle",
+    "noResults": "Sonuç bulunamadı",
+    "noResultsDesc": "Farklı bir kelime dene ya da filtreleri temizle.",
+    "error": "Modeller yüklenemedi. İnternet bağlantını kontrol et."
   }
 }

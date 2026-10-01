@@ -3,19 +3,17 @@ import { useState, useEffect } from "react";
 import { Star } from "lucide-react";
 import { createClient } from "@/lib/supabase/client";
 import { useTranslations, useLocale } from "next-intl";
-
-interface Rating {
-  id: string;
-  rating: number;
-  comment: string | null;
-  created_at: string;
-  user: { full_name: string | null; username: string | null } | null;
-}
+import {
+  canRateModel,
+  fetchRatings as fetchRatingsShared,
+  submitRating as submitRatingShared,
+  type ModelRating,
+} from "@shapebazaar/shared";
 
 export function RatingSection({ modelId }: { modelId: string }) {
   const t      = useTranslations("rating");
   const locale = useLocale();
-  const [ratings,    setRatings]    = useState<Rating[]>([]);
+  const [ratings,    setRatings]    = useState<ModelRating[]>([]);
   const [userRating, setUserRating] = useState(0);
   const [hover,      setHover]      = useState(0);
   const [comment,    setComment]    = useState("");
@@ -26,7 +24,7 @@ export function RatingSection({ modelId }: { modelId: string }) {
   const [error,      setError]      = useState("");
 
   useEffect(() => {
-    fetchRatings();
+    loadRatings();
     checkUser();
   }, [modelId]);
 
@@ -44,28 +42,16 @@ export function RatingSection({ modelId }: { modelId: string }) {
       .single();
     if (data) { setUserRating(data.rating); setSubmitted(true); return; }
 
-    // Satın alma / teslimat şartı: bu modeli içeren, kargolanmış ya da
-    // teslim edilmiş bir siparişi var mı? (RLS de aynı şartı zorunlu kılıyor,
-    // burada sadece formu göstermeden önce erken bir kontrol yapıyoruz.)
-    const { data: purchased } = await supabase
-      .from("order_items")
-      .select("id, orders!inner(status, buyer_id)")
-      .eq("model_id", modelId)
-      .eq("orders.buyer_id", user.id)
-      .in("orders.status", ["shipped", "delivered"])
-      .limit(1);
-    setCanRate((purchased?.length ?? 0) > 0);
+    // Satın alma / teslimat şartı: bkz. packages/shared/src/queries/models.ts
+    // (RLS de aynı şartı zorunlu kılıyor, burada sadece formu göstermeden
+    // önce erken bir kontrol yapıyoruz — web ve mobile bu kontrolü artık
+    // aynı fonksiyondan yapıyor).
+    setCanRate(await canRateModel(supabase, modelId, user.id));
   }
 
-  async function fetchRatings() {
+  async function loadRatings() {
     const supabase = createClient();
-    const { data } = await supabase
-      .from("model_ratings")
-      .select("id, rating, comment, created_at, user:profiles(full_name, username)")
-      .eq("model_id", modelId)
-      .order("created_at", { ascending: false })
-      .limit(10);
-    setRatings((data ?? []) as unknown as Rating[]);
+    setRatings(await fetchRatingsShared(supabase, modelId));
   }
 
   async function submitRating() {
@@ -73,14 +59,14 @@ export function RatingSection({ modelId }: { modelId: string }) {
     setLoading(true);
     setError("");
     const supabase = createClient();
-    const { error: upsertError } = await supabase.from("model_ratings").upsert({
-      model_id: modelId, user_id: userId, rating: userRating, comment: comment || null,
-    }, { onConflict: "model_id,user_id" });
+    const { error: upsertError } = await submitRatingShared(supabase, {
+      modelId, userId, rating: userRating, comment,
+    });
     if (upsertError) {
       setError(t("purchaseRequired"));
     } else {
       setSubmitted(true);
-      fetchRatings();
+      loadRatings();
     }
     setLoading(false);
   }

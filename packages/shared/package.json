@@ -8,8 +8,14 @@
     "test": "vitest run",
     "test:watch": "vitest"
   },
+  "peerDependencies": {
+    "@supabase/supabase-js": "^2.0.0",
+    "zustand": "^5.0.0"
+  },
   "devDependencies": {
     "vitest": "^5.0.0",
-    "@types/node": "^22"
+    "@types/node": "^22",
+    "@supabase/supabase-js": "^2.106.2",
+    "zustand": "^5.0.14"
   }
 }

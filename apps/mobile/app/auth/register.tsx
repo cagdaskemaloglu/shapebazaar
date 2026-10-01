@@ -3,6 +3,7 @@ import { View, Text, TextInput, Pressable, ActivityIndicator, KeyboardAvoidingVi
 import { Trans, useTranslation } from "react-i18next";
 import { Link } from "expo-router";
 import { useAuth } from "../../lib/auth/AuthProvider";
+import { leaveAuthScreen } from "../../lib/auth/navigation";
 
 const WEB_BASE_URL = process.env.EXPO_PUBLIC_WEB_URL ?? "https://www.shapebazaar.com";
 
@@ -34,8 +35,9 @@ export default function RegisterScreen() {
   async function handleGoogle() {
     setGoogleLoading(true);
     setError("");
-    const { error } = await signInWithGoogle();
+    const { error, signedIn } = await signInWithGoogle();
     if (error) setError(error);
+    else if (signedIn) leaveAuthScreen();
     setGoogleLoading(false);
   }
 

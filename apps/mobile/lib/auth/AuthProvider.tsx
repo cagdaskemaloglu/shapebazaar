@@ -12,7 +12,7 @@ interface AuthContextValue {
   loading: boolean;
   signInWithPassword: (email: string, password: string) => Promise<{ error: string | null }>;
   signUpWithPassword: (email: string, password: string, fullName: string) => Promise<{ error: string | null }>;
-  signInWithGoogle: () => Promise<{ error: string | null }>;
+  signInWithGoogle: () => Promise<{ error: string | null; signedIn: boolean }>;
   signOut: () => Promise<void>;
   resetPassword: (email: string) => Promise<{ error: string | null }>;
   updatePassword: (password: string) => Promise<{ error: string | null }>;
@@ -51,34 +51,45 @@ export function AuthProvider({ children }: { children: ReactNode }) {
     return { error: error?.message ?? null };
   }
 
-  // NOT: Bu akış Supabase'in belgelenmiş Expo OAuth desenini takip eder, ama
-  // Expo + Supabase Google OAuth entegrasyonu bilinen kırılganlıklara sahip
-  // (redirect URI ortam bazlı değişebiliyor, setSession bazen takılabiliyor —
-  // bkz. docs/mobile/ARCHITECTURE.md). Kullanmadan önce KENDİ Google Cloud
-  // Console OAuth client'ınızı ve Supabase Dashboard → Authentication →
-  // URL Configuration → Redirect URLs listesine bu uygulamanın şemasını
-  // (shapebazaar://) eklemeniz gerekiyor. Gerçek cihazda/Expo Go'da test edin.
+  // NOT: Supabase, `redirectTo` adresini Dashboard → Authentication → URL Configuration →
+  // "Redirect URLs" listesinde bulamazsa kullanıcıyı Site URL'ine (web sitesi) yönlendirir —
+  // uygulama o zaman tarayıcı sayfasında takılı kalır. Listede şunlar OLMALI:
+  //   exp://**           (Expo Go ile geliştirme)
+  //   shapebazaar://**   (development build / mağaza sürümü)
+  // Ayrıca `__DEV__`'de aşağıdaki redirectTo değeri konsola yazılır.
   async function signInWithGoogle() {
-    const redirectTo = makeRedirectUri();
+    const redirectTo = makeRedirectUri({ path: "auth/callback" });
+    if (__DEV__) console.log("[auth] Google redirectTo:", redirectTo);
 
     const { data, error } = await supabase.auth.signInWithOAuth({
       provider: "google",
       options: { redirectTo, skipBrowserRedirect: true },
     });
-    if (error || !data?.url) return { error: error?.message ?? "OAuth URL oluşturulamadı." };
+    if (error || !data?.url) {
+      return { error: error?.message ?? "OAuth URL oluşturulamadı.", signedIn: false };
+    }
 
     const result = await WebBrowser.openAuthSessionAsync(data.url, redirectTo);
     if (result.type !== "success" || !result.url) {
-      return { error: result.type === "cancel" ? null : "Giriş tamamlanamadı." };
+      // Kullanıcı pencereyi kapattı (cancel/dismiss) — hata değil
+      const closedByUser = result.type === "cancel" || result.type === "dismiss";
+      return { error: closedByUser ? null : "Giriş tamamlanamadı.", signedIn: false };
     }
 
-    const url = new URL(result.url.replace("#", "?")); // token'lar fragment'ta gelir, query'ye çeviriyoruz
-    const access_token = url.searchParams.get("access_token");
-    const refresh_token = url.searchParams.get("refresh_token");
-    if (!access_token || !refresh_token) return { error: "Oturum bilgisi alınamadı." };
+    // Token'lar genelde fragment'ta (#access_token=...), hata durumunda query'de gelebilir
+    const [beforeHash, ...hashParts] = result.url.split("#");
+    const query = beforeHash.includes("?") ? beforeHash.split("?")[1] : "";
+    const params = new URLSearchParams(`${query}&${hashParts.join("#")}`);
+
+    const oauthError = params.get("error_description") ?? params.get("error");
+    if (oauthError) return { error: oauthError.replace(/\+/g, " "), signedIn: false };
+
+    const access_token = params.get("access_token");
+    const refresh_token = params.get("refresh_token");
+    if (!access_token || !refresh_token) return { error: "Oturum bilgisi alınamadı.", signedIn: false };
 
     const { error: sessionError } = await supabase.auth.setSession({ access_token, refresh_token });
-    return { error: sessionError?.message ?? null };
+    return { error: sessionError?.message ?? null, signedIn: !sessionError };
   }
 
   async function signOut() {

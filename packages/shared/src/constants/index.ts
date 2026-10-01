@@ -17,13 +17,17 @@ export const CATEGORIES = [
 
 export const MATERIALS = ["PLA", "PETG", "ABS", "TPU", "Reçine"] as const;
 
+// NOT: `border` alanı HER öğede (true/false olarak) açıkça belirtiliyor —
+// bazı öğelerde olup bazılarında olmaması, TypeScript'in union tipini
+// tutarsız hale getirip "Property 'border' does not exist" hatasına
+// yol açıyordu (mobile'da tespit edildi).
 export const COLORS = [
-  { name: "Lacivert", hex: "#1E3A8A" },
-  { name: "Turuncu",  hex: "#FF6B35" },
-  { name: "Yeşil",    hex: "#10B981" },
-  { name: "Beyaz",    hex: "#FFFFFF", border: true },
-  { name: "Kırmızı",  hex: "#E24B4A" },
-  { name: "Sarı",     hex: "#FBBF24" },
+  { name: "Lacivert", hex: "#1E3A8A", border: false },
+  { name: "Turuncu",  hex: "#FF6B35", border: false },
+  { name: "Yeşil",    hex: "#10B981", border: false },
+  { name: "Beyaz",    hex: "#FFFFFF", border: true  },
+  { name: "Kırmızı",  hex: "#E24B4A", border: false },
+  { name: "Sarı",     hex: "#FBBF24", border: false },
 ] as const;
 
 export const SCALES = ["50%", "75%", "100%", "150%", "Özel"] as const;

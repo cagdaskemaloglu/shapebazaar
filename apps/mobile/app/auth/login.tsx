@@ -1,9 +1,10 @@
 import { useState } from "react";
 import { View, Text, TextInput, Pressable, ActivityIndicator, KeyboardAvoidingView, Platform } from "react-native";
 import { useTranslation } from "react-i18next";
-import { router, Link } from "expo-router";
+import { Link } from "expo-router";
 import { Eye, EyeOff } from "lucide-react-native";
 import { useAuth } from "../../lib/auth/AuthProvider";
+import { leaveAuthScreen } from "../../lib/auth/navigation";
 
 export default function LoginScreen() {
   const { t } = useTranslation();
@@ -23,7 +24,7 @@ export default function LoginScreen() {
     if (error) {
       setError(t("auth.wrongCredentials"));
     } else {
-      router.replace("/(tabs)/profile");
+      leaveAuthScreen(); // geldiği ekrana (sepet, profil…) dön
     }
     setLoading(false);
   }
@@ -31,8 +32,9 @@ export default function LoginScreen() {
   async function handleGoogle() {
     setGoogleLoading(true);
     setError("");
-    const { error } = await signInWithGoogle();
+    const { error, signedIn } = await signInWithGoogle();
     if (error) setError(error);
+    else if (signedIn) leaveAuthScreen();
     setGoogleLoading(false);
   }
 

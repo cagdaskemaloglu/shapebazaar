@@ -65,5 +65,103 @@
     "loggedOutDesc": "Sign in to see your orders and manage your account.",
     "welcome": "Welcome",
     "signOut": "Sign Out"
+  },
+  "home": {
+    "searchPlaceholder": "Search models…",
+    "free": "Free",
+    "noResults": "No models found."
+  },
+  "modelDetail": {
+    "notFound": "Model not found",
+    "designer": "Designer",
+    "free": "Free",
+    "description": "Description",
+    "loadingModel": "Loading 3D model…",
+    "viewerError": "Could not load the 3D model.",
+    "material": "Material",
+    "color": "Color",
+    "colors": {
+      "Lacivert": "Navy",
+      "Turuncu": "Orange",
+      "Yeşil": "Green",
+      "Beyaz": "White",
+      "Kırmızı": "Red",
+      "Sarı": "Yellow"
+    },
+    "size": "Size",
+    "custom": "Custom",
+    "infill": "Infill Density",
+    "infills": {
+      "light": "Light",
+      "standard": "Standard",
+      "solid": "Solid",
+      "dense": "Dense"
+    },
+    "designPrice": "Design fee",
+    "printCost": "Printing",
+    "platformFee": "Platform fee (10%)",
+    "total": "Total",
+    "addToCart": "Add to Cart",
+    "addedToCart": "Added to cart!"
+  },
+  "cart": {
+    "emptyTitle": "Your cart is empty",
+    "emptyDesc": "Browse models and add one to get started.",
+    "address": "Shipping Address",
+    "fullName": "Full Name",
+    "phone": "Phone",
+    "city": "City",
+    "district": "District",
+    "addressLine": "Address",
+    "subtotal": "Subtotal",
+    "shipping": "Shipping",
+    "total": "Total",
+    "checkout": "Checkout",
+    "cancel": "Cancel",
+    "loginRequiredTitle": "Sign in required",
+    "loginRequiredDesc": "Please sign in to complete your order.",
+    "requiredFields": "Full name, city and address are required."
+  },
+  "rating": {
+    "title": "Reviews",
+    "rateThis": "Rate this model",
+    "commentPlaceholder": "Your comment (optional)…",
+    "submit": "Submit Review",
+    "submitting": "Submitting…",
+    "success": "Your review has been saved. Thank you!",
+    "noRatings": "No reviews yet. Be the first to review!",
+    "user": "User",
+    "purchaseRequired": "You can review this model after purchasing and receiving it."
+  },
+  "payment": {
+    "title": "Payment",
+    "preparing": "Preparing payment…",
+    "successTitle": "Payment successful!",
+    "successDesc": "Your order has been received and added to the print queue.",
+    "orderNo": "Order No:",
+    "successInfo": "The nearest print partner will pick up your order. You can follow status updates via email and the Orders tab.",
+    "viewOrders": "View my orders",
+    "backToModels": "Back to models",
+    "failedTitle": "Payment failed",
+    "failedDesc": "The payment could not be completed. Please check your card details and try again.",
+    "tryAgain": "Try again",
+    "backToCart": "Back to cart",
+    "retry": "Try again",
+    "cancelTitle": "Leave payment?",
+    "cancelDesc": "If you leave now you won't be charged and your cart is kept.",
+    "cancelConfirm": "Leave",
+    "keepPaying": "Keep paying",
+    "initError": "Payment could not be started. Please try again.",
+    "connectionError": "Connection error. Check your internet and try again.",
+    "sessionExpired": "Your session has expired. Please sign in again.",
+    "serverAuthError": "The server could not verify your session. Try signing out and signing in again.",
+    "errorCode": "Error code: {{code}}"
+  },
+  "search": {
+    "results": "{{n}} models found",
+    "clear": "Clear filters",
+    "noResults": "No results",
+    "noResultsDesc": "Try a different word or clear the filters.",
+    "error": "Could not load models. Check your internet connection."
   }
 }

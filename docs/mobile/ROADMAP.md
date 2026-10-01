@@ -27,17 +27,21 @@
 - [x] Dil değiştirme çalışıyor — `expo-localization` ile cihaz diline bakılıyor, `tr`/`en` dışında bir şey gelirse `tr`'ye düşülüyor
 
 ## Faz 3 — Browse & Model Detayı
-- [ ] `packages/shared/src/queries/fetchModels.ts` — web'deki merkezi `fetchModels()` fonksiyonunun mobile'dan da çağrılabilir hâli (Supabase client dışarıdan inject edilir)
-- [ ] Model listesi ekranı: arama, kategori filtresi, fiyat aralığı slider'ı (web'deki `ModelsPageClient` mantığının mobil karşılığı)
-- [ ] Model detay ekranı: başlık/açıklama (TR/EN locale-aware), fiyat dökümü, tasarımcı bilgisi, değerlendirmeler
-- [ ] **Native 3D viewer**: react-three-fiber + expo-gl + expo-three ile STL/OBJ/3MF render — web'deki `ModelViewer.tsx`'teki dönme/zoom/sıfırlama mantığının native karşılığı
-- [ ] Değerlendirme (rating) formu — satın alma şartı kontrolü (Faz 1'de eklediğimiz RLS zaten server-side koruyor, UI'da da aynı "satın almadan değerlendiremezsin" mesajı gösterilmeli)
+- [x] `packages/shared/src/queries/models.ts` — `fetchModels`, `fetchModel`, `incrementViewCount`, `canRateModel`, `fetchRatings`, `submitRating` — hepsi client-agnostic (Supabase client dışarıdan inject ediliyor). Web'in `lib/models.ts` ve `RatingSection.tsx`'i de bu fonksiyonlara bağlandı (ince wrapper'lar üzerinden) — artık aynı mantık tek yerde.
+- [x] Model listesi ekranı (Ana Sayfa sekmesi): arama, kategori filtresi (chip listesi), fiyat filtresi — **not: tam bir dual-thumb slider yerine hazır fiyat aralığı seçenekleri (Ücretsiz/₺100 altı/₺250 altı/Tümü) kullanıldı**, RN'de native bir slider ek bağımlılık ve gesture kodu gerektirdiği için v1'de basitleştirildi. İsterseniz sonra web'deki gibi tam slider'a yükseltebiliriz.
+- [x] Model detay ekranı (`app/models/[id].tsx`): başlık/açıklama (TR/EN locale-aware), fiyat, tasarımcı bilgisi, değerlendirmeler — hepsi çalışıyor
+- [x] **Native 3D viewer** (`components/ModelViewer3D.tsx`) — **plan değişti:** react-three-fiber yerine `expo-three` + `expo-gl` (saf Three.js sahne yönetimi, web'deki `ModelViewer.tsx` ile aynı yaklaşım) kullanıldı. Sebep: Expo SDK 57 ile `@react-three/fiber`'ın `expo-gl` sürüm bağımlılığı arasında bilinen bir uyumsuzluk tespit edildi (bkz. ARCHITECTURE.md güncellemesi). **⚠️ Bu bileşen gerçek cihazda test edilmedi** — simülatör/emülatörde Three.js+EXGL güvenilir çalışmıyor, mutlaka fiziksel telefonda deneyin.
+- [x] Değerlendirme formu — satın alma şartı kontrolü `canRateModel()` ile yapılıyor (RLS zaten server-side koruyor)
 
 ## Faz 4 — Sepet & Yapılandırma
-- [ ] Zustand cart store'u `packages/shared`'a taşındı, mobile'dan da kullanılıyor
-- [ ] Malzeme/renk/boyut/dolgu seçimi (web'deki `ConfigRow`/`OptionBtn` mantığının mobil karşılığı)
-- [ ] Fiyat hesaplaması `packages/shared`'daki `calcPrintCost`/`calcTotalPrice`'tan geliyor (web ile birebir aynı sonuç garantisi)
-- [ ] Sepet ekranı: ürün listesi, adres formu, adım göstergesi (web'deki `CartDrawer`'ın tam ekran mobil karşılığı)
+- [x] Zustand cart store `packages/shared/src/cart/`'a taşındı — `createCartStore(storage?)` fabrika fonksiyonu, web'de `localStorage` (varsayılan, davranış değişmedi), mobile'da `AsyncStorage` ile persist ediliyor
+- [x] Malzeme/renk/boyut/dolgu seçimi model detay ekranında (`app/models/[id].tsx`) — `packages/shared`'daki `MATERIALS`/`COLORS`/`SCALES`/`INFILLS` sabitleri kullanılıyor
+- [x] Fiyat hesaplaması `packages/shared`'daki `calcPrintCost`/`calcTotalPrice`'tan geliyor — web ile birebir aynı sonuç garantisi
+- [x] Sepet ekranı (Sepet sekmesi): ürün listesi (kaldırma butonu ile), adres formu, ara toplam/kargo/toplam özeti. **Not:** "adım göstergesi" (multi-step wizard) yerine tek ekranlı, kaydırılabilir bir form kullanıldı — mobilde daha doğal bir UX, web'deki `CartDrawer`'ın adım adım akışı burada gerekli görülmedi.
+- [x] "Ödemeye Geç" butonu var ama gerçek ödeme akışına bağlı değil (Faz 5'te `/api/payment/init`'e bağlanacak) — şimdilik "yakında" mesajı gösteriyor, giriş yapılmamışsa önce girişe yönlendiriyor
+
+### ⚠️ Faz 3 testinde bulunan ve bu fazda düzeltilen bir hata
+Gerçek cihazda test edilirken 3D viewer'da `THREE.WebGLRenderer: WebGL 1 is not supported since r163` hatası çıktı. Sebep: `three.js` r163'ten itibaren `WebGLRenderer`'dan WebGL1 desteğini tamamen kaldırdı, ama `expo-gl`'in verdiği context hâlâ WebGL1 tabanlı — `expo-three` henüz buna yetişmedi. Çözüm: `apps/mobile`'daki `three` sürümü `0.162.0`'a (r163 öncesi son sürüm) sabitlendi. **Bu web'i etkilemiyor** — `apps/web`'in kendi `three` bağımlılığı ayrı ve `^0.184.0` olarak kalıyor, sadece mobile'ın kendi (aynı `packages/shared`'ı paylaşmayan, çünkü three bir UI/render kütüphanesi, iş mantığı değil) `three` sürümü farklı.
 
 ## Faz 5 — Ödeme
 📄 Akış detayı: `ARCHITECTURE.md` → "Ödeme Stratejisi"

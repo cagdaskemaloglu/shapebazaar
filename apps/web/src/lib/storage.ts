@@ -1,4 +1,8 @@
 import { createClient } from "@/lib/supabase/client";
+import {
+  getModelPublicUrl as getModelPublicUrlShared,
+  getModelSignedUrl as getModelSignedUrlShared,
+} from "@shapebazaar/shared";
 
 export type ModelFormat = "stl" | "obj" | "3mf";
 
@@ -34,7 +38,7 @@ export async function uploadModelFile(
 export function getModelPublicUrl(path: string): string {
   const supabase = createClient();
   const { data } = supabase.storage.from("model-files").getPublicUrl(path);
-  return data.publicUrl;
+  return getModelPublicUrlShared(createClient(), path);
 }
 
 export async function getModelSignedUrl(
@@ -46,7 +50,7 @@ export async function getModelSignedUrl(
     .from("model-files")
     .createSignedUrl(path, expiresIn);
   if (error) throw error;
-  return data.signedUrl;
+  return getModelSignedUrlShared(createClient(), path, expiresIn);
 }
 
 /**

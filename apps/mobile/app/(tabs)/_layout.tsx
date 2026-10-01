@@ -10,6 +10,8 @@ export default function TabsLayout() {
 
   return (
     <Tabs
+      // Ürün detayı gizli bir sekme; geri tuşu/jesti bir önceki ekrana (Ana sayfa, Ara, Sepet…) dönsün
+      backBehavior="history"
       screenOptions={{
         headerShown: false,
         tabBarActiveTintColor: ACTIVE_COLOR,
@@ -52,6 +54,8 @@ export default function TabsLayout() {
           tabBarIcon: ({ color, size }) => <User color={color} size={size} />,
         }}
       />
+      {/* Ürün detayı: sekme çubuğunda görünmez ama çubuk ekranda kalır */}
+      <Tabs.Screen name="models/[id]" options={{ href: null }} />
     </Tabs>
   );
 }
