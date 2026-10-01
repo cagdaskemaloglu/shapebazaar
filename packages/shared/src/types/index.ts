@@ -51,7 +51,7 @@ export interface Model {
 
 export type OrderStatus =
   | "pending" | "paid" | "in_print" | "printed"
-  | "shipped" | "delivered" | "cancelled";
+  | "shipped" | "delivered" | "cancelled" | "refunded"; // orders.status CHECK kısıtıyla aynı
 
 export interface OrderItem {
   id: string;

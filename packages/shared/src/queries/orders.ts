@@ -1,10 +1,5 @@
 import type { SupabaseClient } from "@supabase/supabase-js";
-
-/** `orders.status` CHECK kısıtıyla birebir aynı (supabase/migrations/001_initial_schema.sql) */
-export const ORDER_STATUSES = [
-  "pending", "paid", "in_print", "printed", "shipped", "delivered", "cancelled", "refunded",
-] as const;
-export type OrderStatus = (typeof ORDER_STATUSES)[number];
+import type { OrderStatus } from "../types";
 
 export interface OrderListItem {
   id: string;
