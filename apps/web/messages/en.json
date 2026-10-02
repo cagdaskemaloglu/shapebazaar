@@ -997,6 +997,8 @@
     "catalogEmpty": "No models found.",
     "catalogNotPublished": "Not published",
     "catalogConfirm": "“{title}” will be permanently deleted. Order history is kept; ratings and print photos are deleted with the model. Continue?",
-    "catalogDeleteFailed": "Could not delete the model."
+    "catalogDeleteFailed": "Could not delete the model.",
+    "optional": "Optional",
+    "uploaderHintOptional": "This job predates the photo requirement; you can optionally upload up to {max} photos."
   }
 }

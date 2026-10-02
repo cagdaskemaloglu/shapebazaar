@@ -18,10 +18,14 @@ interface Props {
   photos: PartnerPhoto[];
   /** false → salt okunur (kargolanmış iş): sadece fotoğraflar ve durumları görünür */
   editable: boolean;
+  /** true → kargolamadan önce PRINT_PHOTO_MIN fotoğraf şart; false → isteğe bağlı (özellikten önce oluşmuş işler) */
+  required?: boolean;
+  /** Ürün adı (birden çok ürünlü siparişte hangisinin fotoğrafı olduğu görünsün) */
+  title?: string;
   onChange: (photos: PartnerPhoto[]) => void;
 }
 
-export function PrintPhotoUploader({ jobId, orderItemId, photos, editable, onChange }: Props) {
+export function PrintPhotoUploader({ jobId, orderItemId, photos, editable, required = true, title, onChange }: Props) {
   const t = useTranslations("printPhotos");
   const inputRef = useRef<HTMLInputElement>(null);
   const [busy, setBusy]   = useState(false);
@@ -75,21 +79,31 @@ export function PrintPhotoUploader({ jobId, orderItemId, photos, editable, onCha
 
   return (
     <div className="mt-2 pt-2 border-t border-[var(--border)]">
-      <div className="flex items-center justify-between mb-2">
-        <div className="text-[11px] font-semibold uppercase tracking-wider text-[var(--text-tertiary)]">{t("uploaderTitle")}</div>
-        {editable && (
-          <span className={`text-[11px] font-medium px-2 py-0.5 rounded-full flex items-center gap-1 ${
+      <div className="flex items-center justify-between mb-2 gap-2">
+        <div className="min-w-0">
+          <div className="text-[11px] font-semibold uppercase tracking-wider text-[var(--text-tertiary)]">{t("uploaderTitle")}</div>
+          {title && <div className="text-xs text-[var(--text-primary)] truncate">{title}</div>}
+        </div>
+        {editable && (required ? (
+          <span className={`shrink-0 text-[11px] font-medium px-2 py-0.5 rounded-full flex items-center gap-1 ${
             enough ? "bg-[rgba(16,185,129,0.12)] text-[#10B981]" : "bg-[rgba(245,158,11,0.15)] text-amber-600"
           }`}>
             {enough && <Check size={10} />}
             {t("progress", { count: photos.length, min: PRINT_PHOTO_MIN })}
           </span>
-        )}
+        ) : (
+          <span className="shrink-0 text-[11px] font-medium px-2 py-0.5 rounded-full bg-[var(--bg-tertiary)] text-[var(--text-tertiary)]">
+            {t("optional")}
+          </span>
+        ))}
       </div>
 
       {editable && (
         <p className="text-[11px] text-[var(--text-tertiary)] mb-2 leading-relaxed">
-          {t("uploaderHint", { min: PRINT_PHOTO_MIN, max: PRINT_PHOTO_MAX })} {t("privacyTip")}
+          {required
+            ? t("uploaderHint", { min: PRINT_PHOTO_MIN, max: PRINT_PHOTO_MAX })
+            : t("uploaderHintOptional", { max: PRINT_PHOTO_MAX })}{" "}
+          {t("privacyTip")}
         </p>
       )}
 

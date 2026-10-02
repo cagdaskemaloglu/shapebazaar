@@ -253,11 +253,10 @@ export function PartnerDashboardClient({ userId }: { userId: string }) {
   const photosReady = (job: PrintJob) =>
     !job.photos_required || job.items.every((it) => (it.photos?.length ?? 0) >= PRINT_PHOTO_MIN);
 
-  /** Kargolama: fotoğraflar eksikse işi açıp uyarı göster, yeterliyse kargo penceresini aç */
+  /** Kargolama: fotoğraflar eksikse panelde uyarı göster, yeterliyse kargo penceresini aç */
   function requestShip(job: PrintJob) {
     if (photosReady(job)) { setPhotoWarningJobId(null); setShippingJobId(job.id); return; }
     setPhotoWarningJobId(job.id);
-    setExpanded((prev) => new Set(prev).add(job.id));
   }
 
   function toggleExpand(job: PrintJob) {
@@ -438,6 +437,33 @@ export function PartnerDashboardClient({ userId }: { userId: string }) {
                   </div>
                 </div>
 
+                {/* Baskı fotoğrafları: üstlenilen işte kartın üstünde her zaman görünür (açılır detay gerekmez) */}
+                {isMine && ["claimed", "printing"].includes(job.status) && items.length > 0 && (
+                  <div className="mx-4 mb-4 -mt-1 bg-[var(--bg-secondary)] rounded-xl px-3 py-3">
+                    {photoWarningJobId === job.id && !photosReady(job) && (
+                      <div className="flex items-center gap-2 text-xs text-amber-700 bg-amber-50 dark:bg-amber-950/20 border border-amber-200 dark:border-amber-900 rounded-lg px-3 py-2 mb-3">
+                        <AlertTriangle size={13} className="shrink-0" />
+                        {tp("required", { min: PRINT_PHOTO_MIN })}
+                      </div>
+                    )}
+                    <div className="flex flex-col gap-3">
+                      {items.map((item, idx) => (
+                        <div key={item.id} className={idx > 0 ? "pt-3 border-t border-[var(--border)]" : ""}>
+                          <PrintPhotoUploader
+                            jobId={job.id}
+                            orderItemId={item.id}
+                            title={items.length > 1 ? item.model_title : undefined}
+                            photos={item.photos ?? []}
+                            editable
+                            required={!!job.photos_required}
+                            onChange={(photos) => setItemPhotos(job.id, item.id, photos)}
+                          />
+                        </div>
+                      ))}
+                    </div>
+                  </div>
+                )}
+
                 {isMine && order && ["claimed", "printing"].includes(job.status) && (
                   <div className="mx-4 mb-4 -mt-1 bg-[var(--bg-secondary)] rounded-xl px-3 py-2.5">
                     <div className="text-[10px] font-semibold uppercase tracking-wider text-[var(--text-tertiary)] mb-1.5">{t("deliveryAddress")}</div>
@@ -451,12 +477,6 @@ export function PartnerDashboardClient({ userId }: { userId: string }) {
 
                 {isExpanded && (
                   <div className="border-t border-[var(--border)] px-4 pb-4 pt-3 flex flex-col gap-3">
-                    {photoWarningJobId === job.id && !photosReady(job) && (
-                      <div className="flex items-center gap-2 text-xs text-amber-700 bg-amber-50 dark:bg-amber-950/20 border border-amber-200 dark:border-amber-900 rounded-xl px-3 py-2.5">
-                        <AlertTriangle size={13} className="shrink-0" />
-                        {tp("required", { min: PRINT_PHOTO_MIN })}
-                      </div>
-                    )}
                     {items.length > 0 && (
                       <div>
                         <div className="text-xs font-semibold uppercase tracking-wider text-[var(--text-tertiary)] mb-2">{t("products")}</div>
@@ -496,13 +516,13 @@ export function PartnerDashboardClient({ userId }: { userId: string }) {
                                   ) : null
                                 )}
                               </div>
-                              {isMine && ["claimed", "printing", "done"].includes(job.status) && (job.photos_required || (item.photos?.length ?? 0) > 0) && (
+                              {isMine && job.status === "done" && (item.photos?.length ?? 0) > 0 && (
                                 <PrintPhotoUploader
                                   jobId={job.id}
                                   orderItemId={item.id}
                                   photos={item.photos ?? []}
-                                  editable={job.status !== "done" && !!job.photos_required}
-                                  onChange={(photos) => setItemPhotos(job.id, item.id, photos)}
+                                  editable={false}
+                                  onChange={() => {}}
                                 />
                               )}
                               </div>

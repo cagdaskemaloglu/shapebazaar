@@ -926,6 +926,8 @@
     "catalogEmpty": "Model bulunamadı.",
     "catalogNotPublished": "Yayında değil",
     "catalogConfirm": "“{title}” kalıcı olarak silinecek. Sipariş geçmişi korunur; puanlar ve baskı fotoğrafları modelle birlikte silinir. Devam edilsin mi?",
-    "catalogDeleteFailed": "Model silinemedi."
+    "catalogDeleteFailed": "Model silinemedi.",
+    "optional": "İsteğe bağlı",
+    "uploaderHintOptional": "Bu iş, fotoğraf zorunluluğundan önce oluşturuldu; isteğe bağlı olarak en fazla {max} fotoğraf yükleyebilirsiniz."
   }
 }
