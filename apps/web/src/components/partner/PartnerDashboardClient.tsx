@@ -8,6 +8,8 @@ import {
   Package, CheckCircle, Printer, ChevronDown, ChevronUp,
   Clock, Truck, AlertTriangle, User, MapPin, Box, Download
 } from "lucide-react";
+import { PRINT_PHOTO_MIN } from "@shapebazaar/shared";
+import { PrintPhotoUploader, type PartnerPhoto } from "@/components/partner/PrintPhotoUploader";
 
 interface OrderItem {
   id: string;
@@ -20,6 +22,7 @@ interface OrderItem {
   scale_percent: number | null;
   infill: string | null;
   item_total: number;
+  photos?: PartnerPhoto[];
 }
 
 interface PrintJob {
@@ -31,6 +34,7 @@ interface PrintJob {
   created_at: string;
   printer_id: string | null;
   printer_notes: string | null;
+  photos_required?: boolean;
   printer_full_name: string | null;
   printer_username: string | null;
   order: {
@@ -105,6 +109,7 @@ function ShippingModal({ onSubmit, onClose, loading, t }: {
 
 export function PartnerDashboardClient({ userId }: { userId: string }) {
   const t        = useTranslations("partner");
+  const tp = useTranslations("printPhotos");
   const pathname = usePathname();
   const locale   = pathname.split("/")[1] || "tr";
 
@@ -124,6 +129,7 @@ export function PartnerDashboardClient({ userId }: { userId: string }) {
   const [claiming,        setClaiming]        = useState<string | null>(null);
   const [expanded,        setExpanded]        = useState<Set<string>>(new Set());
   const [shippingJobId,   setShippingJobId]   = useState<string | null>(null);
+  const [photoWarningJobId, setPhotoWarningJobId] = useState<string | null>(null);
   const [shippingLoading, setShippingLoading] = useState(false);
   const [partnerRegion,   setPartnerRegion]   = useState<string>("TR");
 
@@ -236,6 +242,22 @@ export function PartnerDashboardClient({ userId }: { userId: string }) {
     setShippingLoading(false);
     setShippingJobId(null);
     await fetchAll();
+  }
+
+  function setItemPhotos(jobId: string, itemId: string, photos: PartnerPhoto[]) {
+    setMyJobs((prev) => prev.map((j) =>
+      j.id !== jobId ? j : { ...j, items: j.items.map((it) => (it.id === itemId ? { ...it, photos } : it)) }
+    ));
+  }
+
+  const photosReady = (job: PrintJob) =>
+    !job.photos_required || job.items.every((it) => (it.photos?.length ?? 0) >= PRINT_PHOTO_MIN);
+
+  /** Kargolama: fotoğraflar eksikse işi açıp uyarı göster, yeterliyse kargo penceresini aç */
+  function requestShip(job: PrintJob) {
+    if (photosReady(job)) { setPhotoWarningJobId(null); setShippingJobId(job.id); return; }
+    setPhotoWarningJobId(job.id);
+    setExpanded((prev) => new Set(prev).add(job.id));
   }
 
   function toggleExpand(job: PrintJob) {
@@ -404,7 +426,7 @@ export function PartnerDashboardClient({ userId }: { userId: string }) {
                       </button>
                     )}
                     {isMine && job.status === "printing" && (
-                      <button onClick={() => setShippingJobId(job.id)}
+                      <button onClick={() => requestShip(job)}
                         className="text-xs px-3 py-1.5 bg-[#FF6B35] text-white rounded-lg hover:bg-[#e85e2a] transition-colors flex items-center gap-1">
                         <Truck size={12} /> {t("completeBtn")}
                       </button>
@@ -429,6 +451,12 @@ export function PartnerDashboardClient({ userId }: { userId: string }) {
 
                 {isExpanded && (
                   <div className="border-t border-[var(--border)] px-4 pb-4 pt-3 flex flex-col gap-3">
+                    {photoWarningJobId === job.id && !photosReady(job) && (
+                      <div className="flex items-center gap-2 text-xs text-amber-700 bg-amber-50 dark:bg-amber-950/20 border border-amber-200 dark:border-amber-900 rounded-xl px-3 py-2.5">
+                        <AlertTriangle size={13} className="shrink-0" />
+                        {tp("required", { min: PRINT_PHOTO_MIN })}
+                      </div>
+                    )}
                     {items.length > 0 && (
                       <div>
                         <div className="text-xs font-semibold uppercase tracking-wider text-[var(--text-tertiary)] mb-2">{t("products")}</div>
@@ -439,7 +467,8 @@ export function PartnerDashboardClient({ userId }: { userId: string }) {
                               ? downloadFiles[job.id]?.find((f) => f.modelId === item.model_id)
                               : undefined;
                             return (
-                              <div key={item.id} className="flex items-center gap-3 bg-[var(--bg-secondary)] rounded-xl px-3 py-2.5">
+                              <div key={item.id} className="bg-[var(--bg-secondary)] rounded-xl px-3 py-2.5">
+                              <div className="flex items-center gap-3">
                                 <div className="w-4 h-4 rounded-full shrink-0 border border-[var(--border)]" style={{ background: item.color_hex ?? "#ccc" }} />
                                 <div className="flex-1 min-w-0">
                                   <div className="text-sm font-medium text-[var(--text-primary)] truncate">{item.model_title}</div>
@@ -466,6 +495,16 @@ export function PartnerDashboardClient({ userId }: { userId: string }) {
                                     </div>
                                   ) : null
                                 )}
+                              </div>
+                              {isMine && ["claimed", "printing", "done"].includes(job.status) && (job.photos_required || (item.photos?.length ?? 0) > 0) && (
+                                <PrintPhotoUploader
+                                  jobId={job.id}
+                                  orderItemId={item.id}
+                                  photos={item.photos ?? []}
+                                  editable={job.status !== "done" && !!job.photos_required}
+                                  onChange={(photos) => setItemPhotos(job.id, item.id, photos)}
+                                />
+                              )}
                               </div>
                             );
                           })}

@@ -214,6 +214,17 @@
     "cancel": "Vazgeç",
     "confirmed": "Teslimatı onayladın. Teşekkürler!",
     "confirmConflict": "Bu sipariş zaten onaylanmış ya da henüz kargoda değil.",
-    "confirmError": "Teslimat onaylanamadı. Lütfen tekrar dene."
+    "confirmError": "Teslimat onaylanamadı. Lütfen tekrar dene.",
+    "printPhotos": "Baskı Fotoğrafları"
+  },
+  "printPhotos": {
+    "realPrint": "Gerçek baskı",
+    "label3d": "3D",
+    "showPhoto": "Baskı fotoğrafını göster",
+    "show3d": "3D görünüme geç",
+    "galleryTitle": "Yazıcılarımızdan çıkanlar",
+    "galleryDesc": "Bu modelin gerçek baskıları",
+    "printedBy": "Basan: {{name}}",
+    "close": "Kapat"
   }
 }

@@ -1,9 +1,10 @@
 "use client";
 import { useState, useEffect, useCallback, useRef } from "react";
-import { Search, Star, TrendingUp, Sparkles, Grid3X3, List, ChevronDown } from "lucide-react";
+import { Search, Star, TrendingUp, Sparkles, Grid3X3, List, ChevronDown, Box, Camera } from "lucide-react";
 import { useTranslations, useLocale } from "next-intl";
 import { createClient } from "@/lib/supabase/client";
 import { fetchModels as fetchModelsApi } from "@/lib/models";
+import { buildPrintPhotoUrl } from "@shapebazaar/shared";
 import { formatPrice } from "@/lib/utils";
 
 const SORT_VALUES = ["popular", "newest", "price_asc", "price_desc", "rating"];
@@ -28,6 +29,7 @@ interface Model {
   print_count: number;
   created_at: string;
   file_format: string;
+  showcase_thumb_path?: string | null;
   designer: { full_name: string | null; username: string | null } | null;
   category: { name_tr: string; name_en: string } | null;
 }
@@ -351,34 +353,89 @@ function GridCard({ model }: { model: Model }) {
   const designer = model.designer?.username
     ? `@${model.designer.username}`
     : model.designer?.full_name ?? t("designer");
+  const tp = useTranslations("printPhotos");
+
+  // Admin'in seçtiği vitrin baskı fotoğrafı (yoksa kart eskisi gibi, buton görünmez)
+  const showcaseUrl = model.showcase_thumb_path
+    ? buildPrintPhotoUrl(process.env.NEXT_PUBLIC_SUPABASE_URL!, model.showcase_thumb_path)
+    : null;
+  const [flipped, setFlipped] = useState(false);
+
+  function toggleFlip(e: React.MouseEvent) {
+    e.preventDefault();   // kart bir <a>: butona basmak sayfaya gitmesin
+    e.stopPropagation();
+    setFlipped((f) => !f);
+  }
 
   return (
     <a href={`/${locale}/models/${model.id}`} className="group block">
       <div className="bg-[var(--bg-primary)] border border-[var(--border)] rounded-2xl overflow-hidden hover:border-[var(--border-strong)] hover:shadow-sm transition-all duration-200">
-        <div className="h-36 bg-[var(--bg-tertiary)] flex items-center justify-center relative overflow-hidden">
-          {model.thumbnail_url ? (
-            <img src={model.thumbnail_url} alt={title} className="w-full h-full object-cover group-hover:scale-105 transition-transform duration-300" />
-          ) : (
-            <ModelIcon />
-          )}
-          {model.print_count > 50 && (
-            <div className="absolute top-2 left-2">
-              <span className="text-[10px] font-medium bg-[rgba(255,107,53,0.12)] text-[#FF6B35] px-2 py-0.5 rounded-full flex items-center gap-1">
-                <TrendingUp size={9} /> {t("trend")}
-              </span>
+        <div className="h-36 relative" style={{ perspective: "900px" }}>
+          <div
+            className="absolute inset-0 transition-transform duration-500 ease-in-out motion-reduce:transition-none"
+            style={{ transformStyle: "preserve-3d", transform: flipped ? "rotateY(180deg)" : "none" }}
+          >
+            {/* Ön yüz: 3D model görseli */}
+            <div
+              className="absolute inset-0 bg-[var(--bg-tertiary)] flex items-center justify-center overflow-hidden"
+              style={{ backfaceVisibility: "hidden", WebkitBackfaceVisibility: "hidden" }}
+            >
+              {model.thumbnail_url ? (
+                <img src={model.thumbnail_url} alt={title} className="w-full h-full object-cover group-hover:scale-105 transition-transform duration-300" />
+              ) : (
+                <ModelIcon />
+              )}
+              {model.print_count > 50 && (
+                <div className="absolute bottom-2 left-2">
+                  <span className="text-[10px] font-medium bg-[rgba(255,107,53,0.12)] text-[#FF6B35] px-2 py-0.5 rounded-full flex items-center gap-1">
+                    <TrendingUp size={9} /> {t("trend")}
+                  </span>
+                </div>
+              )}
+              {isNew(model.created_at) && (
+                <div className="absolute bottom-2 left-2">
+                  <span className="text-[10px] font-medium bg-[rgba(16,185,129,0.12)] text-[#10B981] px-2 py-0.5 rounded-full flex items-center gap-1">
+                    <Sparkles size={9} /> {t("new")}
+                  </span>
+                </div>
+              )}
+              {model.is_free && (
+                <div className="absolute top-2 right-2">
+                  <span className="text-[10px] font-medium bg-[rgba(16,185,129,0.12)] text-[#10B981] px-2 py-0.5 rounded-full">{t("free")}</span>
+                </div>
+              )}
             </div>
-          )}
-          {isNew(model.created_at) && (
-            <div className="absolute top-2 left-2">
-              <span className="text-[10px] font-medium bg-[rgba(16,185,129,0.12)] text-[#10B981] px-2 py-0.5 rounded-full flex items-center gap-1">
-                <Sparkles size={9} /> {t("new")}
-              </span>
-            </div>
-          )}
-          {model.is_free && (
-            <div className="absolute top-2 right-2">
-              <span className="text-[10px] font-medium bg-[rgba(16,185,129,0.12)] text-[#10B981] px-2 py-0.5 rounded-full">{t("free")}</span>
-            </div>
+            {/* Arka yüz: gerçek baskı fotoğrafı */}
+            {showcaseUrl && (
+              <div
+                className="absolute inset-0 bg-[var(--bg-tertiary)] overflow-hidden"
+                style={{ backfaceVisibility: "hidden", WebkitBackfaceVisibility: "hidden", transform: "rotateY(180deg)" }}
+              >
+                <img src={showcaseUrl} alt="" className="w-full h-full object-cover" />
+                <span className="absolute bottom-2 left-2 text-[10px] font-medium bg-black/55 text-white px-2 py-0.5 rounded-full flex items-center gap-1">
+                  <Camera size={9} /> {tp("realPrint")}
+                </span>
+              </div>
+            )}
+          </div>
+
+          {/* Sol üst buton: önce mini baskı fotoğrafı; çevrildikten sonra "3D'ye dön" butonu */}
+          {showcaseUrl && (
+            <button
+              type="button"
+              onClick={toggleFlip}
+              aria-label={flipped ? tp("cardShow3d") : tp("cardShowPhoto")}
+              title={flipped ? tp("cardShow3d") : tp("cardShowPhoto")}
+              className="absolute top-2 left-2 z-10 shadow-md transition-transform hover:scale-105 active:scale-95"
+            >
+              {flipped ? (
+                <span className="h-9 px-2.5 rounded-lg bg-[var(--bg-primary)] border border-[var(--border-strong)] text-[var(--text-primary)] text-xs font-semibold flex items-center gap-1.5">
+                  <Box size={14} className="text-[#FF6B35]" /> {tp("label3d")}
+                </span>
+              ) : (
+                <img src={showcaseUrl} alt="" className="w-9 h-9 rounded-lg object-cover border-2 border-white" />
+              )}
+            </button>
           )}
         </div>
         <div className="p-3">

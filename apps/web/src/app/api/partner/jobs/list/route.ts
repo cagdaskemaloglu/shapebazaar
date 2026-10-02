@@ -1,6 +1,7 @@
 import { NextResponse } from "next/server";
 import { createClient } from "@/lib/supabase/server";
 import { createAdminClient } from "@/lib/supabase/admin";
+import { printPhotoUrl } from "@/lib/printPhotosServer";
 
 /**
  * Yazıcı ortağı paneli için havuz + kendi işleri + kazanç verisini döner.
@@ -40,7 +41,7 @@ export async function GET() {
     .lt("deadline", new Date().toISOString());
 
   const ORDER_SELECT = `
-    id, status, claimed_at, printed_at, deadline, created_at, printer_id, printer_notes,
+    id, status, claimed_at, printed_at, deadline, created_at, printer_id, printer_notes, photos_required,
     order:orders(id, total_amount, shipping_cost, city, district, recipient_name, address_line1, phone)
   `;
 
@@ -87,12 +88,30 @@ export async function GET() {
     }
   }
 
+  // Bu yazıcının yüklediği fotoğraflar (bekleyenler dahil), kalem bazında
+  const allItemIds = Object.values(itemsMap).flat().map((i: any) => i.id);
+  let photosMap: Record<string, any[]> = {};
+  if (allItemIds.length > 0) {
+    const { data: photos } = await admin
+      .from("print_photos")
+      .select("id, order_item_id, status, photo_path, thumb_path, created_at")
+      .eq("printer_id", user.id)
+      .in("order_item_id", allItemIds)
+      .order("created_at", { ascending: true });
+    for (const ph of photos ?? []) {
+      (photosMap[ph.order_item_id] ??= []).push({
+        id: ph.id, status: ph.status,
+        photo_url: printPhotoUrl(ph.photo_path), thumb_url: printPhotoUrl(ph.thumb_path),
+      });
+    }
+  }
+
   function enrich(jobs: any[]) {
     return jobs.map((j) => ({
       ...j,
       printer_full_name: j.printer_id ? printerMap[j.printer_id]?.full_name ?? null : null,
       printer_username:  j.printer_id ? printerMap[j.printer_id]?.username  ?? null : null,
-      items: itemsMap[j.order?.id ?? ""] ?? [],
+      items: (itemsMap[j.order?.id ?? ""] ?? []).map((it: any) => ({ ...it, photos: photosMap[it.id] ?? [] })),
     }));
   }
 

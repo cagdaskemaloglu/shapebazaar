@@ -40,6 +40,11 @@ export async function GET() {
       .limit(50),
   ]);
 
+  const { count: pendingPhotoCount } = await admin
+    .from("print_photos")
+    .select("id", { count: "exact", head: true })
+    .eq("status", "pending");
+
   const orderIds = (ordersRes.data ?? []).map((o: any) => o.id);
 
   let itemsMap: Record<string, any[]> = {};
@@ -84,6 +89,7 @@ export async function GET() {
     orders:          enrichedOrders,
     withdrawals:     wdData ?? [],
     testModels:      modelsForTest.data ?? [],
+    pendingPhotoCount: pendingPhotoCount ?? 0,
     stats: {
       totalUsers:  usersRes.count ?? 0,
       totalOrders: ordersRes.data?.length ?? 0,

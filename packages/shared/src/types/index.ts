@@ -44,6 +44,9 @@ export interface Model {
   rotation_y?: number | null;
   rotation_z?: number | null;
   license?: "standard" | "multi_print" | "open";
+  /** Admin'in seçtiği vitrin baskı fotoğrafı (print-photos bucket yolu) — yoksa null */
+  showcase_photo_path?: string | null;
+  showcase_thumb_path?: string | null;
   designer?: Designer | null;
   category?: Category | null;
 }

@@ -3,5 +3,6 @@ export * from "./types";
 export * from "./constants";
 export * from "./queries/models";
 export * from "./queries/orders";
+export * from "./queries/printPhotos";
 export * from "./cart";
 export * from "./storage";

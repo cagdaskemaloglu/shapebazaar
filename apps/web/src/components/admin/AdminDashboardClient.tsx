@@ -9,6 +9,8 @@ import {
   Package, Users, Upload, CheckCircle, XCircle,
   Eye, FlaskConical, ChevronDown, ChevronUp, Plus
 } from "lucide-react";
+import { PrintPhotosAdmin } from "@/components/admin/PrintPhotosAdmin";
+import { CatalogAdmin } from "@/components/admin/CatalogAdmin";
 
 interface OrderItem {
   id: string;
@@ -85,7 +87,9 @@ const COLORS = [
 export function AdminDashboardClient() {
   const t     = useTranslations("admin");
   const tFree = useTranslations("modelsPage");
-  const [tab,             setTab]             = useState<"models" | "partners" | "orders" | "reports" | "withdrawals" | "test">("models");
+  const tPhotos = useTranslations("printPhotos");
+  const [tab,             setTab]             = useState<"models" | "partners" | "orders" | "reports" | "withdrawals" | "photos" | "catalog" | "test">("models");
+  const [pendingPhotoCount, setPendingPhotoCount] = useState(0);
   const [pendingModels,   setPendingModels]   = useState<PendingModel[]>([]);
   const [pendingPartners, setPendingPartners] = useState<PendingPartner[]>([]);
   const [orders,          setOrders]          = useState<OrderRow[]>([]);
@@ -142,6 +146,7 @@ export function AdminDashboardClient() {
     setWithdrawals(data.withdrawals ?? []);
     setTestModels(data.testModels ?? []);
     setStats(data.stats ?? { totalUsers: 0, totalOrders: 0, revenue: 0 });
+    setPendingPhotoCount(data.pendingPhotoCount ?? 0);
     setLoading(false);
   }
 
@@ -324,6 +329,8 @@ export function AdminDashboardClient() {
             { id: "partners",    label: `${t("partnerApps")} (${pendingPartners.length})` },
             { id: "orders",      label: `${t("orders")} (${orders.length})`                },
             { id: "withdrawals", label: `${t("withdrawalRequests")} (${withdrawals.filter(w => w.status === "pending").length})` },
+            { id: "photos",      label: `${tPhotos("tabPhotos")} (${pendingPhotoCount})`    },
+            { id: "catalog",     label: tPhotos("tabCatalog")                            },
             { id: "reports",     label: t("reportsTab")                                  },
             { id: "test",        label: "🧪 Test Siparişi", highlight: true            },
           ].map((t) => (
@@ -726,6 +733,9 @@ export function AdminDashboardClient() {
             )}
 
             {/* TEST SİPARİŞİ */}
+            {tab === "photos"  && <PrintPhotosAdmin onPendingCount={setPendingPhotoCount} />}
+            {tab === "catalog" && <CatalogAdmin />}
+
             {tab === "test" && (
               <div className="max-w-xl">
                 <div className="bg-purple-50 dark:bg-purple-950/20 border border-purple-200 dark:border-purple-900 rounded-2xl p-4 mb-5 flex gap-3">

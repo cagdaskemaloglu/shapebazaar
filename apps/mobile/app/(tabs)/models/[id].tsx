@@ -7,13 +7,14 @@ import {
   fetchModel, canRateModel, fetchRatings, submitRating,
   calcPrintCost, calcTotalPrice, SCALE_FACTOR, INFILL_FACTOR,
   MATERIALS, COLORS, SCALES, INFILLS, INFILL_LABEL_KEY,
-  getModelPublicUrl,
-  type Model, type ModelRating,
+  getModelPublicUrl, fetchModelPrintPhotos,
+  type Model, type ModelRating, type PrintPhoto,
 } from "@shapebazaar/shared";
 import { supabase } from "../../../lib/supabase";
 import { useAuth } from "../../../lib/auth/AuthProvider";
 import { useCartStore, buildCartItem } from "../../../lib/cart";
 import { ModelViewer3D } from "../../../components/ModelViewer3D";
+import { PrintPhotoStrip } from "../../../components/PrintPhotoStrip";
 
 
 // Detay ekranı artık (tabs) içinde gizli bir sekme: alt sekme çubuğu görünür kalır.
@@ -56,6 +57,7 @@ function ModelDetailScreen({ id }: { id: string }) {
   const [submitted, setSubmitted]   = useState(false);
   const [ratingError, setRatingError] = useState("");
   const [viewerActive, setViewerActive] = useState(false);
+  const [printPhotos, setPrintPhotos] = useState<PrintPhoto[]>([]);
 
   const loadRatings = useCallback(async () => {
     if (!id) return;
@@ -74,6 +76,8 @@ function ModelDetailScreen({ id }: { id: string }) {
       setLoading(false);
     })();
     loadRatings();
+    // Yazıcı ortaklarının bastığı gerçek ürün fotoğrafları (sadece admin onaylıları; hata olursa bölüm gizli kalır)
+    fetchModelPrintPhotos(supabase, id).then(setPrintPhotos).catch((e) => console.warn("[print photos]", e));
   }, [id, loadRatings]);
 
   useEffect(() => {
@@ -155,6 +159,12 @@ function ModelDetailScreen({ id }: { id: string }) {
               <Text className="text-sm text-slate-600 leading-relaxed">{description}</Text>
             </View>
           ) : null}
+
+          <PrintPhotoStrip
+            photos={printPhotos}
+            title={t("printPhotos.galleryTitle")}
+            description={t("printPhotos.galleryDesc")}
+          />
 
           {/* Yapılandırma */}
           <View className="mb-3">

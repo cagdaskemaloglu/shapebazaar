@@ -214,6 +214,17 @@
     "cancel": "Cancel",
     "confirmed": "You've confirmed delivery. Thank you!",
     "confirmConflict": "This order is already confirmed or hasn't shipped yet.",
-    "confirmError": "Could not confirm delivery. Please try again."
+    "confirmError": "Could not confirm delivery. Please try again.",
+    "printPhotos": "Print Photos"
+  },
+  "printPhotos": {
+    "realPrint": "Real print",
+    "label3d": "3D",
+    "showPhoto": "Show print photo",
+    "show3d": "Switch to 3D view",
+    "galleryTitle": "Printed by our partners",
+    "galleryDesc": "Real prints of this model",
+    "printedBy": "Printed by {{name}}",
+    "close": "Close"
   }
 }

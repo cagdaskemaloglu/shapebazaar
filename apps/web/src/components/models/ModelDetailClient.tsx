@@ -10,6 +10,7 @@ import { formatPrice } from "@/lib/utils";
 import { ModelViewer } from "@/components/viewer/ModelViewer";
 import { createClient } from "@/lib/supabase/client";
 import { RatingSection } from "@/components/models/RatingSection";
+import { PrintPhotoGallery } from "@/components/models/PrintPhotoGallery";
 import { getModelPublicUrl } from "@/lib/storage";
 import { usePathname } from "next/navigation";
 import { useTranslations } from "next-intl";
@@ -371,6 +372,7 @@ export function ModelDetailClient({ modelId }: { modelId: string }) {
               <p className="text-sm text-[var(--text-secondary)] leading-relaxed">{displayDescription}</p>
             </div>
           )}
+          <PrintPhotoGallery modelId={modelId} />
         </div>
 
         {/* RIGHT — Config */}

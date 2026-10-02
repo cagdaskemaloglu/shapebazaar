@@ -1,7 +1,7 @@
 # ShapeBazaar Mobile — Yol Haritası (v1: Sadece Alıcı)
 
 > Her faz, kendinden önceki fazın üzerine inşa edilecek şekilde sıralandı.
-> **Son güncelleme:** Faz 5 cihazda doğrulandı (Google girişi + iyzico test ödemesi çalıştı). Faz 6 kodu yazıldı, cihazda test bekliyor.
+> **Son güncelleme:** Faz 6 cihazda doğrulandı. Baskı fotoğrafı özelliği (web + mobil) kodlandı, test ve migration 008 bekliyor.
 
 ## Faz 0 — Monorepo Geçişi ✅ TAMAMLANDI
 📄 Ayrıntılı adımlar: `MONOREPO_MIGRATION.md`
@@ -82,6 +82,19 @@
 - [x] **Güvenlik/veri düzeltmesi:** `payment/init` `orders` + `order_items` yazmalarını admin client ile yapıyor (kullanıcı client'ıyla `order_items` INSERT'ü RLS'te policy olmadığı için sessizce reddediliyor olabilirdi; kalemsiz sipariş = tasarımcı kazancı/puan şartı çalışmaz). `007_orders_rls_hardening.sql`: alıcının `orders` üzerindeki INSERT/UPDATE politikaları kaldırılıyor (önceden kendi siparişinin status/total_amount'unu değiştirebiliyordu). **Sıra: önce web deploy, sonra migration.**
 - [ ] Cihazda test: ödeme sonrası sipariş listede görünüyor mu, kalemler dolu mu, detay/zaman çizelgesi, (admin panelinden `shipped` yapılmış bir siparişle) "Teslim Aldım" ve cüzdan kazançları
 - [ ] Faz 3'ten kalan: satın alma şartıyla puan verme testi
+
+## Faz 6.5 — Yazıcı baskı fotoğrafları + vitrin fotoğrafı + admin model silme ✅ KOD TAMAM, TEST BEKLİYOR
+Kararlar: yazıcı kargolamadan önce **her ürün için ≥2 (en fazla 5)** fotoğraf yükler (admin onayı kargolamayı engellemez); fotoğraflar admin onayından sonra ürün sayfasında görünür; admin ürün başına **tek bir vitrin fotoğrafı** seçer ve bu, ürün kartında sol üstte mini buton olur — basınca görsel alanı 180° dönüp baskı fotoğrafını gösterir, buton "3D" butonuna dönüşür. Tüm yazıcıların fotoğrafı kartta gösterilmez. Zorunluluk sadece migration'dan sonra oluşan işlere uygulanır (`print_jobs.photos_required`).
+- [x] `supabase/migrations/008_print_photos.sql`: `print_photos` tablosu (pending/approved, RLS: herkes onaylıyı, yazıcı kendininkini okur), `models.showcase_*` kolonları + vitrin temizleme trigger'ları, `print-photos` public bucket
+- [x] Web partner paneli: tarayıcıda küçültme (≤1600px + ≤640px JPEG, EXIF atılır) + `/api/partner/photos` (POST/DELETE); `partner/jobs/ship` ≥2 fotoğraf şartını sunucuda uygular
+- [x] Web admin paneli: "Fotoğraflar" sekmesi (onayla/sil, vitrin seç; yayındakileri sonradan düzenle: vitrin değiştir, onayı kaldır, sil) ve "Katalog" sekmesi (model arama + kalıcı silme)
+- [x] Model silme koruması: devam eden siparişi (paid/in_print/printed/shipped, yeni `pending`) olan model silinemez; sipariş geçmişi korunur
+- [x] Web: ürün kartı flip animasyonu (`ModelsPageClient`), model sayfasında "Yazıcılarımızdan çıkanlar" galerisi
+- [x] Mobil: `ModelCard` flip (Animated, native driver), model detayında galeri şeridi + tam ekran görüntüleyici, sipariş detayında alıcının kendi baskı fotoğrafları
+- [x] **Canlı DB bulgusu:** `print_jobs` tablosu canlı veritabanında hiç yoktu (001'den kurulmamış, DB panelden elle büyütülmüş) → ödeme callback'indeki `print_jobs` insert'i sessizce hata veriyordu, yani siparişler hiçbir yazıcıya düşmemişti. `008` tabloyu kodun beklediği kolonlarla (`region`, `deadline`, `photos_required`) ve sıkı RLS/kolon yetkileriyle kuruyor; gerçek bir PostgreSQL'de iki kez çalıştırılarak test edildi. Geçmiş ödenmiş siparişleri havuza eklemek için dosya sonunda opsiyonel (yorumlu) sorgu var.
+- [ ] **Dağıtım sırası: ÖNCE 008'i Supabase'de çalıştır, SONRA web deploy, sonra mobil.** (Yeni kod `showcase_thumb_path` ve `photos_required` kolonlarını okur; migration yoksa model listesi ve partner paneli boş döner.)
+- [ ] Uçtan uca test: yazıcı iki fotoğraf yükleyip kargolasın → admin onaylayıp vitrin seçsin → kart ve model sayfası → mobil kart/galeri/sipariş detayı
+- [ ] Uygulama mağazasına fotoğraf gösterimiyle çıkılacaksa: kullanıcı kaynaklı içerik kuralları (şikâyet butonu vb.) güncel Apple/Google metninden kontrol edilmeli
 
 ## Faz 7 — Push Bildirimleri (başlanmadı, opsiyonel hızlandırma)
 - [ ] Expo push token kaydı

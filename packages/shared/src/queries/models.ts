@@ -22,6 +22,7 @@ const MODEL_LIST_SELECT = `
   avg_rating, rating_count, print_count, created_at, tags,
   weight_grams, dimension_x, dimension_y, dimension_z,
   rotation_x, rotation_y, rotation_z,
+  showcase_thumb_path,
   designer:profiles(id, full_name, username, avatar_url),
   category:categories(id, slug, name_tr, name_en)
 `;

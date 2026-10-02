@@ -5,7 +5,7 @@ import {
 import { router, useLocalSearchParams, useFocusEffect, Redirect } from "expo-router";
 import { useTranslation } from "react-i18next";
 import { ChevronLeft, Check } from "lucide-react-native";
-import { fetchOrderDetail, type OrderDetail } from "@shapebazaar/shared";
+import { fetchOrderDetail, fetchOrderPrintPhotos, type OrderDetail, type PrintPhoto } from "@shapebazaar/shared";
 import { supabase } from "../../../lib/supabase";
 import { useAuth } from "../../../lib/auth/AuthProvider";
 import { apiPost, ApiError } from "../../../lib/api";
@@ -13,6 +13,7 @@ import {
   TIMELINE_STEPS, timelineIndex, formatDate, formatMoney, shortOrderNo,
 } from "../../../lib/orderStatus";
 import { OrderStatusBadge } from "../../../components/OrderStatusBadge";
+import { PrintPhotoStrip } from "../../../components/PrintPhotoStrip";
 
 // Sekme ekranları unmount olmadığı için (bkz. models/[id].tsx): `key={id}` ile başka siparişe
 // geçince state sıfırlanır, odak kaybedilince içerik unmount edilir ve geri dönüşte veri tazelenir.
@@ -49,13 +50,17 @@ function OrderDetailScreen({ id }: { id: string }) {
   const [error, setError]           = useState(false);
   const [refreshing, setRefreshing] = useState(false);
   const [confirming, setConfirming] = useState(false);
+  const [photos, setPhotos]         = useState<PrintPhoto[]>([]);
 
   const load = useCallback(async (isRefresh = false) => {
     if (!userId) return;
     if (isRefresh) setRefreshing(true);
     try {
-      setOrder(await fetchOrderDetail(supabase, id, userId));
+      const o = await fetchOrderDetail(supabase, id, userId);
+      setOrder(o);
       setError(false);
+      // Siparişin basılmış ürün fotoğrafları (admin onayından sonra görünür) — yüklenemezse sessizce geç
+      fetchOrderPrintPhotos(supabase, (o?.order_items ?? []).map((i) => i.id)).then(setPhotos).catch(() => {});
     } catch (e) {
       console.warn("[order] load", e);
       setError(true);
@@ -232,6 +237,9 @@ function OrderDetailScreen({ id }: { id: string }) {
             ) : null}
           </Section>
         )}
+
+        {/* Basılan ürünün fotoğrafları */}
+        <PrintPhotoStrip photos={photos} title={t("orders.printPhotos")} />
 
         {/* Ürünler */}
         <Section title={t("orders.items")}>
