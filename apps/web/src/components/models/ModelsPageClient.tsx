@@ -4,7 +4,7 @@ import { Search, Star, TrendingUp, Sparkles, Grid3X3, List, ChevronDown, Box, Ca
 import { useTranslations, useLocale } from "next-intl";
 import { createClient } from "@/lib/supabase/client";
 import { fetchModels as fetchModelsApi } from "@/lib/models";
-import { buildPrintPhotoUrl } from "@shapebazaar/shared";
+import { buildPrintPhotoUrl, defaultPrintPrice } from "@shapebazaar/shared";
 import { formatPrice } from "@/lib/utils";
 
 const SORT_VALUES = ["popular", "newest", "price_asc", "price_desc", "rating"];
@@ -30,6 +30,7 @@ interface Model {
   created_at: string;
   file_format: string;
   showcase_thumb_path?: string | null;
+  weight_grams?: number | null;
   designer: { full_name: string | null; username: string | null } | null;
   category: { name_tr: string; name_en: string } | null;
 }
@@ -361,6 +362,9 @@ function GridCard({ model }: { model: Model }) {
     : null;
   const [flipped, setFlipped] = useState(false);
 
+  // Varsayılan ayarlarla baskı ücreti (kargo hariç) — ağırlığı olmayan modelde gösterilmez
+  const printPrice = defaultPrintPrice(model.weight_grams, model.is_free ? 0 : model.base_price)?.printWithFee ?? null;
+
   function toggleFlip(e: React.MouseEvent) {
     e.preventDefault();   // kart bir <a>: butona basmak sayfaya gitmesin
     e.stopPropagation();
@@ -370,7 +374,7 @@ function GridCard({ model }: { model: Model }) {
   return (
     <a href={`/${locale}/models/${model.id}`} className="group block">
       <div className="bg-[var(--bg-primary)] border border-[var(--border)] rounded-2xl overflow-hidden hover:border-[var(--border-strong)] hover:shadow-sm transition-all duration-200">
-        <div className="h-36 relative" style={{ perspective: "900px" }}>
+        <div className="aspect-[4/3] relative" style={{ perspective: "900px" }}>
           <div
             className="absolute inset-0 transition-transform duration-500 ease-in-out motion-reduce:transition-none"
             style={{ transformStyle: "preserve-3d", transform: flipped ? "rotateY(180deg)" : "none" }}
@@ -381,7 +385,7 @@ function GridCard({ model }: { model: Model }) {
               style={{ backfaceVisibility: "hidden", WebkitBackfaceVisibility: "hidden" }}
             >
               {model.thumbnail_url ? (
-                <img src={model.thumbnail_url} alt={title} className="w-full h-full object-cover group-hover:scale-105 transition-transform duration-300" />
+                <img src={model.thumbnail_url} alt={title} className="w-full h-full object-contain group-hover:scale-105 transition-transform duration-300" />
               ) : (
                 <ModelIcon />
               )}
@@ -411,7 +415,7 @@ function GridCard({ model }: { model: Model }) {
                 className="absolute inset-0 bg-[var(--bg-tertiary)] overflow-hidden"
                 style={{ backfaceVisibility: "hidden", WebkitBackfaceVisibility: "hidden", transform: "rotateY(180deg)" }}
               >
-                <img src={showcaseUrl} alt="" className="w-full h-full object-cover" />
+                <img src={showcaseUrl} alt="" className="w-full h-full object-contain" />
                 <span className="absolute bottom-2 left-2 text-[10px] font-medium bg-black/55 text-white px-2 py-0.5 rounded-full flex items-center gap-1">
                   <Camera size={9} /> {tp("realPrint")}
                 </span>
@@ -442,9 +446,16 @@ function GridCard({ model }: { model: Model }) {
           <div className="text-xs text-[var(--text-tertiary)] mb-0.5">{designer}</div>
           <div className="font-medium text-sm text-[var(--text-primary)] truncate mb-2">{title}</div>
           <div className="flex items-center justify-between">
-            <span className="text-sm font-semibold text-[#FF6B35]">
-              {model.is_free ? t("free") : formatPrice(model.base_price, locale)}
-            </span>
+            <div className="min-w-0 flex items-baseline gap-x-1.5 flex-wrap">
+              <span className="text-sm font-semibold text-[#FF6B35]">
+                {model.is_free ? t("free") : formatPrice(model.base_price, locale)}
+              </span>
+              {printPrice !== null && (
+                <span className="text-[11px] text-[var(--text-tertiary)]" title={t("printPriceHint")}>
+                  + {t("printPrice", { price: formatPrice(printPrice, locale) })}
+                </span>
+              )}
+            </div>
             {model.rating_count > 0 && (
               <span className="flex items-center gap-1 text-xs text-[var(--text-tertiary)]">
                 <Star size={10} fill="currentColor" className="text-amber-400" />

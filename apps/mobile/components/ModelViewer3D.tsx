@@ -1,4 +1,4 @@
-import { useRef, useState, useCallback } from "react";
+import { useRef, useState, useCallback, useEffect } from "react";
 import { View, Text, Pressable, PanResponder, ActivityIndicator } from "react-native";
 import { GLView } from "expo-gl";
 import { Renderer, THREE } from "expo-three";
@@ -16,7 +16,10 @@ global.THREE = global.THREE || THREE;
 interface Props {
   fileUrl: string;
   fileFormat: string; // "stl" | "obj" — 3mf mobile'da desteklenmiyor (bkz. not)
+  /** Tasarımcının kaydettiği başlangıç yönelimi (Euler, radyan) — web viewer ile aynı: x, y VE z. */
   rotation?: { x: number; y: number; z: number };
+  /** Seçilen baskı rengi (hex). Değişince model anında bu rengi alır. */
+  colorHex?: string;
   /** Viewer'a dokunulduğunda true, bırakıldığında false döner. Üst ekran
    *  bunu kullanarak kendi ScrollView'ını geçici olarak kapatmalı — aksi
    *  halde iOS'un native UIScrollView'ı dikey sürüklemeyi JS'teki
@@ -25,8 +28,13 @@ interface Props {
 }
 
 const DEFAULT_DISTANCE = 3;
+const MIN_DISTANCE = DEFAULT_DISTANCE * 0.35;
+const MAX_DISTANCE = DEFAULT_DISTANCE * 3;
+const DEFAULT_COLOR = "#FF6B35";
+const AXIS_X = new THREE.Vector3(1, 0, 0);
+const AXIS_Y = new THREE.Vector3(0, 1, 0);
 
-export function ModelViewer3D({ fileUrl, fileFormat, rotation, onInteractionChange }: Props) {
+export function ModelViewer3D({ fileUrl, fileFormat, rotation, colorHex, onInteractionChange }: Props) {
   const { t } = useTranslation();
   const [status, setStatus] = useState<"loading" | "ready" | "error" | "unsupported">("loading");
 
@@ -36,12 +44,23 @@ export function ModelViewer3D({ fileUrl, fileFormat, rotation, onInteractionChan
   const rendererRef = useRef<InstanceType<typeof Renderer> | null>(null);
   const glRef = useRef<any>(null);
   const cameraDistance = useRef(DEFAULT_DISTANCE);
-  const lastPinchDistance = useRef<number | null>(null);
-  // Bir önceki onPanResponderMove'daki KÜMÜLATİF gesture.dx/dy — aradaki
-  // farkı (delta) hesaplamak için.
-  const lastGesture = useRef({ dx: 0, dy: 0 });
 
-  const rotationState = useRef({ x: rotation?.x ?? 0, y: rotation?.y ?? 0 });
+  // Modelin malzemeleri (renk değişince güncellenir) ve geçerli renk
+  const materialsRef = useRef<THREE.MeshStandardMaterial[]>([]);
+  const colorRef = useRef(colorHex ?? DEFAULT_COLOR);
+
+  // Başlangıç yönelimi: web viewer ile aynı Euler (x, y, z) → quaternion
+  const baseQuat = useRef(
+    new THREE.Quaternion().setFromEuler(new THREE.Euler(rotation?.x ?? 0, rotation?.y ?? 0, rotation?.z ?? 0))
+  );
+
+  // Gesture durumu
+  const lastTouch = useRef<{ x: number; y: number } | null>(null);
+  const lastPinchDistance = useRef<number | null>(null);
+  const velocity = useRef({ x: 0, y: 0 }); // rad/ms (yaw, pitch)
+  const lastMoveTime = useRef(0);
+  const rafId = useRef<number | null>(null);
+  const viewSize = useRef(320);
 
   const render = useCallback(() => {
     if (!rendererRef.current || !sceneRef.current || !cameraRef.current || !glRef.current) return;
@@ -59,20 +78,68 @@ export function ModelViewer3D({ fileUrl, fileFormat, rotation, onInteractionChan
     camera.lookAt(0, 0, 0);
   }
 
+  // ── Renk ──────────────────────────────────────────────────────────────
+  const applyColor = useCallback((hex: string) => {
+    colorRef.current = hex;
+    materialsRef.current.forEach((m) => m.color.set(hex));
+  }, []);
+
+  useEffect(() => {
+    applyColor(colorHex ?? DEFAULT_COLOR);
+    render();
+  }, [colorHex, applyColor, render]);
+
+  // ── Döndürme: DÜNYA eksenleri etrafında (trackball) ───────────────────
+  // Eski sürüm Euler açılarını biriktiriyordu: model bir kez eğilince yatay sürükleme modelin
+  // KENDİ ekseni etrafında dönüyor, parmağın yönüyle uyuşmuyordu. Burada her sürükleme, ekrana
+  // göre sağ-sol (dünya Y) ve yukarı-aşağı (dünya X) eksenlerinde dönüş olarak modele eklenir.
+  function rotateBy(yaw: number, pitch: number) {
+    const g = groupRef.current;
+    if (!g) return;
+    const qy = new THREE.Quaternion().setFromAxisAngle(AXIS_Y, yaw);
+    const qx = new THREE.Quaternion().setFromAxisAngle(AXIS_X, pitch);
+    g.quaternion.premultiply(qy).premultiply(qx);
+    render();
+  }
+
+  function cancelInertia() {
+    if (rafId.current != null) cancelAnimationFrame(rafId.current);
+    rafId.current = null;
+  }
+
+  // Parmak kalkınca hız sönümlenerek dönmeye devam eder
+  function startInertia() {
+    cancelInertia();
+    let last = Date.now();
+    const step = () => {
+      const now = Date.now();
+      const dt = Math.min(now - last, 32);
+      last = now;
+      const v = velocity.current;
+      if (Math.hypot(v.x, v.y) < 0.00004) { rafId.current = null; return; }
+      rotateBy(v.x * dt, v.y * dt);
+      const decay = Math.pow(0.94, dt / 16);
+      v.x *= decay;
+      v.y *= decay;
+      rafId.current = requestAnimationFrame(step);
+    };
+    rafId.current = requestAnimationFrame(step);
+  }
+
+  useEffect(() => cancelInertia, []);
+
   function resetCamera() {
-    rotationState.current = { x: rotation?.x ?? 0, y: rotation?.y ?? 0 };
-    if (groupRef.current) {
-      groupRef.current.rotation.x = rotationState.current.x;
-      groupRef.current.rotation.y = rotationState.current.y;
-    }
+    cancelInertia();
+    velocity.current = { x: 0, y: 0 };
+    if (groupRef.current) groupRef.current.quaternion.copy(baseQuat.current);
     cameraDistance.current = DEFAULT_DISTANCE;
     applyCamera();
     render();
   }
 
-  function zoom(delta: number) {
-    const next = cameraDistance.current - delta;
-    cameraDistance.current = Math.min(Math.max(next, DEFAULT_DISTANCE * 0.3), DEFAULT_DISTANCE * 3);
+  // Çarpımsal zoom: factor < 1 yaklaşır, > 1 uzaklaşır
+  function zoom(factor: number) {
+    cameraDistance.current = Math.min(Math.max(cameraDistance.current * factor, MIN_DISTANCE), MAX_DISTANCE);
     applyCamera();
     render();
   }
@@ -86,39 +153,60 @@ export function ModelViewer3D({ fileUrl, fileFormat, rotation, onInteractionChan
         Math.abs(gesture.dx) > 2 || Math.abs(gesture.dy) > 2,
 
       onPanResponderGrant: () => {
-        lastGesture.current = { dx: 0, dy: 0 };
+        cancelInertia();
+        velocity.current = { x: 0, y: 0 };
+        lastTouch.current = null;
+        lastPinchDistance.current = null;
+        lastMoveTime.current = Date.now();
       },
 
-      onPanResponderMove: (evt, gesture) => {
+      onPanResponderMove: (evt) => {
         const touches = evt.nativeEvent.touches;
-        if (touches.length === 2) {
-          // İki parmak → pinch zoom
+
+        if (touches.length >= 2) {
+          // İki parmak → oransal pinch zoom (parmaklar açılınca yaklaş)
           const dx = touches[0].pageX - touches[1].pageX;
           const dy = touches[0].pageY - touches[1].pageY;
-          const distance = Math.sqrt(dx * dx + dy * dy);
-          if (lastPinchDistance.current != null) {
-            const delta = (distance - lastPinchDistance.current) * 0.01;
-            zoom(delta);
+          const distance = Math.hypot(dx, dy);
+          if (lastPinchDistance.current != null && distance > 0) {
+            zoom(lastPinchDistance.current / distance);
           }
           lastPinchDistance.current = distance;
-        } else {
-          // Tek parmak → döndür (gesture.dx/dy kümülatiftir; farkını alıyoruz)
-          lastPinchDistance.current = null;
-          if (!groupRef.current) return;
-
-          const deltaX = gesture.dx - lastGesture.current.dx;
-          const deltaY = gesture.dy - lastGesture.current.dy;
-          lastGesture.current = { dx: gesture.dx, dy: gesture.dy };
-
-          rotationState.current.y += deltaX * 0.008;
-          rotationState.current.x += deltaY * 0.008;
-          groupRef.current.rotation.y = rotationState.current.y;
-          groupRef.current.rotation.x = rotationState.current.x;
-          render();
+          lastTouch.current = null; // parmak sayısı değişince döndürmede sıçrama olmasın
+          velocity.current = { x: 0, y: 0 };
+          return;
         }
+
+        // Tek parmak → döndür. Hassasiyet görünüm genişliğine bağlı: görünümü baştan sona
+        // sürüklemek ≈ 180° döndürür (cihaz/boyuttan bağımsız aynı his).
+        lastPinchDistance.current = null;
+        const touch = touches[0];
+        if (!touch) return;
+        const now = Date.now();
+
+        if (lastTouch.current) {
+          const k = Math.PI / Math.max(viewSize.current, 200);
+          const yaw = (touch.pageX - lastTouch.current.x) * k;
+          const pitch = (touch.pageY - lastTouch.current.y) * k;
+          rotateBy(yaw, pitch);
+
+          const dt = Math.max(now - lastMoveTime.current, 1);
+          // Hız: son hareketlerin yumuşatılmış ortalaması (rad/ms)
+          velocity.current = {
+            x: velocity.current.x * 0.5 + (yaw / dt) * 0.5,
+            y: velocity.current.y * 0.5 + (pitch / dt) * 0.5,
+          };
+        }
+        lastTouch.current = { x: touch.pageX, y: touch.pageY };
+        lastMoveTime.current = now;
       },
+
       onPanResponderRelease: () => {
         lastPinchDistance.current = null;
+        lastTouch.current = null;
+        // Parmak durup bırakıldıysa fırlatma yok; hareket ederken bırakıldıysa eylemsizlik
+        if (Date.now() - lastMoveTime.current < 80) startInertia();
+        else velocity.current = { x: 0, y: 0 };
       },
       onPanResponderTerminationRequest: () => false,
     })
@@ -144,6 +232,10 @@ export function ModelViewer3D({ fileUrl, fileFormat, rotation, onInteractionChan
     const dirLight = new THREE.DirectionalLight(0xffffff, 0.8);
     dirLight.position.set(2, 4, 3);
     scene.add(dirLight);
+    // Arkadan yumuşak dolgu ışığı: model döndükçe karanlık kalan yüzler okunabilsin
+    const fillLight = new THREE.DirectionalLight(0xffffff, 0.35);
+    fillLight.position.set(-3, -1, -2);
+    scene.add(fillLight);
 
     // Zemin gridi — sahneye (group'a değil) ekleniyor, bu yüzden model
     // dönerken grid sabit kalıyor (gerçek bir zemin gibi).
@@ -167,12 +259,22 @@ export function ModelViewer3D({ fileUrl, fileFormat, rotation, onInteractionChan
     try {
       const geometryOrObject = await loadModelFile(fileUrl, fileFormat);
       let mesh: THREE.Object3D;
+      materialsRef.current = [];
+
+      const makeMaterial = () => {
+        const m = new THREE.MeshStandardMaterial({ color: colorRef.current, metalness: 0.1, roughness: 0.6 });
+        materialsRef.current.push(m);
+        return m;
+      };
 
       if (geometryOrObject instanceof THREE.BufferGeometry) {
-        const material = new THREE.MeshStandardMaterial({ color: 0xff6b35, metalness: 0.1, roughness: 0.6 });
-        mesh = new THREE.Mesh(geometryOrObject, material);
+        mesh = new THREE.Mesh(geometryOrObject, makeMaterial());
       } else {
         mesh = geometryOrObject;
+        // OBJ: her alt mesh'e, renk değişince güncellenebilen kendi malzememizi ver
+        mesh.traverse((child) => {
+          if ((child as THREE.Mesh).isMesh) (child as THREE.Mesh).material = makeMaterial();
+        });
       }
 
       // Merkeze al ve kameraya sığacak şekilde ölçekle.
@@ -186,8 +288,7 @@ export function ModelViewer3D({ fileUrl, fileFormat, rotation, onInteractionChan
       mesh.scale.setScalar(scale);
 
       group.add(mesh);
-      group.rotation.x = rotationState.current.x;
-      group.rotation.y = rotationState.current.y;
+      group.quaternion.copy(baseQuat.current);
 
       // Grid'i modelin (başlangıç yönelimindeki) tabanına oturt.
       group.updateMatrixWorld(true);
@@ -205,6 +306,7 @@ export function ModelViewer3D({ fileUrl, fileFormat, rotation, onInteractionChan
   return (
     <View
       className="relative w-full aspect-square bg-brand-light rounded-2xl overflow-hidden"
+      onLayout={(e) => { viewSize.current = e.nativeEvent.layout.width; }}
       onTouchStart={() => onInteractionChange?.(true)}
       onTouchEnd={() => onInteractionChange?.(false)}
       onTouchCancel={() => onInteractionChange?.(false)}
@@ -239,10 +341,10 @@ export function ModelViewer3D({ fileUrl, fileFormat, rotation, onInteractionChan
           <Pressable onPress={resetCamera} className="w-9 h-9 rounded-full bg-white/90 items-center justify-center">
             <RotateCcw size={16} color="#1E293B" />
           </Pressable>
-          <Pressable onPress={() => zoom(0.4)} className="w-9 h-9 rounded-full bg-white/90 items-center justify-center">
+          <Pressable onPress={() => zoom(0.8)} className="w-9 h-9 rounded-full bg-white/90 items-center justify-center">
             <ZoomIn size={16} color="#1E293B" />
           </Pressable>
-          <Pressable onPress={() => zoom(-0.4)} className="w-9 h-9 rounded-full bg-white/90 items-center justify-center">
+          <Pressable onPress={() => zoom(1.25)} className="w-9 h-9 rounded-full bg-white/90 items-center justify-center">
             <ZoomOut size={16} color="#1E293B" />
           </Pressable>
         </View>

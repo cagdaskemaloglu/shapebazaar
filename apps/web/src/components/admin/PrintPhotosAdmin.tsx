@@ -2,6 +2,7 @@
 import { useEffect, useState, useCallback } from "react";
 import { Star, Trash2, Check, EyeOff } from "lucide-react";
 import { useLocale, useTranslations } from "next-intl";
+import { PRINT_PHOTO_MIN } from "@shapebazaar/shared";
 
 interface Photo {
   id: string;
@@ -89,6 +90,7 @@ export function PrintPhotosAdmin({ onPendingCount }: { onPendingCount?: (n: numb
       {/* ── Onay bekleyenler ── */}
       <section>
         <h2 className="text-sm font-semibold text-[var(--text-primary)] mb-1">{t("adminPendingTitle")}</h2>
+        <p className="text-xs text-[var(--text-tertiary)] mb-1">{t("adminPendingHint", { min: PRINT_PHOTO_MIN })}</p>
         <p className="text-xs text-[var(--text-tertiary)] mb-3">{t("adminShowcaseHint")}</p>
         {pending.length === 0 ? (
           <p className="text-sm text-[var(--text-tertiary)] py-6">{t("adminNoPending")}</p>

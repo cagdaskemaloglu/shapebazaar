@@ -31,7 +31,9 @@ export function PrintPhotoUploader({ jobId, orderItemId, photos, editable, requi
   const [busy, setBusy]   = useState(false);
   const [error, setError] = useState<string | null>(null);
 
-  const enough = photos.length >= PRINT_PHOTO_MIN;
+  const approvedCount = photos.filter((p) => p.status === "approved").length;
+  const uploadedEnough = photos.length >= PRINT_PHOTO_MIN;
+  const approvedEnough = approvedCount >= PRINT_PHOTO_MIN;
 
   async function handleFiles(files: FileList | null) {
     const list = Array.from(files ?? []);
@@ -85,11 +87,16 @@ export function PrintPhotoUploader({ jobId, orderItemId, photos, editable, requi
           {title && <div className="text-xs text-[var(--text-primary)] truncate">{title}</div>}
         </div>
         {editable && (required ? (
+          // 3 aşama: yükleniyor (x/2) → admin onayı bekleniyor → onaylandı (kargo bilgisi girilebilir)
           <span className={`shrink-0 text-[11px] font-medium px-2 py-0.5 rounded-full flex items-center gap-1 ${
-            enough ? "bg-[rgba(16,185,129,0.12)] text-[#10B981]" : "bg-[rgba(245,158,11,0.15)] text-amber-600"
+            approvedEnough ? "bg-[rgba(16,185,129,0.12)] text-[#10B981]"
+              : uploadedEnough ? "bg-[rgba(59,130,246,0.12)] text-blue-600"
+              : "bg-[rgba(245,158,11,0.15)] text-amber-600"
           }`}>
-            {enough && <Check size={10} />}
-            {t("progress", { count: photos.length, min: PRINT_PHOTO_MIN })}
+            {approvedEnough && <Check size={10} />}
+            {approvedEnough ? t("approvedChip")
+              : uploadedEnough ? t("awaitingApprovalChip", { approved: approvedCount, min: PRINT_PHOTO_MIN })
+              : t("progress", { count: photos.length, min: PRINT_PHOTO_MIN })}
           </span>
         ) : (
           <span className="shrink-0 text-[11px] font-medium px-2 py-0.5 rounded-full bg-[var(--bg-tertiary)] text-[var(--text-tertiary)]">

@@ -228,7 +228,9 @@
     "new": "Yeni",
     "apply": "Uygula",
     "reset": "Sıfırla",
-    "andUp": "+"
+    "andUp": "+",
+    "printPrice": "Baskı {price}",
+    "printPriceHint": "Varsayılan ayarlarla (PLA · %100 · %25 dolgu) baskı ücreti, kargo hariç"
   },
   "modelDetail": {
     "home": "Ana Sayfa",
@@ -735,7 +737,7 @@
       "paying": "Yönlendiriliyor…"
     },
     "errors": {
-      "required": "Lütfen zorunlu alanları doldurun.",
+      "required": "Kargo bilgisi girmeden önce her ürün için en az {min} fotoğraf yüklemelisiniz.",
       "connection": "Bağlantı hatası. Lütfen tekrar deneyin."
     },
     "footer": {
@@ -882,7 +884,7 @@
   },
   "printPhotos": {
     "uploaderTitle": "Baskı fotoğrafları",
-    "uploaderHint": "Kargolamadan önce her ürün için en az {min} fotoğraf yükleyin (en fazla {max}). Fotoğraflar admin onayından sonra yayınlanır; onayı beklemeden kargolayabilirsiniz.",
+    "uploaderHint": "Kargo bilgisi girebilmek için her ürün için en az {min} fotoğraf yükleyin (en fazla {max}) ve admin onayını bekleyin.",
     "privacyTip": "Fotoğrafta adres, kargo etiketi veya kişisel bilgi görünmemeli.",
     "progress": "{count}/{min} fotoğraf",
     "add": "Fotoğraf ekle",
@@ -928,6 +930,10 @@
     "catalogConfirm": "“{title}” kalıcı olarak silinecek. Sipariş geçmişi korunur; puanlar ve baskı fotoğrafları modelle birlikte silinir. Devam edilsin mi?",
     "catalogDeleteFailed": "Model silinemedi.",
     "optional": "İsteğe bağlı",
-    "uploaderHintOptional": "Bu iş, fotoğraf zorunluluğundan önce oluşturuldu; isteğe bağlı olarak en fazla {max} fotoğraf yükleyebilirsiniz."
+    "uploaderHintOptional": "Bu iş, fotoğraf zorunluluğundan önce oluşturuldu; isteğe bağlı olarak en fazla {max} fotoğraf yükleyebilirsiniz.",
+    "awaitingApprovalChip": "Onay bekleniyor ({approved}/{min})",
+    "approvedChip": "Onaylandı",
+    "awaitingApprovalBanner": "Fotoğraflarınız admin onayında. Onaylanınca kargo bilgilerini girebilirsiniz.",
+    "adminPendingHint": "Yazıcılar, her ürün için en az {min} fotoğraf onaylanmadan kargo bilgisi giremez."
   }
 }

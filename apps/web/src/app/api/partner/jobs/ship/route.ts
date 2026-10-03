@@ -1,7 +1,7 @@
 import { NextRequest, NextResponse } from "next/server";
 import { createClient } from "@/lib/supabase/server";
 import { createAdminClient } from "@/lib/supabase/admin";
-import { PRINT_PHOTO_MIN } from "@shapebazaar/shared";
+import { PRINT_PHOTO_MIN, evaluatePrintPhotoGate } from "@shapebazaar/shared";
 
 /**
  * Yazıcı ortağı kargo bilgilerini girip işi tamamladığında çağrılır.
@@ -36,21 +36,24 @@ export async function POST(req: NextRequest) {
     return NextResponse.json({ error: "Bu iş zaten tamamlanmış" }, { status: 409 });
   }
 
-  // Her ürün için en az PRINT_PHOTO_MIN baskı fotoğrafı YÜKLENMİŞ olmalı. Admin onayı beklenmez —
-  // onay kargolamayı engellemez. (Özellikten önce oluşmuş işlerde `photos_required` = false.)
+  // Kargo bilgisi girilebilmesi için her ürün için en az PRINT_PHOTO_MIN fotoğraf yüklenmiş VE admin
+  // tarafından onaylanmış olmalı (uzaktaki yazıcının modeli düzgün basıp basmadığını admin görür).
+  // Özellikten önce oluşmuş işlerde `photos_required` = false → şart yok.
   if (job.photos_required) {
     const { data: items } = await admin.from("order_items").select("id").eq("order_id", job.order_id);
     const itemIds = (items ?? []).map((i) => i.id);
     const { data: photos } = await admin
       .from("print_photos")
-      .select("order_item_id")
+      .select("order_item_id, status")
       .eq("printer_id", user.id)
       .in("order_item_id", itemIds.length ? itemIds : ["00000000-0000-0000-0000-000000000000"]);
-    const counts: Record<string, number> = {};
-    for (const ph of photos ?? []) counts[ph.order_item_id] = (counts[ph.order_item_id] ?? 0) + 1;
-    if (itemIds.some((id) => (counts[id] ?? 0) < PRINT_PHOTO_MIN)) {
+
+    const gate = evaluatePrintPhotoGate(itemIds, photos ?? [], PRINT_PHOTO_MIN);
+    if (!gate.ok) {
       return NextResponse.json(
-        { error: `Her ürün için en az ${PRINT_PHOTO_MIN} fotoğraf yüklemelisiniz`, code: "PHOTOS_REQUIRED" },
+        gate.reason === "UPLOAD_MORE"
+          ? { error: `Her ürün için en az ${PRINT_PHOTO_MIN} fotoğraf yüklemelisiniz`, code: "PHOTOS_REQUIRED" }
+          : { error: "Fotoğraflar henüz admin tarafından onaylanmadı", code: "PHOTOS_NOT_APPROVED" },
         { status: 422 }
       );
     }

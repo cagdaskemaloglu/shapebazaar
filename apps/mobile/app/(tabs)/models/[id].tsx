@@ -139,6 +139,7 @@ function ModelDetailScreen({ id }: { id: string }) {
               y: model.rotation_y ?? 0,
               z: model.rotation_z ?? 0,
             }}
+            colorHex={COLORS[colorIdx].hex}
             onInteractionChange={setViewerActive}
           />
         </View>

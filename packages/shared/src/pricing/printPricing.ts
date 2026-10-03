@@ -77,3 +77,24 @@ export function calcTotalPrice(
 export function tlToUsd(tl: number): number {
   return tl / EXCHANGE_RATE_TL_PER_USD;
 }
+
+/** Ürün kartlarında "baskı ücreti" hesabında kullanılan varsayılan ayarlar (detay sayfasının ilk seçimleriyle aynı). */
+export const DEFAULT_PRINT_SETTINGS = { material: "PLA", scale: "100%", infill: "25% (Standart)" } as const;
+
+/**
+ * Varsayılan ayarlarla (PLA · %100 · %25 dolgu) baskı ücreti — KARGO HARİÇ.
+ * `printWithFee`: tasarım ücretinin üstüne alıcının baskı için ödeyeceği tutar (baskı + komisyon).
+ * Ücretsiz modelde bu, sepette görülecek ürün tutarıyla birebir aynıdır; ücretli modelde
+ * `designPrice + printWithFee` = detay sayfasındaki varsayılan toplam. Ağırlığı bilinmeyen
+ * modelde `null` döner (sadece işçilik gösterip yanıltmamak için).
+ */
+export function defaultPrintPrice(
+  weightGrams: number | null | undefined,
+  designPrice: number
+): { printCost: number; printWithFee: number; total: number } | null {
+  if (!weightGrams || weightGrams <= 0) return null;
+  const { material, scale, infill } = DEFAULT_PRINT_SETTINGS;
+  const printCost = calcPrintCost(material, weightGrams, SCALE_FACTOR[scale] ?? 1, INFILL_FACTOR[infill] ?? 1);
+  const { total } = calcTotalPrice(designPrice, printCost);
+  return { printCost, printWithFee: total - designPrice, total };
+}

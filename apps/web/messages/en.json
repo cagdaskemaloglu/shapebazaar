@@ -181,7 +181,9 @@
     "new": "New",
     "apply": "Apply",
     "reset": "Reset",
-    "andUp": "+"
+    "andUp": "+",
+    "printPrice": "Print {price}",
+    "printPriceHint": "Print cost with default settings (PLA · 100% · 25% infill), shipping excluded"
   },
   "modelDetail": {
     "home": "Home",
@@ -690,7 +692,7 @@
       "paying": "Redirecting…"
     },
     "errors": {
-      "required": "Please fill all required fields.",
+      "required": "Upload at least {min} photos for every item before entering shipping details.",
       "connection": "Connection error. Please try again."
     },
     "footer": {
@@ -953,7 +955,7 @@
   },
   "printPhotos": {
     "uploaderTitle": "Print photos",
-    "uploaderHint": "Upload at least {min} photos for each item before shipping (max {max}). Photos go live after admin approval; you can ship without waiting for it.",
+    "uploaderHint": "To enter shipping details, upload at least {min} photos for each item (max {max}) and wait for admin approval.",
     "privacyTip": "Make sure no address, shipping label or personal info is visible.",
     "progress": "{count}/{min} photos",
     "add": "Add photo",
@@ -999,6 +1001,10 @@
     "catalogConfirm": "“{title}” will be permanently deleted. Order history is kept; ratings and print photos are deleted with the model. Continue?",
     "catalogDeleteFailed": "Could not delete the model.",
     "optional": "Optional",
-    "uploaderHintOptional": "This job predates the photo requirement; you can optionally upload up to {max} photos."
+    "uploaderHintOptional": "This job predates the photo requirement; you can optionally upload up to {max} photos.",
+    "awaitingApprovalChip": "Awaiting approval ({approved}/{min})",
+    "approvedChip": "Approved",
+    "awaitingApprovalBanner": "Your photos are awaiting admin approval. You can enter shipping details once they are approved.",
+    "adminPendingHint": "Printers cannot enter shipping details until at least {min} photos per item are approved."
   }
 }

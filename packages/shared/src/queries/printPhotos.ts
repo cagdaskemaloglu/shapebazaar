@@ -56,3 +56,29 @@ export async function fetchOrderPrintPhotos(supabase: SupabaseClient, orderItemI
   if (error) throw error;
   return (data ?? []) as unknown as PrintPhoto[];
 }
+
+export type PrintPhotoGate =
+  | { ok: true }
+  /** UPLOAD_MORE: yüklenen fotoğraf sayısı yetersiz — AWAITING_APPROVAL: yeterli yüklenmiş ama onaylı sayısı yetersiz */
+  | { ok: false; reason: "UPLOAD_MORE" | "AWAITING_APPROVAL" };
+
+/**
+ * Yazıcı, kargo bilgisini girebilmek için HER ürün (order_item) için en az `min` fotoğraf yüklemiş
+ * VE admin bunlardan en az `min` tanesini onaylamış olmalı. (Uzaktaki yazıcının modeli düzgün
+ * basıp basmadığını admin görsün diye.) Sunucu (ship route) ve arayüz aynı kuralı kullanır.
+ */
+export function evaluatePrintPhotoGate(
+  itemIds: string[],
+  photos: { order_item_id: string; status: string }[],
+  min: number = PRINT_PHOTO_MIN
+): PrintPhotoGate {
+  const uploaded: Record<string, number> = {};
+  const approved: Record<string, number> = {};
+  for (const p of photos) {
+    uploaded[p.order_item_id] = (uploaded[p.order_item_id] ?? 0) + 1;
+    if (p.status === "approved") approved[p.order_item_id] = (approved[p.order_item_id] ?? 0) + 1;
+  }
+  if (itemIds.some((id) => (uploaded[id] ?? 0) < min)) return { ok: false, reason: "UPLOAD_MORE" };
+  if (itemIds.some((id) => (approved[id] ?? 0) < min)) return { ok: false, reason: "AWAITING_APPROVAL" };
+  return { ok: true };
+}

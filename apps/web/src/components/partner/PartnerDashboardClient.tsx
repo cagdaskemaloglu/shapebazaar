@@ -8,7 +8,7 @@ import {
   Package, CheckCircle, Printer, ChevronDown, ChevronUp,
   Clock, Truck, AlertTriangle, User, MapPin, Box, Download
 } from "lucide-react";
-import { PRINT_PHOTO_MIN } from "@shapebazaar/shared";
+import { PRINT_PHOTO_MIN, evaluatePrintPhotoGate, type PrintPhotoGate } from "@shapebazaar/shared";
 import { PrintPhotoUploader, type PartnerPhoto } from "@/components/partner/PrintPhotoUploader";
 
 interface OrderItem {
@@ -165,12 +165,12 @@ export function PartnerDashboardClient({ userId }: { userId: string }) {
     document.body.removeChild(a);
   }
 
-  const fetchAll = useCallback(async () => {
-    setLoading(true);
+  const fetchAll = useCallback(async (silent = false) => {
+    if (!silent) setLoading(true); // sessiz yenilemede (admin onayı bekleme) liste yanıp sönmesin
     const res = await fetch("/api/partner/jobs/list");
     if (!res.ok) {
       console.error("fetchAll error:", await res.json().catch(() => ({})));
-      setLoading(false);
+      if (!silent) setLoading(false);
       return;
     }
     const data = await res.json();
@@ -178,7 +178,7 @@ export function PartnerDashboardClient({ userId }: { userId: string }) {
     setPoolJobs(data.poolJobs ?? []);
     setMyJobs(data.myJobs ?? []);
     setEarnings(data.earnings ?? 0);
-    setLoading(false);
+    if (!silent) setLoading(false);
   }, [userId]);
 
   useEffect(() => { fetchAll(); }, [fetchAll]);
@@ -250,12 +250,28 @@ export function PartnerDashboardClient({ userId }: { userId: string }) {
     ));
   }
 
-  const photosReady = (job: PrintJob) =>
-    !job.photos_required || job.items.every((it) => (it.photos?.length ?? 0) >= PRINT_PHOTO_MIN);
+  /** Kargo kapısı: her ürün için ≥PRINT_PHOTO_MIN fotoğraf yüklenmiş VE admin onaylamış olmalı (sunucuyla aynı kural) */
+  function photoGate(job: PrintJob): PrintPhotoGate {
+    if (!job.photos_required) return { ok: true };
+    const itemIds = job.items.map((it) => it.id);
+    const photos = job.items.flatMap((it) => (it.photos ?? []).map((ph) => ({ order_item_id: it.id, status: ph.status })));
+    return evaluatePrintPhotoGate(itemIds, photos, PRINT_PHOTO_MIN);
+  }
+
+  // Fotoğraflar admin onayını beklerken paneli arka planda yenile: onay gelince kargo bilgisi açılır
+  const awaitingApproval = myJobs.some((j) => {
+    const g = photoGate(j);
+    return ["claimed", "printing"].includes(j.status) && !g.ok && g.reason === "AWAITING_APPROVAL";
+  });
+  useEffect(() => {
+    if (!awaitingApproval) return;
+    const id = setInterval(() => fetchAll(true), 20000);
+    return () => clearInterval(id);
+  }, [awaitingApproval, fetchAll]);
 
   /** Kargolama: fotoğraflar eksikse panelde uyarı göster, yeterliyse kargo penceresini aç */
   function requestShip(job: PrintJob) {
-    if (photosReady(job)) { setPhotoWarningJobId(null); setShippingJobId(job.id); return; }
+    if (photoGate(job).ok) { setPhotoWarningJobId(null); setShippingJobId(job.id); return; }
     setPhotoWarningJobId(job.id);
   }
 
@@ -426,7 +442,7 @@ export function PartnerDashboardClient({ userId }: { userId: string }) {
                     )}
                     {isMine && job.status === "printing" && (
                       <button onClick={() => requestShip(job)}
-                        className="text-xs px-3 py-1.5 bg-[#FF6B35] text-white rounded-lg hover:bg-[#e85e2a] transition-colors flex items-center gap-1">
+                        className={`text-xs px-3 py-1.5 bg-[#FF6B35] text-white rounded-lg hover:bg-[#e85e2a] transition-colors flex items-center gap-1 ${photoGate(job).ok ? "" : "opacity-50"}`}>
                         <Truck size={12} /> {t("completeBtn")}
                       </button>
                     )}
@@ -440,12 +456,25 @@ export function PartnerDashboardClient({ userId }: { userId: string }) {
                 {/* Baskı fotoğrafları: üstlenilen işte kartın üstünde her zaman görünür (açılır detay gerekmez) */}
                 {isMine && ["claimed", "printing"].includes(job.status) && items.length > 0 && (
                   <div className="mx-4 mb-4 -mt-1 bg-[var(--bg-secondary)] rounded-xl px-3 py-3">
-                    {photoWarningJobId === job.id && !photosReady(job) && (
-                      <div className="flex items-center gap-2 text-xs text-amber-700 bg-amber-50 dark:bg-amber-950/20 border border-amber-200 dark:border-amber-900 rounded-lg px-3 py-2 mb-3">
-                        <AlertTriangle size={13} className="shrink-0" />
-                        {tp("required", { min: PRINT_PHOTO_MIN })}
-                      </div>
-                    )}
+                    {(() => {
+                      const gate = photoGate(job);
+                      if (gate.ok) return null;
+                      // Onay beklerken her zaman bilgi göster; eksik fotoğraf uyarısı sadece "Kargola"ya basılınca
+                      if (gate.reason === "AWAITING_APPROVAL") {
+                        return (
+                          <div className="flex items-center gap-2 text-xs text-blue-700 bg-blue-50 dark:bg-blue-950/20 border border-blue-200 dark:border-blue-900 rounded-lg px-3 py-2 mb-3">
+                            <Clock size={13} className="shrink-0" />
+                            {tp("awaitingApprovalBanner")}
+                          </div>
+                        );
+                      }
+                      return photoWarningJobId === job.id ? (
+                        <div className="flex items-center gap-2 text-xs text-amber-700 bg-amber-50 dark:bg-amber-950/20 border border-amber-200 dark:border-amber-900 rounded-lg px-3 py-2 mb-3">
+                          <AlertTriangle size={13} className="shrink-0" />
+                          {tp("required", { min: PRINT_PHOTO_MIN })}
+                        </div>
+                      ) : null;
+                    })()}
                     <div className="flex flex-col gap-3">
                       {items.map((item, idx) => (
                         <div key={item.id} className={idx > 0 ? "pt-3 border-t border-[var(--border)]" : ""}>

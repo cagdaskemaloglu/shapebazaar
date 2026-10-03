@@ -69,7 +69,8 @@
   "home": {
     "searchPlaceholder": "Search models…",
     "free": "Free",
-    "noResults": "No models found."
+    "noResults": "No models found.",
+    "printPrice": "Print ₺{{price}}"
   },
   "modelDetail": {
     "notFound": "Model not found",

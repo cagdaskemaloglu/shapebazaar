@@ -69,7 +69,8 @@
   "home": {
     "searchPlaceholder": "Model ara…",
     "free": "Ücretsiz",
-    "noResults": "Model bulunamadı."
+    "noResults": "Model bulunamadı.",
+    "printPrice": "Baskı ₺{{price}}"
   },
   "modelDetail": {
     "notFound": "Model bulunamadı",
