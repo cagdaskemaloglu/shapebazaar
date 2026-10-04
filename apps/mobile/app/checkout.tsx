@@ -141,6 +141,8 @@ export default function CheckoutScreen() {
         }
 
         const data = await res.json().catch(() => ({}));
+        // Sunucu fiyatları yeniden hesaplar; sepetteki tutar güncelse (tasarımcı fiyatı değişti vb.) durdurur
+        if (res.status === 409 && data.code === "PRICE_CHANGED") return fail(t("payment.priceChanged"), "PRICE_CHANGED");
         if (!res.ok || data.error || !data.checkoutFormContent) {
           console.warn("[checkout] init failed:", res.status, data?.error);
           return fail(t("payment.initError"), `HTTP_${res.status}`);

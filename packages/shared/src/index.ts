@@ -1,4 +1,5 @@
 export * from "./pricing/printPricing";
+export * from "./pricing/cartPricing";
 export * from "./types";
 export * from "./constants";
 export * from "./queries/models";

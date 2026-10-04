@@ -363,7 +363,7 @@ function GridCard({ model }: { model: Model }) {
   const [flipped, setFlipped] = useState(false);
 
   // Varsayılan ayarlarla baskı ücreti (kargo hariç) — ağırlığı olmayan modelde gösterilmez
-  const printPrice = defaultPrintPrice(model.weight_grams, model.is_free ? 0 : model.base_price)?.printWithFee ?? null;
+  const printPrice = defaultPrintPrice(model.weight_grams, model.is_free ? 0 : model.base_price).printWithFee;
 
   function toggleFlip(e: React.MouseEvent) {
     e.preventDefault();   // kart bir <a>: butona basmak sayfaya gitmesin

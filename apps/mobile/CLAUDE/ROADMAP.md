@@ -95,10 +95,17 @@ Kararlar: yazıcı kargo bilgisini girebilmek için **her ürün için ≥2 (en 
 - [ ] **Dağıtım sırası: ÖNCE 008'i Supabase'de çalıştır, SONRA web deploy, sonra mobil.** (Yeni kod `showcase_thumb_path` ve `photos_required` kolonlarını okur; migration yoksa model listesi ve partner paneli boş döner.)
 - [x] Mobil kart flip hatası düzeltildi: yüz ve buton etiketi tek state'ten (`showPhoto`) türüyor; animasyon iki yarım dönüş (önceki `backfaceVisibility` yaklaşımı iOS'ta butonla ters eşleşiyordu)
 - [x] Kart iyileştirmeleri (web + mobil): medya çerçevesi 4:3 (iPhone fotoğraf oranı), 3D render ve baskı fotoğrafı `contain` ile kesilmeden sığar; fiyat satırında varsayılan ayarlarla (PLA · %100 · %25 dolgu) baskı ücreti, kargo hariç (`defaultPrintPrice`, kart = detay = sepet tutarı; ağırlığı olmayan modelde gösterilmez)
-- [x] Mobil flip ikinci düzeltme: 3D rotateY + native driver iOS'ta kartı boş bırakıyordu → 2D `scaleX` tek zaman çizelgesi (JS sürücüsü), bitişte son durum açıkça yazılıyor
+- [x] Mobil flip üçüncü düzeltme (kök neden): animasyon sürerken state değişip yeniden render olunca her render'da YENİ `interpolate` bağlantısı oluşuyor, görünüm son güncellemeyi alamayıp ara değerde kalıyordu (önce beyaz kart, sonra ince şeride sıkışmış fotoğraf). Şimdi iki yüz sürekli bağlı, görünürlüğü animasyonlu opaklık belirliyor, bağlantılar `useRef` ile bir kez oluşturuluyor, animasyon sırasında state değişmiyor, bitişte `mix.setValue(target)` ile son durum yazılıyor; görseller mutlak doldurma stiliyle boyutlanıyor
 - [x] Mobil 3D viewer: dünya eksenli (trackball) döndürme + eylemsizlik, görünüm genişliğine oranlı hassasiyet, oransal pinch zoom, kayıtlı başlangıç yönelimi artık x/y/z (z eksikti), seçilen renk modele uygulanıyor (`colorHex`), dolgu ışığı
 - [ ] Uçtan uca test: yazıcı iki fotoğraf yükleyip admin onayından sonra kargolasın → admin onaylayıp vitrin seçsin → kart ve model sayfası → mobil kart/galeri/sipariş detayı
 - [ ] Uygulama mağazasına fotoğraf gösterimiyle çıkılacaksa: kullanıcı kaynaklı içerik kuralları (şikâyet butonu vb.) güncel Apple/Google metninden kontrol edilmeli
+
+## Faz 6.6 — Sunucu tarafı fiyat doğrulaması ✅ KOD TAMAM, DEPLOY + TEST BEKLİYOR
+- [x] `payment/init` artık istemcinin gönderdiği tutarlara güvenmiyor: model/malzeme/ölçek/dolguyu alır; tasarım ücreti ve ağırlığı DB'den okur; tutarı `packages/shared/src/pricing/cartPricing.ts` (`priceCart`, saf fonksiyon) ile yeniden hesaplar. Kuruş (tamsayı) üzerinden toplanır → iyzico "sepet toplamı tutmuyor" hatası olmaz. Önceden giriş yapmış herkes sepet tutarını ve `order_items.model_price`'ı (tasarımcı kazancının dayanağı) kendisi belirleyebiliyordu.
+- [x] İstemci toplamı sunucununkinden >₺1 farklıysa 409 `PRICE_CHANGED` (tasarımcı fiyatı değiştirdi / eski sepet): kullanıcı bilmeden farklı tutar ödemez. Web sunucu mesajını gösterir, mobil `payment.priceChanged` gösterir.
+- [x] Bilinmeyen malzeme/ölçek/dolgu/renk, geçersiz model id, yayında olmayan/silinmiş model, >20 kalem, geçersiz adres → 400 (eskiden bilinmeyen seçenek sessizce PLA/×1'e düşüyordu). 25 senaryolu testten geçti; istemci formülüyle 200 kombinasyonda birebir aynı sonuç.
+- [x] **Düzeltilen fiyat hataları:** (1) "Reçine" fiyat tablosunda yoktu (`Resin` anahtarı vardı) → reçine seçimi PLA fiyatıyla satılıyordu; tabloya `Reçine: 1400` eklendi. (2) Ağırlığı olmayan model web'de 50 g, mobilde 0 g ile fiyatlanıyordu; tek kural `resolveWeightGrams` (50 g) artık web, mobil, kart ve sunucuda aynı. Eski sepetlerdeki reçine/ağırlıksız kalemler tek seferlik `PRICE_CHANGED` alabilir.
+- [ ] Deploy sonrası test: normal ödeme (web + mobil), reçine seçili ödeme, fiyatı değiştirilmiş modelle eski sepetten ödeme (409 beklenir)
 
 ## Faz 7 — Push Bildirimleri (başlanmadı, opsiyonel hızlandırma)
 - [ ] Expo push token kaydı
@@ -117,7 +124,6 @@ Kararlar: yazıcı kargo bilgisini girebilmek için **her ürün için ≥2 (en 
 ## 🔧 Bilinen teknik borç / temizlenmesi gerekenler
 - `scrollEnabled={!viewerActive}` bağlantısı kodda mevcut (`models/[id].tsx`), ama 3D viewer üzerinde sürükleme cihazda henüz test edilmedi
 - Ödeme başlatılınca sipariş `pending` olarak kaydediliyor; vazgeçilen ödemelerin `pending` siparişleri kalıyor (web'de de aynı). Faz 6'da sipariş listesinde `pending`/`cancelled` siparişler gizlenmeli ya da etiketlenmeli
-- `/api/payment/init` fiyatları istemciden olduğu gibi alıyor; sunucuda `packages/shared` ile yeniden hesaplanmalı (mağaza öncesi)
 - Kökteki eski `src/`, `messages/`, `package.json` kopyaları `apps/web`'in eski hali — silinebilir
 
 ## Kapsam Dışı (v1'de YOK)

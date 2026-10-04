@@ -156,7 +156,8 @@
     "connectionError": "Bağlantı hatası. İnternetini kontrol edip tekrar dene.",
     "sessionExpired": "Oturumun sona ermiş. Lütfen tekrar giriş yap.",
     "serverAuthError": "Sunucu oturumunu doğrulayamadı. Çıkış yapıp tekrar giriş yapmayı dene.",
-    "errorCode": "Hata kodu: {{code}}"
+    "errorCode": "Hata kodu: {{code}}",
+    "priceChanged": "Sepetteki fiyatlar güncellendi. Lütfen sepete dönüp ürünleri silip yeniden ekleyin."
   },
   "search": {
     "results": "{{n}} model bulundu",

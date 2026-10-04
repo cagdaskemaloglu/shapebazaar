@@ -156,7 +156,8 @@
     "connectionError": "Connection error. Check your internet and try again.",
     "sessionExpired": "Your session has expired. Please sign in again.",
     "serverAuthError": "The server could not verify your session. Try signing out and signing in again.",
-    "errorCode": "Error code: {{code}}"
+    "errorCode": "Error code: {{code}}",
+    "priceChanged": "Prices in your cart have changed. Please go back to the cart and re-add the items."
   },
   "search": {
     "results": "{{n}} models found",

@@ -4,6 +4,7 @@ import {
   calcPrintCost,
   SCALE_FACTOR,
   INFILL_FACTOR,
+  resolveWeightGrams,
   SHIPPING_COST_TL,
   PLATFORM_FEE_RATE,
 } from "../pricing/printPricing";
@@ -96,9 +97,11 @@ export function buildCartItem(params: {
   basePrice: number;
 }): Omit<CartItem, "cartItemId"> {
   const designPrice = params.isFree ? 0 : params.basePrice;
+  // Web `?? 50`, mobil `?? 0` veriyordu: aynı model iki uygulamada farklı fiyatlanıyordu. Kural artık burada.
+  const weightGrams = resolveWeightGrams(params.weightGrams);
   const printCost   = calcPrintCost(
     params.material,
-    params.weightGrams,
+    weightGrams,
     SCALE_FACTOR[params.scale]   ?? 1,
     INFILL_FACTOR[params.infill] ?? 1,
   );
@@ -112,7 +115,7 @@ export function buildCartItem(params: {
     colorHex:     params.colorHex,
     scale:        params.scale,
     infill:       params.infill,
-    weightGrams:  params.weightGrams,
+    weightGrams,
     designPrice,
     printCost,
     itemTotal: designPrice + printCost + platformFee,

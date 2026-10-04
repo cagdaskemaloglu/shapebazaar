@@ -13,7 +13,18 @@ export const FILAMENT_PRICE_PER_KG: Record<string, number> = {
   ABS:   1200,
   TPU:   1300,
   Resin: 1400,
+  // Arayüzdeki malzeme adı "Reçine" (MATERIALS sabiti). Bu anahtar olmadan reçine seçimi sessizce
+  // PLA fiyatına düşüyordu (kg başına 1000 yerine 1400): alıcıdan eksik ücret alınıyordu.
+  "Reçine": 1400,
 };
+
+/** Modelin ağırlığı kayıtlı değilse (null/0) fiyat hesabında kullanılan varsayılan (gram). Web, mobil ve sunucu aynı kuralı kullanır. */
+export const DEFAULT_WEIGHT_GRAMS = 50;
+
+export function resolveWeightGrams(weightGrams: number | string | null | undefined): number {
+  const w = Number(weightGrams);
+  return Number.isFinite(w) && w > 0 ? w : DEFAULT_WEIGHT_GRAMS;
+}
 
 /** Gram başına filament maliyeti — KG fiyatından otomatik türetilir */
 export const FILAMENT_PRICE_PER_GRAM: Record<string, number> = Object.fromEntries(
@@ -85,16 +96,15 @@ export const DEFAULT_PRINT_SETTINGS = { material: "PLA", scale: "100%", infill: 
  * Varsayılan ayarlarla (PLA · %100 · %25 dolgu) baskı ücreti — KARGO HARİÇ.
  * `printWithFee`: tasarım ücretinin üstüne alıcının baskı için ödeyeceği tutar (baskı + komisyon).
  * Ücretsiz modelde bu, sepette görülecek ürün tutarıyla birebir aynıdır; ücretli modelde
- * `designPrice + printWithFee` = detay sayfasındaki varsayılan toplam. Ağırlığı bilinmeyen
- * modelde `null` döner (sadece işçilik gösterip yanıltmamak için).
+ * `designPrice + printWithFee` = detay sayfasındaki varsayılan toplam. Ağırlığı kayıtlı olmayan
+ * modelde `DEFAULT_WEIGHT_GRAMS` kullanılır (sepette ve sunucuda da böyle fiyatlanır).
  */
 export function defaultPrintPrice(
   weightGrams: number | null | undefined,
   designPrice: number
-): { printCost: number; printWithFee: number; total: number } | null {
-  if (!weightGrams || weightGrams <= 0) return null;
+): { printCost: number; printWithFee: number; total: number } {
   const { material, scale, infill } = DEFAULT_PRINT_SETTINGS;
-  const printCost = calcPrintCost(material, weightGrams, SCALE_FACTOR[scale] ?? 1, INFILL_FACTOR[infill] ?? 1);
+  const printCost = calcPrintCost(material, resolveWeightGrams(weightGrams), SCALE_FACTOR[scale] ?? 1, INFILL_FACTOR[infill] ?? 1);
   const { total } = calcTotalPrice(designPrice, printCost);
   return { printCost, printWithFee: total - designPrice, total };
 }

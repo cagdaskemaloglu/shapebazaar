@@ -13,6 +13,9 @@ interface Props {
 
 const SUPABASE_URL = process.env.EXPO_PUBLIC_SUPABASE_URL ?? "";
 const FLIP_MS = 440;
+// Görseller yüzdeyle (w-full h-full) değil, mutlak doldurmayla boyutlanır: katman boyutu animasyondan
+// ve NativeWind yüzde hesabından bağımsız, kare çerçevenin tamamı olur.
+const FILL = { position: "absolute" as const, top: 0, left: 0, right: 0, bottom: 0 };
 
 /**
  * 2 sütunlu model gridinde kullanılan kart (Ana sayfa + Ara).
@@ -22,11 +25,14 @@ const FLIP_MS = 440;
  * "3D" butonuna dönüşür ve tekrar basınca 3D görsele geri çevirir. (Kartta interaktif viewer yok —
  * 3D tarafı modelin render görseli; interaktif viewer detay sayfasında.)
  *
- * Hangi yüzün görüneceği ve buton etiketi AYNI state'ten (`showPhoto`) türer. Çevirme tek bir
- * zaman çizelgesidir: ilk yarıda kart daralır, yarıda yüz değişir, ikinci yarıda genişler.
- * Perspektifli 3D döndürme (rotateY + native driver) iOS'ta çevirme sonunda kartı boş (beyaz)
- * bırakıyordu; bu yüzden 2D `scaleX` + JS sürücüsü kullanılıyor ve bitişte son durum
- * (yüz + ölçek) açıkça yeniden yazılıyor.
+ * Tasarım, iOS'ta görülen iki hataya (çevirme sonrası beyaz kart, fotoğrafın ince şeride sıkışması)
+ * karşı şöyle kuruldu:
+ *  - İki yüz de HER ZAMAN bağlı (mount) kalır; hangisinin görüneceğini animasyonlu opaklık belirler.
+ *    Animasyon sırasında React state'i değişmez → yeniden render yok.
+ *  - ölçek/opaklık `interpolate` bağlantıları BİR KEZ oluşturulur. Eski sürüm her render'da yeni
+ *    bağlantı üretiyordu; animasyon sürerken yeniden render olunca görünüm son güncellemeyi
+ *    alamayıp ara değerde (ince/boş) kalıyordu.
+ *  - `mix` 0 = 3D görsel, 1 = baskı fotoğrafı. Dinlenme durumunda ölçek tam 1, opaklık 0/1'dir.
  */
 export function ModelCard({ item, locale, freeLabel }: Props) {
   const { t } = useTranslation();
@@ -37,35 +43,34 @@ export function ModelCard({ item, locale, freeLabel }: Props) {
 
   const showcaseUrl = item.showcase_thumb_path ? buildPrintPhotoUrl(SUPABASE_URL, item.showcase_thumb_path) : null;
 
-  const [showPhoto, setShowPhoto] = useState(false); // şu an hangi yüz görünüyor (tek doğruluk kaynağı)
-  const progress = useRef(new Animated.Value(0)).current; // 0 → 1: tek çevirme zaman çizelgesi
+  // `showPhoto` yalnız buton etiketi içindir; görüntüyü `mix` belirler. Basış anında hemen güncellenir.
+  const [showPhoto, setShowPhoto] = useState(false);
+  const mix = useRef(new Animated.Value(0)).current; // 0 = 3D görsel, 1 = baskı fotoğrafı
   const busy = useRef(false);
 
+  // Bağlantılar bir kez oluşturulur (render'lar arasında aynı kalmalı)
+  const anim = useRef({
+    scaleX: mix.interpolate({ inputRange: [0, 0.5, 1], outputRange: [1, 0.02, 1] }),
+    // Yüz değişimi tam orta noktada, kart en dar anındayken olur
+    modelOpacity: mix.interpolate({ inputRange: [0, 0.4999, 0.5, 1], outputRange: [1, 1, 0, 0] }),
+    photoOpacity: mix.interpolate({ inputRange: [0, 0.4999, 0.5, 1], outputRange: [0, 0, 1, 1] }),
+  }).current;
+
   // Varsayılan ayarlarla baskı ücreti (kargo hariç) — ağırlığı olmayan modelde gösterilmez
-  const printPrice = defaultPrintPrice(item.weight_grams, item.is_free ? 0 : item.base_price)?.printWithFee ?? null;
+  const printPrice = defaultPrintPrice(item.weight_grams, item.is_free ? 0 : item.base_price).printWithFee;
 
   function toggleFlip() {
     if (busy.current) return; // animasyon sürerken art arda basışları yok say
     busy.current = true;
-    const target = !showPhoto;
-    let swapped = false;
-
-    progress.setValue(0);
-    const id = progress.addListener(({ value }) => {
-      if (!swapped && value >= 0.5) { swapped = true; setShowPhoto(target); } // kart en dar anındayken yüz değişir
-    });
-    Animated.timing(progress, {
-      toValue: 1, duration: FLIP_MS, easing: Easing.inOut(Easing.cubic), useNativeDriver: false,
+    const target = showPhoto ? 0 : 1;
+    setShowPhoto(target === 1); // buton anında tepki versin
+    Animated.timing(mix, {
+      toValue: target, duration: FLIP_MS, easing: Easing.inOut(Easing.cubic), useNativeDriver: false,
     }).start(() => {
-      progress.removeListener(id);
-      setShowPhoto(target);   // animasyon kesilse bile son durum kesin
-      progress.setValue(0);   // ölçek tam boyuta döner
+      mix.setValue(target); // son durumu açıkça yaz (ölçek 1, doğru yüz)
       busy.current = false;
     });
   }
-
-  // 1 → 0 (daralır) → 1 (açılır); ortada yüz değişir
-  const scaleX = progress.interpolate({ inputRange: [0, 0.5, 1], outputRange: [1, 0.02, 1] });
 
   // maxWidth: sütun sayısı tek kalan son kart tüm satırı kaplamasın
   return (
@@ -75,21 +80,25 @@ export function ModelCard({ item, locale, freeLabel }: Props) {
         className="bg-white rounded-2xl overflow-hidden border border-slate-100"
       >
         {/* 4:3 çerçeve = iPhone fotoğraf oranı; hem 3D görsel hem baskı fotoğrafı kesilmeden sığar */}
-        <View style={{ aspectRatio: 4 / 3 }} className="bg-slate-100">
-          <Animated.View style={{ flex: 1, transform: [{ scaleX }] }}>
-            {showPhoto && showcaseUrl ? (
-              // Gerçek baskı fotoğrafı
-              <View className="flex-1">
-                <Image source={{ uri: showcaseUrl }} className="w-full h-full" resizeMode="contain" />
+        <View style={{ aspectRatio: 4 / 3 }} className="bg-slate-100 overflow-hidden">
+          <Animated.View style={[FILL, { transform: [{ scaleX: anim.scaleX }] }]}>
+            {/* 3D model görseli */}
+            <Animated.View style={[FILL, { opacity: anim.modelOpacity }]}>
+              {item.thumbnail_url ? (
+                <Image source={{ uri: item.thumbnail_url }} style={FILL} resizeMode="contain" />
+              ) : null}
+            </Animated.View>
+
+            {/* Gerçek baskı fotoğrafı */}
+            {showcaseUrl && (
+              <Animated.View style={[FILL, { opacity: anim.photoOpacity }]} pointerEvents="none">
+                <Image source={{ uri: showcaseUrl }} style={FILL} resizeMode="contain" />
                 <View className="absolute bottom-2 left-2 flex-row items-center bg-black/55 px-2 py-0.5 rounded-full">
                   <Camera size={9} color="#fff" />
                   <Text className="text-[10px] text-white ml-1">{t("printPhotos.realPrint")}</Text>
                 </View>
-              </View>
-            ) : item.thumbnail_url ? (
-              // 3D model görseli
-              <Image source={{ uri: item.thumbnail_url }} className="w-full h-full" resizeMode="contain" />
-            ) : null}
+              </Animated.View>
+            )}
           </Animated.View>
 
           {/* Sol üst: önce mini baskı fotoğrafı, fotoğraf görünürken "3D" butonu */}
