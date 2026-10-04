@@ -19,6 +19,7 @@ export default function RootLayout() {
           <Stack.Screen name="checkout" options={{ presentation: "fullScreenModal", gestureEnabled: false }} />
           <Stack.Screen name="payment/success" options={{ gestureEnabled: false }} />
           <Stack.Screen name="payment/failed" options={{ gestureEnabled: false }} />
+          <Stack.Screen name="account/delete" />
         </Stack>
       </AuthProvider>
     </SafeAreaProvider>

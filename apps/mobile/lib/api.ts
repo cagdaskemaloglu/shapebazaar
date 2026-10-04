@@ -4,9 +4,12 @@ export const WEB_BASE_URL = (process.env.EXPO_PUBLIC_WEB_URL ?? "https://www.sha
 
 export class ApiError extends Error {
   status: number;
-  constructor(message: string, status: number) {
+  /** Sunucunun JSON yanıtı (ör. 409'da `code` ve `blockers`) */
+  data: any;
+  constructor(message: string, status: number, data?: any) {
     super(message);
     this.status = status;
+    this.data = data;
   }
 }
 
@@ -33,6 +36,6 @@ export async function apiPost<T = unknown>(path: string, body: unknown, signal?:
   }
 
   const json = await res.json().catch(() => ({}));
-  if (!res.ok) throw new ApiError(json?.error ?? `HTTP_${res.status}`, res.status);
+  if (!res.ok) throw new ApiError(json?.error ?? `HTTP_${res.status}`, res.status, json);
   return json as T;
 }

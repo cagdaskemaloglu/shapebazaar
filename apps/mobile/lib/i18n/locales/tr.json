@@ -228,5 +228,38 @@
     "galleryDesc": "Bu modelin gerçek baskıları",
     "printedBy": "Basan: {{name}}",
     "close": "Kapat"
+  },
+  "account": {
+    "deleteLink": "Hesabımı sil",
+    "title": "Hesabı Sil",
+    "checking": "Hesabın kontrol ediliyor…",
+    "irreversible": "Bu işlem geri alınamaz.",
+    "willDeleteTitle": "Ne olacak?",
+    "willDelete": "Profilin, puanların, kayıtlı adreslerin ve cüzdan geçmişin silinir.",
+    "willKeepOrders": "Geçmiş siparişlerinin kayıtları saklanır; ad, adres ve telefon gibi kişisel bilgiler 30 gün sonra silinir.",
+    "willUnpublish": "{{count}} modelin yayından kaldırılır.",
+    "willCancel": "Modellerini içeren, henüz kargolanmamış {{count}} sipariş iptal edilir ve alıcılara ödemeleri iade edilir.",
+    "confirmPrompt": "Onaylamak için aşağıya {{word}} yaz.",
+    "confirmWord": "SİL",
+    "deleteButton": "Hesabımı kalıcı olarak sil",
+    "deleting": "Siliniyor…",
+    "back": "Vazgeç",
+    "blockedTitle": "Hesabın şu an silinemiyor",
+    "blockedIntro": "Önce şunları tamamlaman gerekiyor:",
+    "done": "Hesabın silindi.",
+    "failed": "Hesap silinemedi. Lütfen tekrar dene.",
+    "loadFailed": "Hesap durumu kontrol edilemedi. Bağlantını kontrol edip tekrar dene.",
+    "retry": "Tekrar dene",
+    "blockers": {
+      "ADMIN_ACCOUNT": "Yönetici hesapları uygulamadan silinemez.",
+      "WALLET_BALANCE": "Cüzdanında ₺{{amount}} bakiye var. Web sitesinden çekim talebi oluşturup bakiyeni çek.",
+      "PENDING_WITHDRAWAL": "Bekleyen {{count}} çekim talebin var. Ödeme tamamlanınca hesabını silebilirsin.",
+      "ACTIVE_BUYER_ORDERS": "Devam eden {{count}} siparişin var. Siparişlerin teslim edilince hesabını silebilirsin.",
+      "ACTIVE_PRINT_JOBS": "Üstlendiğin {{count}} baskı işi devam ediyor. İşleri tamamlayınca hesabını silebilirsin.",
+      "AWAITING_DELIVERY_PAYOUT": "Kargoladığın {{count}} işin teslim onayı bekleniyor. Kazancın teslimden sonra yatar, sonra hesabını silebilirsin.",
+      "DESIGNER_SHIPPED_ORDERS": "Modellerini içeren {{count}} sipariş kargoda. Teslim edilince kazancın yatar, sonra hesabını silebilirsin.",
+      "NOT_FOUND": "Hesap bulunamadı.",
+      "UNKNOWN": "Şu an hesabın silinemiyor."
+    }
   }
 }

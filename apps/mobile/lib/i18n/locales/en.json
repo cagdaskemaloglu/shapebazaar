@@ -228,5 +228,38 @@
     "galleryDesc": "Real prints of this model",
     "printedBy": "Printed by {{name}}",
     "close": "Close"
+  },
+  "account": {
+    "deleteLink": "Delete my account",
+    "title": "Delete Account",
+    "checking": "Checking your account…",
+    "irreversible": "This cannot be undone.",
+    "willDeleteTitle": "What will happen?",
+    "willDelete": "Your profile, ratings, saved addresses and wallet history will be deleted.",
+    "willKeepOrders": "Records of your past orders are kept; personal details such as name, address and phone are erased after 30 days.",
+    "willUnpublish": "{{count}} of your models will be unpublished.",
+    "willCancel": "{{count}} order(s) containing your models that have not shipped yet will be cancelled and the buyers refunded.",
+    "confirmPrompt": "Type {{word}} below to confirm.",
+    "confirmWord": "DELETE",
+    "deleteButton": "Permanently delete my account",
+    "deleting": "Deleting…",
+    "back": "Cancel",
+    "blockedTitle": "Your account can't be deleted right now",
+    "blockedIntro": "You need to finish these first:",
+    "done": "Your account has been deleted.",
+    "failed": "Could not delete the account. Please try again.",
+    "loadFailed": "Could not check your account. Check your connection and try again.",
+    "retry": "Try again",
+    "blockers": {
+      "ADMIN_ACCOUNT": "Administrator accounts can't be deleted from the app.",
+      "WALLET_BALANCE": "Your wallet has a balance of ₺{{amount}}. Create a withdrawal request on the website to cash it out.",
+      "PENDING_WITHDRAWAL": "You have {{count}} pending withdrawal request(s). You can delete your account once they are paid out.",
+      "ACTIVE_BUYER_ORDERS": "You have {{count}} order(s) in progress. You can delete your account once they are delivered.",
+      "ACTIVE_PRINT_JOBS": "You have {{count}} print job(s) in progress. You can delete your account once they are finished.",
+      "AWAITING_DELIVERY_PAYOUT": "{{count}} job(s) you shipped are awaiting delivery confirmation. Your earnings are paid after delivery, then you can delete your account.",
+      "DESIGNER_SHIPPED_ORDERS": "{{count}} order(s) containing your models are in transit. Your earnings are paid after delivery, then you can delete your account.",
+      "NOT_FOUND": "Account not found.",
+      "UNKNOWN": "Your account can't be deleted right now."
+    }
   }
 }

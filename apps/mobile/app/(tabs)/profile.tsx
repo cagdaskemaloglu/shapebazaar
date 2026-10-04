@@ -1,7 +1,7 @@
 import { View, Text, Pressable } from "react-native";
 import { useTranslation } from "react-i18next";
-import { Link } from "expo-router";
-import { User, LogOut } from "lucide-react-native";
+import { Link, router } from "expo-router";
+import { User, LogOut, Trash2 } from "lucide-react-native";
 import { useAuth } from "../../lib/auth/AuthProvider";
 
 export default function ProfileScreen() {
@@ -49,6 +49,14 @@ export default function ProfileScreen() {
       >
         <LogOut size={16} color="#EF4444" />
         <Text className="text-sm font-medium text-red-500">{t("profile.signOut")}</Text>
+      </Pressable>
+
+      <Pressable
+        onPress={() => router.push("/account/delete")}
+        className="mt-6 h-10 flex-row items-center justify-center gap-2"
+      >
+        <Trash2 size={14} color="#94A3B8" />
+        <Text className="text-xs text-slate-400">{t("account.deleteLink")}</Text>
       </Pressable>
     </View>
   );

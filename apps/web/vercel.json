@@ -3,6 +3,10 @@
     {
       "path": "/api/cron/reset-print-jobs",
       "schedule": "0 2 * * *"
+    },
+    {
+      "path": "/api/cron/scrub-order-pii",
+      "schedule": "0 3 * * *"
     }
   ]
 }

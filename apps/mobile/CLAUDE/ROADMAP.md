@@ -1,7 +1,7 @@
 # ShapeBazaar Mobile — Yol Haritası (v1: Sadece Alıcı)
 
 > Her faz, kendinden önceki fazın üzerine inşa edilecek şekilde sıralandı.
-> **Son güncelleme:** Faz 6 cihazda doğrulandı. Baskı fotoğrafı özelliği (web + mobil) kodlandı, test ve migration 008 bekliyor.
+> **Son güncelleme:** Hesap silme kodlandı (Apple zorunluluğu). Ödeme altyapısı değişikliği olası (bkz. ⚠️ Engel). Mobil kart çevirmesi (Animated'sız) ve sunucu fiyat doğrulaması cihaz/deploy testi bekliyor.
 
 ## Faz 0 — Monorepo Geçişi ✅ TAMAMLANDI
 📄 Ayrıntılı adımlar: `MONOREPO_MIGRATION.md`
@@ -95,7 +95,7 @@ Kararlar: yazıcı kargo bilgisini girebilmek için **her ürün için ≥2 (en 
 - [ ] **Dağıtım sırası: ÖNCE 008'i Supabase'de çalıştır, SONRA web deploy, sonra mobil.** (Yeni kod `showcase_thumb_path` ve `photos_required` kolonlarını okur; migration yoksa model listesi ve partner paneli boş döner.)
 - [x] Mobil kart flip hatası düzeltildi: yüz ve buton etiketi tek state'ten (`showPhoto`) türüyor; animasyon iki yarım dönüş (önceki `backfaceVisibility` yaklaşımı iOS'ta butonla ters eşleşiyordu)
 - [x] Kart iyileştirmeleri (web + mobil): medya çerçevesi 4:3 (iPhone fotoğraf oranı), 3D render ve baskı fotoğrafı `contain` ile kesilmeden sığar; fiyat satırında varsayılan ayarlarla (PLA · %100 · %25 dolgu) baskı ücreti, kargo hariç (`defaultPrintPrice`, kart = detay = sepet tutarı; ağırlığı olmayan modelde gösterilmez)
-- [x] Mobil flip üçüncü düzeltme (kök neden): animasyon sürerken state değişip yeniden render olunca her render'da YENİ `interpolate` bağlantısı oluşuyor, görünüm son güncellemeyi alamayıp ara değerde kalıyordu (önce beyaz kart, sonra ince şeride sıkışmış fotoğraf). Şimdi iki yüz sürekli bağlı, görünürlüğü animasyonlu opaklık belirliyor, bağlantılar `useRef` ile bir kez oluşturuluyor, animasyon sırasında state değişmiyor, bitişte `mix.setValue(target)` ile son durum yazılıyor; görseller mutlak doldurma stiliyle boyutlanıyor
+- [x] Mobil flip DÖRDÜNCÜ düzeltme: cihazda dört farklı `Animated` yaklaşımında kartın görüntüsü butonun bir basış gerisinde kalıyordu (animasyon kareleri ekrana yansımıyor, yalnız son render değeri görünüyor). `Animated` tamamen bırakıldı: görüntü `face`/`scaleX` React state'inden çiziliyor, çevirme requestAnimationFrame ile state'i güncelliyor. (Önceki, geçersiz kalan teşhis:) animasyon sürerken state değişip yeniden render olunca her render'da YENİ `interpolate` bağlantısı oluşuyor, görünüm son güncellemeyi alamayıp ara değerde kalıyordu (önce beyaz kart, sonra ince şeride sıkışmış fotoğraf). Şimdi iki yüz sürekli bağlı, görünürlüğü animasyonlu opaklık belirliyor, bağlantılar `useRef` ile bir kez oluşturuluyor, animasyon sırasında state değişmiyor, bitişte `mix.setValue(target)` ile son durum yazılıyor; görseller mutlak doldurma stiliyle boyutlanıyor
 - [x] Mobil 3D viewer: dünya eksenli (trackball) döndürme + eylemsizlik, görünüm genişliğine oranlı hassasiyet, oransal pinch zoom, kayıtlı başlangıç yönelimi artık x/y/z (z eksikti), seçilen renk modele uygulanıyor (`colorHex`), dolgu ışığı
 - [ ] Uçtan uca test: yazıcı iki fotoğraf yükleyip admin onayından sonra kargolasın → admin onaylayıp vitrin seçsin → kart ve model sayfası → mobil kart/galeri/sipariş detayı
 - [ ] Uygulama mağazasına fotoğraf gösterimiyle çıkılacaksa: kullanıcı kaynaklı içerik kuralları (şikâyet butonu vb.) güncel Apple/Google metninden kontrol edilmeli
@@ -107,17 +107,29 @@ Kararlar: yazıcı kargo bilgisini girebilmek için **her ürün için ≥2 (en 
 - [x] **Düzeltilen fiyat hataları:** (1) "Reçine" fiyat tablosunda yoktu (`Resin` anahtarı vardı) → reçine seçimi PLA fiyatıyla satılıyordu; tabloya `Reçine: 1400` eklendi. (2) Ağırlığı olmayan model web'de 50 g, mobilde 0 g ile fiyatlanıyordu; tek kural `resolveWeightGrams` (50 g) artık web, mobil, kart ve sunucuda aynı. Eski sepetlerdeki reçine/ağırlıksız kalemler tek seferlik `PRICE_CHANGED` alabilir.
 - [ ] Deploy sonrası test: normal ödeme (web + mobil), reçine seçili ödeme, fiyatı değiştirilmiş modelle eski sepetten ödeme (409 beklenir)
 
+## ⚠️ Engel — Ödeme altyapısı
+- iyzico canlı (production) başvurusu Findeks değerlendirmesi nedeniyle onaylanmadı → **gerçek ödeme alınamıyor**; şimdiye kadarki testler sandbox. Karar (4 Ekim 2026): şimdilik aksiyon yok, muhtemelen ödeme sağlayıcısı değişecek.
+- Sağlayıcıdan **bağımsız** kalanlar: sunucu fiyat doğrulaması (`priceCart`), sipariş/ürün kayıtları, yazıcı havuzu, fotoğraf akışı, hesap silme.
+- Sağlayıcıya **bağlı** kalanlar (değişince yeniden yazılacak): `lib/iyzico.ts`, `payment/init`, `payment/callback`, mobil `checkout.tsx` (iyzico checkout formunu WebView'da gösteriyor), iade (şu an elle).
+- Not: cüzdan/çekim sistemi kullanıcı bakiyesi tutuyor (parayı platform tutuyor görünümü). Yeni sağlayıcıyı seçerken **pazaryeri / alt üye iş yeri (split ödeme)** desteği ve mevzuat uyumu (ödeme hizmetleri mevzuatı) mutlaka sorulmalı.
+- Mağaza yayını için gerçek ödeme şart değil (inceleme notunda açıklanır), ama müşteriye açılmak için şart.
+
 ## Faz 7 — Push Bildirimleri (başlanmadı, opsiyonel hızlandırma)
 - [ ] Expo push token kaydı
 - [ ] Sipariş durumu değiştiğinde bildirim
 
-## Faz 8 — Mağaza Başvurusu (başlanmadı)
-- [ ] Gerçek app icon/splash/adaptive-icon görselleri (şu an app.json'da yok — Faz 1'de bilerek kaldırıldı)
-- [ ] Gizlilik politikası / kullanım koşulları linkleri
-- [ ] App Store Review Guidelines 3.1.3 ve Play Store Payments Policy'nin güncel halinin son kontrolü
-- [ ] TestFlight + Internal Testing ile kapalı beta
-- [ ] Store listing metinleri
-- [ ] `eas init` + EAS Build + submit
+## Faz 8 — Mağaza Başvurusu (hazırlık başladı → `FAZ8-STORE-HAZIRLIK.md`)
+- [x] Mağaza kuralları kontrol edildi (3 Ekim 2026): fiziksel ürün için IAP dışı ödeme (iyzico) doğru; Apple 5.1.1(v) **uygulama içi hesap silme zorunlu**; Google kişisel hesaplarda 12 test kullanıcısı × 14 gün kapalı test (kurumsal hesap muaf)
+- [x] `eas.json` oluşturuldu (`preview`, `production`); `app.json`'a `usesNonExemptEncryption: false` eklendi
+- [x] **Hesap silme** (zorunlu) kodlandı: `009_account_deletion.sql`, `POST /api/account/delete`, `/api/cron/scrub-order-pii`, mobil `account/delete` ekranı. SQL gerçek PostgreSQL'de engel/etki/yetki/PII senaryolarıyla test edildi. **Deploy sırası: önce 009'u Supabase'de çalıştır, sonra web deploy.**
+- [ ] Hesap silme: cihazda uçtan uca test (temiz hesap, bakiyeli hesap, tasarımcı hesabı) ve web'den silme sayfası (Google Data safety)
+- [ ] Gerçek app icon/splash/adaptive-icon görselleri (şu an app.json'da yok)
+- [ ] Gizlilik politikası / kullanım koşulları / destek / hesap silme web sayfaları (URL)
+- [ ] İnceleme notu + demo hesabı + test ödeme açıklaması
+- [ ] EAS hesabı, `eas init`, `EXPO_PUBLIC_*` değişkenlerini EAS ortamına tanımlama
+- [ ] TestFlight + Google kapalı test (kişisel hesapsa 14 gün)
+- [ ] Store listing metinleri ve ekran görüntüleri
+- [ ] İsteğe bağlı: baskı fotoğrafı "Şikâyet et" butonu (Guideline 1.2)
 
 ---
 
