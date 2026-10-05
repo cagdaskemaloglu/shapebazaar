@@ -1,4 +1,5 @@
 import { createClient } from "@/lib/supabase/server";
+import { createAdminClient } from "@/lib/supabase/admin";
 import { redirect } from "next/navigation";
 
 // Bu sayfa yalnızca ilk admin kurulumu için kullanılır
@@ -37,8 +38,9 @@ export default async function AdminSetupPage({
     );
   }
 
-  // Mevcut kullanıcıyı admin yap
-  await supabase
+  // Mevcut kullanıcıyı admin yap. `role` kolonu artık kullanıcı isteklerinden korunuyor (010) → service-role.
+  // Güvenlik: bu sayfa ADMIN_SETUP_KEY ile korunur; ilk admin oluşturulunca env değişkenini SİLİN.
+  await createAdminClient()
     .from("profiles")
     .update({ role: "admin" })
     .eq("id", user.id);

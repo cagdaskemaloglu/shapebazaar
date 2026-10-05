@@ -379,6 +379,7 @@
     "withdrawalMin": "Minimum çekim tutarı ₺50'dir.",
     "withdrawalInsufficient": "Yetersiz bakiye.",
     "withdrawalSuccess": "Çekim talebiniz alındı. 3-5 iş günü içinde işleme alınacak.",
+    "withdrawalInvalidIban": "Geçersiz IBAN. Lütfen kontrol edin (TR ile başlayan 26 karakter).",
     "withdrawalError": "Hata oluştu. Lütfen tekrar deneyin.",
     "withdrawalHistory": "Çekim Geçmişi",
     "withdrawalPending": "Beklemede",

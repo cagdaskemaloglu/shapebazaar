@@ -14,21 +14,23 @@ export async function POST(req: NextRequest) {
     return NextResponse.json({ error: "geçersiz status" }, { status: 400 });
   }
 
-  const update: Record<string, unknown> = { status };
-  if (status === "rejected") update.admin_note = adminNote ?? null;
-
+  // Durum geçişi, reddedilirse bakiye iadesi ve cüzdan kaydı tek işlemde (veritabanı fonksiyonu).
+  // Geçersiz geçişler (paid/rejected sonrası tekrar işlem, çift iade) reddedilir.
   const supabase = createAdminClient();
-  const { error, data } = await supabase
-    .from("withdrawal_requests")
-    .update(update)
-    .eq("id", id)
-    .select("id")
-    .single();
+  const { data, error } = await supabase.rpc("resolve_withdrawal", {
+    rid: id,
+    p_status: status,
+    p_note: status === "rejected" ? adminNote ?? null : null,
+  });
 
-  if (error || !data) {
+  if (error) {
+    const m = error.message ?? "";
+    if (m.includes("INVALID_TRANSITION")) return NextResponse.json({ error: "Bu talep artık bu duruma geçirilemez", code: "INVALID_TRANSITION" }, { status: 409 });
+    if (m.includes("WITHDRAWAL_NOT_FOUND")) return NextResponse.json({ error: "Talep bulunamadı" }, { status: 404 });
     console.error("[admin/withdrawals/update] error:", error);
-    return NextResponse.json({ error: error?.message ?? "Güncellenemedi" }, { status: 500 });
+    return NextResponse.json({ error: m || "Güncellenemedi" }, { status: 500 });
   }
 
-  return NextResponse.json({ ok: true });
+  return NextResponse.json({ ok: true, ...(data as object) });
+
 }

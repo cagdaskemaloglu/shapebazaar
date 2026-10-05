@@ -426,6 +426,8 @@ function WalletTab({ balance, userId, t, locale }: {
   const [transactions,  setTransactions]  = useState<{ id: string; type: string; amount: number; description: string; created_at: string }[]>([]);
   const [withdrawals,   setWithdrawals]   = useState<{ id: string; amount: number; iban: string; status: string; created_at: string; admin_note: string | null }[]>([]);
   const [txLoading,     setTxLoading]     = useState(true);
+  // Çekim talebi bakiyeyi sunucuda düşürür; sayfayı yenilemeden güncel görünsün
+  const [localBalance, setLocalBalance] = useState(balance);
 
   const [amount,        setAmount]        = useState("");
   const [iban,          setIban]          = useState("");
@@ -451,32 +453,44 @@ function WalletTab({ balance, userId, t, locale }: {
     e.preventDefault();
     const amt = parseFloat(amount);
     if (isNaN(amt) || amt < 50) { setMessage({ type: "error", text: t("withdrawalMin") }); return; }
-    if (amt > balance)           { setMessage({ type: "error", text: t("withdrawalInsufficient") }); return; }
+    if (amt > localBalance)      { setMessage({ type: "error", text: t("withdrawalInsufficient") }); return; }
     if (!iban.trim() || !holderName.trim()) { setMessage({ type: "error", text: "IBAN ve ad soyad zorunlu." }); return; }
 
     setSubmitting(true);
     setMessage(null);
-    const supabase = createClient();
-    const { error } = await supabase.from("withdrawal_requests").insert({
-      user_id:   userId,
-      amount:    amt,
-      iban:      iban.trim().replace(/\s/g, ""),
-      full_name: holderName.trim(),
+    // Talep sunucuda oluşturulur: bakiye düşülür, IBAN doğrulanır (tarayıcıdan doğrudan insert artık yok)
+    const res = await fetch("/api/wallet/withdraw", {
+      method: "POST",
+      headers: { "Content-Type": "application/json" },
+      body: JSON.stringify({ amount: amt, iban, fullName: holderName }),
     });
+    const data = await res.json().catch(() => ({}));
     setSubmitting(false);
-    if (error) {
-      setMessage({ type: "error", text: t("withdrawalError") });
-    } else {
-      setMessage({ type: "success", text: t("withdrawalSuccess") });
-      setAmount("");
-      setIban("");
-      setHolderName("");
-      // Talebi listeye ekle
-      const { data: wdRes } = await supabase.from("withdrawal_requests")
-        .select("id, amount, iban, status, created_at, admin_note")
-        .eq("user_id", userId).order("created_at", { ascending: false });
-      setWithdrawals(wdRes ?? []);
+    if (!res.ok) {
+      const text =
+        data.code === "INSUFFICIENT_BALANCE" ? t("withdrawalInsufficient")
+        : data.code === "INVALID_IBAN"       ? t("withdrawalInvalidIban")
+        : data.code === "WITHDRAWAL_BELOW_MIN" ? t("withdrawalMin")
+        : t("withdrawalError");
+      setMessage({ type: "error", text });
+      return;
     }
+
+    setMessage({ type: "success", text: t("withdrawalSuccess") });
+    setLocalBalance((b) => Math.round((b - amt) * 100) / 100);
+    setAmount("");
+    setIban("");
+    setHolderName("");
+    // Listeleri yenile (yeni talep + cüzdan hareketi)
+    const supabase = createClient();
+    const [txRes, wdRes] = await Promise.all([
+      supabase.from("wallet_transactions").select("id, type, amount, description, created_at")
+        .eq("user_id", userId).order("created_at", { ascending: false }).limit(20),
+      supabase.from("withdrawal_requests").select("id, amount, iban, status, created_at, admin_note")
+        .eq("user_id", userId).order("created_at", { ascending: false }),
+    ]);
+    setTransactions(txRes.data ?? []);
+    setWithdrawals(wdRes.data ?? []);
   }
 
   const STATUS_COLORS: Record<string, string> = {
@@ -493,7 +507,7 @@ function WalletTab({ balance, userId, t, locale }: {
       {/* Bakiye kartı */}
       <div className="rounded-2xl p-6 text-white" style={{ background: "linear-gradient(135deg, #FF6B35, #e85e2a)" }}>
         <div className="text-sm opacity-80 mb-1">{t("walletBalance")}</div>
-        <div className="text-4xl font-semibold">{formatPrice(balance, locale)}</div>
+        <div className="text-4xl font-semibold">{formatPrice(localBalance, locale)}</div>
         <div className="text-sm opacity-70 mt-2">{t("walletDesc")}</div>
       </div>
 
@@ -539,7 +553,7 @@ function WalletTab({ balance, userId, t, locale }: {
             </div>
           )}
 
-          <button type="submit" disabled={submitting || balance < 50}
+          <button type="submit" disabled={submitting || localBalance < 50}
             className="h-10 rounded-xl bg-[#FF6B35] text-white text-sm font-medium hover:bg-[#e85e2a] disabled:opacity-50 transition-colors flex items-center justify-center gap-2">
             {submitting
               ? <><div className="w-4 h-4 border-2 border-white/30 border-t-white rounded-full animate-spin" /> {t("withdrawalSubmitting")}</>
@@ -589,8 +603,8 @@ function WalletTab({ balance, userId, t, locale }: {
                     {new Date(tx.created_at).toLocaleDateString(locale === "tr" ? "tr-TR" : "en-US")}
                   </div>
                 </div>
-                <span className={`text-sm font-semibold ${tx.type === "earn" ? "text-[#10B981]" : "text-red-500"}`}>
-                  {tx.type === "earn" ? "+" : "-"}{formatPrice(tx.amount, locale)}
+                <span className={`text-sm font-semibold ${tx.type === "earn" || tx.type === "refund" ? "text-[#10B981]" : "text-red-500"}`}>
+                  {tx.type === "earn" || tx.type === "refund" ? "+" : "-"}{formatPrice(tx.amount, locale)}
                 </span>
               </div>
             ))}

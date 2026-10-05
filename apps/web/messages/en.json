@@ -332,6 +332,7 @@
     "withdrawalMin": "Minimum withdrawal amount is ₺50.",
     "withdrawalInsufficient": "Insufficient balance.",
     "withdrawalSuccess": "Your withdrawal request has been received. It will be processed within 3-5 business days.",
+    "withdrawalInvalidIban": "Invalid IBAN. Please check it (26 characters starting with TR).",
     "withdrawalError": "An error occurred. Please try again.",
     "withdrawalHistory": "Withdrawal History",
     "withdrawalPending": "Pending",

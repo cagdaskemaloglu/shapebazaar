@@ -1,7 +1,7 @@
 # ShapeBazaar Mobile — Yol Haritası (v1: Sadece Alıcı)
 
 > Her faz, kendinden önceki fazın üzerine inşa edilecek şekilde sıralandı.
-> **Son güncelleme:** Hesap silme kodlandı (Apple zorunluluğu). Ödeme altyapısı değişikliği olası (bkz. ⚠️ Engel). Mobil kart çevirmesi (Animated'sız) ve sunucu fiyat doğrulaması cihaz/deploy testi bekliyor.
+> **Son güncelleme:** Güvenlik denetimi + çekim muhasebesi kodlandı (010). GitHub Actions migration iş akışı Supabase'e bağlanamıyor (token/proje eşleşmesi). Hesap silme (009) ve 008/010 migration'ları henüz uygulanmamış olabilir.
 
 ## Faz 0 — Monorepo Geçişi ✅ TAMAMLANDI
 📄 Ayrıntılı adımlar: `MONOREPO_MIGRATION.md`
@@ -106,6 +106,24 @@ Kararlar: yazıcı kargo bilgisini girebilmek için **her ürün için ≥2 (en 
 - [x] Bilinmeyen malzeme/ölçek/dolgu/renk, geçersiz model id, yayında olmayan/silinmiş model, >20 kalem, geçersiz adres → 400 (eskiden bilinmeyen seçenek sessizce PLA/×1'e düşüyordu). 25 senaryolu testten geçti; istemci formülüyle 200 kombinasyonda birebir aynı sonuç.
 - [x] **Düzeltilen fiyat hataları:** (1) "Reçine" fiyat tablosunda yoktu (`Resin` anahtarı vardı) → reçine seçimi PLA fiyatıyla satılıyordu; tabloya `Reçine: 1400` eklendi. (2) Ağırlığı olmayan model web'de 50 g, mobilde 0 g ile fiyatlanıyordu; tek kural `resolveWeightGrams` (50 g) artık web, mobil, kart ve sunucuda aynı. Eski sepetlerdeki reçine/ağırlıksız kalemler tek seferlik `PRICE_CHANGED` alabilir.
 - [ ] Deploy sonrası test: normal ödeme (web + mobil), reçine seçili ödeme, fiyatı değiştirilmiş modelle eski sepetten ödeme (409 beklenir)
+
+## Faz 8.5 — Güvenlik denetimi ve cüzdan muhasebesi ✅ KOD TAMAM, DEPLOY BEKLİYOR
+RLS/fonksiyon denetiminde (migration dosyalarına göre) bulunan ve **010_security_hardening.sql** ile kapatılan açıklar — saldırılar gerçek PostgreSQL'de 010 öncesi çalıştırılıp sonrası engellendiği gösterildi, tam ve sapmış şemada:
+- `increment_wallet` herkese açıktı → anon anahtarıyla herhangi bir hesaba sınırsız bakiye eklenebiliyordu (artık sadece service_role).
+- `profiles_self_update` kolon kısıtsızdı → kullanıcı kendi `role`'ünü `admin`, `wallet_balance`'ını ve `is_partner_approved`'ını değiştirebiliyordu (`requireAdmin` yalnız `profiles.role`'e bakar → tam yönetici). Artık tetikleyici bu üç kolonu kullanıcı isteklerinden korur.
+- `models` insert/update kolon kısıtsızdı → tasarımcı kendi modelini admin onayı olmadan yayınlayabiliyor, puan/sayaç/vitrin/sahiplik değiştirebiliyordu.
+- `model_ratings` güncellemede `model_id` değiştirilebiliyordu (satın alma şartı atlanıyordu).
+- **Çekim akışı:** talep tarayıcıdan doğrudan insert ediliyordu (miktar/durum doğrulanmıyor) ve bakiye HİÇBİR adımda düşmüyordu → aynı bakiyeyle sınırsız talep, "ödendi" bakiyeyi azaltmıyor, hesap silme engeli hiç kalkmıyordu. Artık: `POST /api/wallet/withdraw` (IBAN mod-97 doğrulaması) → `request_withdrawal` bakiyeyi kilitleyip DÜŞER; `resolve_withdrawal` durum geçişlerini doğrular, reddedilince iade eder (eski, `balance_held=false` talepler için iade YOK: para yoktan var olmasın).
+- `admin/setup` sayfası `role: "admin"`'i kullanıcı client'ıyla yazıyordu (açık politikaya dayanıyordu) → service-role'e alındı. **İlk admin oluşturulduktan sonra `ADMIN_SETUP_KEY` ortam değişkenini sil.**
+- [ ] **Açık bulgu (karar bekliyor): `profiles_public_read USING (TRUE)`** → `phone` ve `wallet_balance` dahil tüm profil kolonları anon anahtarıyla HERKES tarafından okunabiliyor (KVKK). Çözüm özel kolonları ayrı tabloya/RPC'ye taşımak; çok sayıda okuma noktasını etkilediği için ayrı iş.
+- [ ] Canlıda doğrulama: `supabase/checks/security_audit.sql` (010 öncesi/sonrası)
+- [ ] Mevcut bekleyen/onaylı çekim talepleri varsa 010 dosyasının sonundaki opsiyonel bölümü oku
+
+## ⚠️ CI — GitHub Actions "Supabase Migrations" iş akışı
+- Repoda `push` ile çalışan bir iş akışı var (`supabase-migrations.yml`: link → (elle tetiklenirse) repair → db push). 4 Ekim 2026'da **"Link Supabase project" adımında** `Authorization failed for the access token and project ref pair` hatasıyla düşüyor → migration'lar (008, 009, 010) **uygulanmıyor**.
+- Düzeltme: `SUPABASE_PROJECT_REF` = uygulamanın bağlandığı proje (`qlngvvbdwqnaezretjbt`) ve `SUPABASE_ACCESS_TOKEN` = o projeye erişimi olan hesabın kişisel token'ı olmalı; `db push` için ayrıca `SUPABASE_DB_PASSWORD`.
+- İlk başarılı çalıştırmadan önce **migration geçmişi onarılmalı**: veritabanı elle kuruldu, geçmiş tablosunda 001–00x kayıtlı değil; `db push` 001'den başlayıp `CREATE TABLE` hatası alır. Elle uygulanmış sürümler `supabase migration repair --status applied …` ile işaretlenmeli (iş akışındaki `repair_versions` girdisi).
+- **010'a bağımlı kod (çekim API'si, admin çekim route'u) DB'de fonksiyonlar yokken çalışmaz → CI düzelene/010 elle uygulanana kadar bu kodu deploy etme.**
 
 ## ⚠️ Engel — Ödeme altyapısı
 - iyzico canlı (production) başvurusu Findeks değerlendirmesi nedeniyle onaylanmadı → **gerçek ödeme alınamıyor**; şimdiye kadarki testler sandbox. Karar (4 Ekim 2026): şimdilik aksiyon yok, muhtemelen ödeme sağlayıcısı değişecek.
