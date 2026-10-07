@@ -400,6 +400,7 @@
     "saved": "Kaydedildi ✓",
     "becomePartner": "Yazıcı Ortağı Ol",
     "becomePartnerDesc": "3D yazıcınız var mı? Sipariş havuzundan baskı alın, her baskıdan puan kazanın.",
+    "deleteAccountLink": "Hesabımı sil",
     "apply": "Başvur →",
     "loading": "Yükleniyor…",
     "model": "Model",
@@ -639,19 +640,99 @@
     "controlsHint": "🖱 Döndür · Kaydır · Yakınlaştır"
   },
   "privacy": {
-    "title": "Gizlilik Politikası",
-    "lastUpdated": "Son Güncelleme: Haziran 2024",
-    "intro": "ShapeBazaar (\"biz\", \"bize\" veya \"Şirket\") olarak gizliliğinize saygı duyuyoruz.",
-    "section1": "Topladığımız Bilgiler",
-    "section1Content": "Kayıt olduğunuzda ve hizmetlerimizi kullandığınızda; ad, e-posta adresi, telefon numarası, ödeme bilgileri, 3D tasarım dosyaları ve sipariş geçmişi gibi bilgileri topluyoruz.",
-    "section2": "Bilgilerin Kullanımı",
-    "section2Content": "Topladığımız verileri hizmetlerimizi sunmak, geliştirmek, analiz etmek ve yasal yükümlülüklere uymak amacıyla kullanıyoruz.",
-    "section3": "Veri Güvenliği",
-    "section3Content": "Verileriniz şifreli bağlantılar ve güvenli sunucularla korunur. Ancak hiçbir sistem %100 güvenli değildir.",
-    "section4": "Çerezler",
-    "section4Content": "Platformumuz kullanıcı deneyimini iyileştirmek için çerezler kullanır.",
-    "section5": "Haklarınız",
-    "section5Content": "KVKK/GDPR düzenlemeleri kapsamında kişisel verilerinize erişme, düzeltme ve silme hakkına sahipsiniz.",
+    "title": "Gizlilik Politikası ve KVKK Aydınlatma Metni",
+    "lastUpdated": "Son Güncelleme: Ekim 2026",
+    "intro": "ShapeBazaar olarak kişisel verilerinizin güvenliğine önem veriyoruz. Bu metin, hangi kişisel verileri, hangi amaçlarla işlediğimizi, kimlerle paylaştığımızı, ne kadar süre sakladığımızı ve 6698 sayılı Kişisel Verilerin Korunması Kanunu (KVKK) kapsamındaki haklarınızı açıklar. Verilerinizi satmayız ve reklam amacıyla üçüncü taraflarla paylaşmayız.",
+    "sections": [
+      {
+        "title": "1. Veri Sorumlusu",
+        "body": [
+          "Kişisel verilerinizin işlenmesinden sorumlu veri sorumlusu: [ŞİRKET / İŞLETME ÜNVANI], [ADRES]. İletişim: [E-POSTA ADRESİ] veya iletişim sayfamız."
+        ]
+      },
+      {
+        "title": "2. İşlediğimiz Kişisel Veriler",
+        "body": [
+          "Hizmeti kullanma biçiminize göre şu verileri işleriz:"
+        ],
+        "list": [
+          "Hesap bilgileri: e-posta adresi, ad soyad, kullanıcı adı, profil fotoğrafı, kısa biyografi, şehir ve bölge; isteğe bağlı olarak telefon numarası. Google ile giriş yaparsanız Google'ın paylaştığı ad, e-posta ve profil fotoğrafı.",
+          "Sipariş bilgileri: teslimat için ad soyad, adres, il/ilçe ve telefon; sipariş içeriği (model, malzeme, renk, ölçek), tutar, ödeme durumu ve kargo bilgisi.",
+          "Ödeme bilgileri: Kart bilgileriniz doğrudan ödeme sağlayıcısının güvenli formuna girilir; sunucularımıza ulaşmaz ve bizde saklanmaz. Sağlayıcıdan yalnızca işlemin sonucunu ve işlem numarasını alırız.",
+          "Tasarımcılar için: yüklediğiniz 3D model dosyaları, görseller ve açıklamalar; kazanç ve cüzdan hareketleri.",
+          "Yazıcı ortakları için: başvuru bilgileri (dükkân adı, şehir), üstlendiğiniz baskı işleri, yüklediğiniz baskı fotoğrafları; para çekme talebinde ad soyad ve IBAN.",
+          "Değerlendirmeler: ürünlere verdiğiniz puan ve yorumlar.",
+          "Teknik veriler: oturum çerezleri, IP adresi, tarayıcı/cihaz türü ve güvenlik amaçlı sunucu kayıtları."
+        ]
+      },
+      {
+        "title": "3. İşleme Amaçları ve Hukuki Sebepler",
+        "body": [
+          "Verilerinizi; hesabınızı oluşturmak ve yönetmek, siparişinizi almak, ödemeyi tamamlamak, ürünü ürettirmek ve kargolamak, tasarımcı ve yazıcı ortağı kazançlarını hesaplamak ve ödemek (sözleşmenin kurulması ve ifası); fatura, muhasebe ve diğer mevzuat yükümlülüklerini yerine getirmek (hukuki yükümlülük); platformun güvenliğini sağlamak, dolandırıcılığı önlemek ve hizmeti geliştirmek (meşru menfaat) amaçlarıyla işleriz. Açık rıza gerektiren durumlarda rızanız ayrıca alınır ve dilediğiniz zaman geri çekilebilir."
+        ]
+      },
+      {
+        "title": "4. Verilerin Paylaşıldığı Taraflar",
+        "list": [
+          "Yazıcı ortağı: siparişinizi basan ve kargolayan yazıcı ortağı, yalnızca siparişi yerine getirmek için teslimat adınızı, adresinizi, telefonunuzu ve sipariş içeriğini görür.",
+          "Tasarımcı: modelinizin satıldığını ve satış istatistiklerini görür; alıcının kimlik ve adres bilgisini görmez.",
+          "Hizmet sağlayıcılar (veri işleyenler): barındırma, veritabanı, kimlik doğrulama ve dosya depolama (Supabase, Vercel), ödeme altyapısı ([ÖDEME SAĞLAYICISI]), e-posta gönderimi (Resend) ve Google ile giriş. Bu sağlayıcılar verileri yalnızca bizim adımıza ve talimatlarımız doğrultusunda işler.",
+          "Yetkili kurum ve kuruluşlar: mevzuatın zorunlu kıldığı durumlarda."
+        ]
+      },
+      {
+        "title": "5. Yurt Dışına Aktarım",
+        "body": [
+          "Altyapı sağlayıcılarımızın sunucuları yurt dışında bulunabilir (veritabanı bölgesi: [SUPABASE BÖLGESİ]). Bu nedenle verileriniz KVKK'nın 9. maddesindeki şartlara uygun olarak yurt dışına aktarılabilir."
+        ]
+      },
+      {
+        "title": "6. Saklama Süreleri",
+        "body": [
+          "Hesap verileriniz hesabınız açık kaldığı sürece saklanır. Hesabınızı sildiğinizde profiliniz, kayıtlı adresleriniz, değerlendirmeleriniz ve cüzdan hareketleriniz silinir. Geçmiş siparişlerin kayıtları (ürün ve tutar bilgisi) muhasebe ve yasal yükümlülükler için saklanır; bu siparişlerdeki ad, adres ve telefon bilgileriniz hesabınızın silinmesinden 30 gün sonra anonimleştirilir. Mevzuatın daha uzun bir saklama süresi öngördüğü kayıtlar bu süre boyunca muhafaza edilir. Yüklediğiniz model dosyaları, hesabınız silindiğinde yayından kaldırılır."
+        ]
+      },
+      {
+        "title": "7. Baskı Fotoğrafları",
+        "body": [
+          "Yazıcı ortakları, ürettikleri ürünlerin fotoğraflarını yükler. Bu fotoğraflar yönetici onayından sonra ürün sayfasında herkese açık yayınlanır. Fotoğraflarda adres, kargo etiketi veya kişisel bilgi bulunmamalıdır; yükleme sırasında fotoğrafların konum (EXIF) bilgisi temizlenir. Yazıcı hesabı silindiğinde yayınlanmış fotoğraflar ürün sayfasında kalır, ancak hesabınızla bağlantısı kaldırılır."
+        ]
+      },
+      {
+        "title": "8. Hesabınızı Silme",
+        "body": [
+          "Hesabınızı dilediğiniz zaman silebilirsiniz: mobil uygulamada Profil > Hesabı sil, web sitesinde aşağıdaki bağlantı üzerinden. Devam eden siparişiniz, bekleyen para çekme talebiniz veya cüzdan bakiyeniz varsa önce bunların tamamlanması gerekir; sistem sizi bu konuda bilgilendirir. Tasarımcı hesabı silindiğinde modelleriniz yayından kaldırılır ve henüz kargolanmamış siparişleriniz iptal edilerek alıcılara iade yapılır."
+        ],
+        "link": {
+          "href": "/account/delete",
+          "label": "Hesabımı silmek istiyorum"
+        }
+      },
+      {
+        "title": "9. Güvenlik",
+        "body": [
+          "Verileriniz şifreli bağlantılar (HTTPS) üzerinden iletilir; erişim yetkileri rollere göre sınırlandırılır ve kart bilgileri sistemlerimizde saklanmaz. Ancak hiçbir sistem tamamen güvenli değildir; olası bir ihlalde mevzuatın öngördüğü bildirimleri yaparız."
+        ]
+      },
+      {
+        "title": "10. Çerezler",
+        "body": [
+          "Platformumuz yalnızca oturum açma, dil ve tema tercihlerinizi hatırlama gibi zorunlu işlevler için çerez ve yerel depolama kullanır; reklam veya izleme amaçlı çerez kullanmayız. Ayrıntılar Çerez Politikamızdadır."
+        ]
+      },
+      {
+        "title": "11. KVKK Kapsamındaki Haklarınız",
+        "body": [
+          "KVKK'nın 11. maddesi uyarınca; kişisel verilerinizin işlenip işlenmediğini öğrenme, işlenmişse bilgi talep etme, işleme amacını ve amacına uygun kullanılıp kullanılmadığını öğrenme, yurt içinde veya yurt dışında aktarıldığı üçüncü kişileri bilme, eksik veya yanlış işlenmişse düzeltilmesini isteme, silinmesini veya yok edilmesini isteme, bu işlemlerin aktarıldığı üçüncü kişilere bildirilmesini isteme, işlenen verilerin analiz edilmesi suretiyle aleyhinize bir sonuç çıkmasına itiraz etme ve kanuna aykırı işleme nedeniyle zarara uğramanız halinde zararın giderilmesini talep etme haklarına sahipsiniz. Başvurularınızı iletişim sayfamız veya yukarıdaki e-posta adresi üzerinden iletebilirsiniz; en geç 30 gün içinde yanıtlarız."
+        ]
+      },
+      {
+        "title": "12. Değişiklikler",
+        "body": [
+          "Bu metni zaman zaman güncelleyebiliriz. Önemli değişiklikleri sitede ve uygulamada duyururuz; güncel sürüm her zaman bu sayfadadır."
+        ]
+      }
+    ],
     "contactTitle": "Sorularınız mı var?",
     "contactText": "Gizlilik politikamız hakkında sorunuz varsa,",
     "contactLink": "bize yazın"
@@ -676,16 +757,16 @@
   },
   "cookies": {
     "title": "Çerez Politikası",
-    "lastUpdated": "Son Güncelleme: Haziran 2024",
-    "intro": "ShapeBazaar, platformumuzu geliştirmek ve kullanıcı deneyimini iyileştirmek için çerezler kullanır.",
+    "lastUpdated": "Son Güncelleme: Ekim 2026",
+    "intro": "ShapeBazaar, platformun çalışması için gerekli çerezleri ve yerel depolamayı kullanır.",
     "section1": "Çerez Nedir?",
-    "section1Content": "Çerezler, tarayıcınız tarafından saklanan küçük metin dosyalarıdır. Tercihlerinizi ve kullanıcı seçimlerinizi hatırlamak için kullanılır.",
-    "section2": "Kullandığımız Çerez Türleri",
-    "section2Content": "Zorunlu çerezler: Doğru çalışması için. Analitik çerezler: Trafiği anlamak için. Pazarlama çerezleri: Reklam sunumunu optimize etmek için.",
+    "section1Content": "Çerezler, tarayıcınız tarafından saklanan küçük metin dosyalarıdır. Oturumunuzu ve tercihlerinizi hatırlamak için kullanılır.",
+    "section2": "Kullandığımız Çerezler",
+    "section2Content": "Yalnızca zorunlu çerezler ve yerel depolama kullanırız: oturum açma (kimlik doğrulama), dil tercihi ve tema (açık/koyu) tercihi. Reklam, pazarlama veya izleme amaçlı çerez kullanmıyoruz ve ziyaretlerinizi analiz eden üçüncü taraf araçlar çalıştırmıyoruz.",
     "section3": "Çerezleri Yönetme",
-    "section3Content": "Çerezleri tarayıcı ayarlarınızdan kontrol edebilirsiniz. Ancak bu, platform işlevselliğini etkileyebilir.",
-    "section4": "Üçüncü Taraf Çerezleri",
-    "section4Content": "Google Analytics ve Stripe gibi hizmetler de çerez kullanabilir.",
+    "section3Content": "Çerezleri tarayıcı ayarlarınızdan silebilir veya engelleyebilirsiniz; ancak oturum çerezlerini engellerseniz giriş yapamazsınız.",
+    "section4": "Üçüncü Taraf Hizmetler",
+    "section4Content": "Ödeme sırasında ödeme sağlayıcısının güvenli formu açılır ve sağlayıcı kendi çerezlerini kullanabilir; Google ile giriş yaparsanız Google'ın kendi çerez ve gizlilik kuralları geçerlidir.",
     "tipTitle": "İpucu",
     "tipText": "Çoğu tarayıcı ayarlarından çerezleri yönetebilirsiniz. Daha fazla bilgi için tarayıcınızın yardım sayfasını ziyaret edin."
   },
@@ -936,5 +1017,40 @@
     "approvedChip": "Onaylandı",
     "awaitingApprovalBanner": "Fotoğraflarınız admin onayında. Onaylanınca kargo bilgilerini girebilirsiniz.",
     "adminPendingHint": "Yazıcılar, her ürün için en az {min} fotoğraf onaylanmadan kargo bilgisi giremez."
+  },
+  "accountDelete": {
+    "title": "Hesabı Sil",
+    "intro": "Bu sayfadan ShapeBazaar hesabınızı ve ilişkili kişisel verilerinizi kalıcı olarak silebilirsiniz.",
+    "whatTitle": "Ne olacak?",
+    "whatDeleted": "Profiliniz, kayıtlı adresleriniz, değerlendirmeleriniz ve cüzdan geçmişiniz silinir.",
+    "whatKept": "Geçmiş siparişlerinizin kayıtları (ürün ve tutar) yasal yükümlülükler için saklanır; ad, adres ve telefon bilgileriniz 30 gün sonra anonimleştirilir.",
+    "whatDesigner": "Tasarımcıysanız modelleriniz yayından kaldırılır; henüz kargolanmamış siparişleriniz iptal edilir ve alıcılara iade yapılır.",
+    "whatPhotos": "Yazıcı ortağıysanız yayınlanmış baskı fotoğraflarınız ürün sayfasında kalır, ancak hesabınızla bağlantısı kaldırılır.",
+    "loggedOutDesc": "Hesabınızı silmek için önce giriş yapın; ardından bu sayfaya dönüp silme işlemini onaylayabilirsiniz.",
+    "loginCta": "Giriş yap",
+    "inApp": "Mobil uygulamada: Profil > Hesabı sil.",
+    "checking": "Hesabınız kontrol ediliyor…",
+    "loadFailed": "Hesap durumu kontrol edilemedi. Lütfen tekrar deneyin.",
+    "retry": "Tekrar dene",
+    "blockedTitle": "Hesabınız şu an silinemiyor",
+    "blockedIntro": "Önce şunları tamamlamanız gerekiyor:",
+    "irreversible": "Bu işlem geri alınamaz.",
+    "willUnpublish": "{count} modeliniz yayından kaldırılacak.",
+    "willCancel": "Modellerinizi içeren, henüz kargolanmamış {count} sipariş iptal edilecek ve alıcılara ödemeleri iade edilecek.",
+    "confirmPrompt": "Onaylamak için aşağıya {word} yazın.",
+    "confirmWord": "SİL",
+    "deleteButton": "Hesabımı kalıcı olarak sil",
+    "deleting": "Siliniyor…",
+    "failed": "Hesap silinemedi. Lütfen tekrar deneyin.",
+    "blockers": {
+      "ADMIN_ACCOUNT": "Yönetici hesapları buradan silinemez.",
+      "WALLET_BALANCE": "Cüzdanınızda ₺{amount} bakiye var. Panelinizdeki Cüzdan sekmesinden çekim talebi oluşturup bakiyenizi çekin.",
+      "PENDING_WITHDRAWAL": "Bekleyen {count} çekim talebiniz var. Ödeme tamamlanınca hesabınızı silebilirsiniz.",
+      "ACTIVE_BUYER_ORDERS": "Devam eden {count} siparişiniz var. Siparişleriniz teslim edilince hesabınızı silebilirsiniz.",
+      "ACTIVE_PRINT_JOBS": "Üstlendiğiniz {count} baskı işi devam ediyor. İşleri tamamlayınca hesabınızı silebilirsiniz.",
+      "AWAITING_DELIVERY_PAYOUT": "Kargoladığınız {count} işin teslim onayı bekleniyor. Kazancınız teslimden sonra yatar, sonra hesabınızı silebilirsiniz.",
+      "DESIGNER_SHIPPED_ORDERS": "Modellerinizi içeren {count} sipariş kargoda. Teslim edilince kazancınız yatar, sonra hesabınızı silebilirsiniz.",
+      "NOT_FOUND": "Hesap bulunamadı."
+    }
   }
 }

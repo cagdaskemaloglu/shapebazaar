@@ -56,7 +56,7 @@ SELECT id, created_at, total_amount, cancel_reason FROM orders WHERE refund_pend
 UPDATE orders SET refund_pending = FALSE, status = 'refunded' WHERE id = '<sipariş id>';   -- iade yapıldıktan sonra
 ```
 
-**Açık kalan:** Google Data safety için hesap silmeyi **web'den** de sunan bir sayfa gerekecek (API cookie ile de çalışıyor, sadece arayüz yok).
+**Web'den silme:** `https://www.shapebazaar.com/en/account/delete` (herkese açık; Google Data safety formundaki "hesap silme URL'si" alanı için).
 
 ## 4. İnceleme notu taslağı (App Review Notes)
 > ShapeBazaar sells **physical 3D-printed products** that are manufactured by independent print partners and shipped by courier to the customer. Payment is collected with a card through our payment provider (iyzico) inside a secure web form, as required by Guideline 3.1.3(e)/3.1.5 for physical goods. The app does not sell digital content or unlock digital features. Demo account: `<e-posta>` / `<şifre>`. To test checkout, `<test kartı bilgisi veya ekran kaydı>`.

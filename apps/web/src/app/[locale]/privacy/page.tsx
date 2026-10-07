@@ -6,9 +6,17 @@ export const metadata = {
   title: "Privacy Policy | ShapeBazaar",
 };
 
+interface PolicySection {
+  title: string;
+  body?: string[];
+  list?: string[];
+  link?: { href: string; label: string };
+}
+
 export default function PrivacyPage() {
   const t      = useTranslations("privacy");
   const locale = useLocale();
+  const sections = t.raw("sections") as PolicySection[];
 
   return (
     <div className="min-h-screen flex flex-col">
@@ -33,55 +41,30 @@ export default function PrivacyPage() {
               {t("intro")}
             </p>
 
-            {/* Section 1 */}
-            <div className="mb-12">
-              <h2 className="text-2xl font-bold mb-4 text-slate-900 dark:text-white">
-                {t("section1")}
-              </h2>
-              <p className="text-slate-600 dark:text-slate-300 leading-relaxed">
-                {t("section1Content")}
-              </p>
-            </div>
-
-            {/* Section 2 */}
-            <div className="mb-12">
-              <h2 className="text-2xl font-bold mb-4 text-slate-900 dark:text-white">
-                {t("section2")}
-              </h2>
-              <p className="text-slate-600 dark:text-slate-300 leading-relaxed">
-                {t("section2Content")}
-              </p>
-            </div>
-
-            {/* Section 3 */}
-            <div className="mb-12">
-              <h2 className="text-2xl font-bold mb-4 text-slate-900 dark:text-white">
-                {t("section3")}
-              </h2>
-              <p className="text-slate-600 dark:text-slate-300 leading-relaxed">
-                {t("section3Content")}
-              </p>
-            </div>
-
-            {/* Section 4 */}
-            <div className="mb-12">
-              <h2 className="text-2xl font-bold mb-4 text-slate-900 dark:text-white">
-                {t("section4")}
-              </h2>
-              <p className="text-slate-600 dark:text-slate-300 leading-relaxed">
-                {t("section4Content")}
-              </p>
-            </div>
-
-            {/* Section 5 */}
-            <div className="mb-12">
-              <h2 className="text-2xl font-bold mb-4 text-slate-900 dark:text-white">
-                {t("section5")}
-              </h2>
-              <p className="text-slate-600 dark:text-slate-300 leading-relaxed">
-                {t("section5Content")}
-              </p>
-            </div>
+            {/* Bölümler: messages/*.json → privacy.sections (başlık, paragraflar, madde listesi, isteğe bağlı bağlantı) */}
+            {sections.map((section, i) => (
+              <div key={i} className="mb-10">
+                <h2 className="text-2xl font-bold mb-4 text-slate-900 dark:text-white">{section.title}</h2>
+                {section.body?.map((paragraph, j) => (
+                  <p key={j} className="text-slate-600 dark:text-slate-300 leading-relaxed mb-3">{paragraph}</p>
+                ))}
+                {section.list && (
+                  <ul className="list-disc pl-6 space-y-2 text-slate-600 dark:text-slate-300 leading-relaxed">
+                    {section.list.map((item, j) => <li key={j}>{item}</li>)}
+                  </ul>
+                )}
+                {section.link && (
+                  <p className="mt-4">
+                    <a
+                      href={`/${locale}${section.link.href}`}
+                      className="text-blue-600 dark:text-blue-400 font-semibold hover:underline"
+                    >
+                      {section.link.label}
+                    </a>
+                  </p>
+                )}
+              </div>
+            ))}
 
             {/* Contact */}
             <div className="bg-blue-50 dark:bg-blue-900/20 rounded-lg p-6 mt-12">

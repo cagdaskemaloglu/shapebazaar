@@ -353,6 +353,7 @@
     "saved": "Saved ✓",
     "becomePartner": "Become a Print Partner",
     "becomePartnerDesc": "Have a 3D printer? Claim jobs from the order pool and earn points per print.",
+    "deleteAccountLink": "Delete my account",
     "apply": "Apply →",
     "loading": "Loading…",
     "model": "Model",
@@ -564,21 +565,101 @@
     "address": "Address"
   },
   "privacy": {
-    "title": "Privacy Policy",
-    "lastUpdated": "Last Updated: June 2024",
-    "intro": "At ShapeBazaar (\"we\", \"us\", or \"Company\"), we respect your privacy.",
-    "section1": "Information We Collect",
-    "section1Content": "When you register and use our services, we collect: name, email address, phone number, payment information, 3D design files, and order history.",
-    "section2": "Use of Information",
-    "section2Content": "We use collected data to provide, improve, and analyze our services, and to comply with legal obligations.",
-    "section3": "Data Security",
-    "section3Content": "Your data is protected through encrypted connections and secure servers. However, no system is 100% secure.",
-    "section4": "Cookies",
-    "section4Content": "Our platform uses cookies to improve user experience.",
-    "section5": "Your Rights",
-    "section5Content": "Under GDPR regulations, you have the right to access, correct, and delete your personal data.",
-    "contactTitle": "Have questions?",
-    "contactText": "If you have questions about our privacy policy,",
+    "title": "Privacy Policy and Data Protection Notice",
+    "lastUpdated": "Last updated: October 2026",
+    "intro": "At ShapeBazaar we take the security of your personal data seriously. This notice explains which personal data we process, for what purposes, with whom we share it, how long we keep it, and your rights under the Turkish Personal Data Protection Law (KVKK, Law No. 6698). We do not sell your data and we do not share it with third parties for advertising.",
+    "sections": [
+      {
+        "title": "1. Data Controller",
+        "body": [
+          "The data controller responsible for processing your personal data is [COMPANY / BUSINESS NAME], [ADDRESS]. Contact: [EMAIL ADDRESS] or our contact page."
+        ]
+      },
+      {
+        "title": "2. Personal Data We Process",
+        "body": [
+          "Depending on how you use the service, we process the following:"
+        ],
+        "list": [
+          "Account data: email address, full name, username, profile photo, short bio, city and region; optionally a phone number. If you sign in with Google, the name, email and profile photo Google shares with us.",
+          "Order data: name, address, city/district and phone for delivery; order contents (model, material, color, scale), amount, payment status and shipping details.",
+          "Payment data: Your card details are entered directly into the payment provider's secure form; they never reach our servers and are not stored by us. We only receive the result of the transaction and a transaction reference from the provider.",
+          "For designers: the 3D model files, images and descriptions you upload; earnings and wallet transactions.",
+          "For print partners: application details (shop name, city), print jobs you take, photos you upload; name and IBAN for withdrawal requests.",
+          "Reviews: ratings and comments you leave on products.",
+          "Technical data: session cookies, IP address, browser/device type and security-related server logs."
+        ]
+      },
+      {
+        "title": "3. Purposes and Legal Bases",
+        "body": [
+          "We process your data to create and manage your account, take your order, complete payment, have the product made and shipped, and calculate and pay designer and print-partner earnings (performance of a contract); to meet invoicing, accounting and other legal obligations (legal obligation); and to keep the platform secure, prevent fraud and improve the service (legitimate interest). Where consent is required it is requested separately and can be withdrawn at any time."
+        ]
+      },
+      {
+        "title": "4. Who We Share Data With",
+        "list": [
+          "Print partner: the partner who prints and ships your order sees your delivery name, address, phone and the order contents, solely to fulfil the order.",
+          "Designer: sees that their model was sold and sales statistics; does not see the buyer's identity or address.",
+          "Service providers (data processors): hosting, database, authentication and file storage (Supabase, Vercel), payment infrastructure ([PAYMENT PROVIDER]), email delivery (Resend) and Google sign-in. They process data only on our behalf and under our instructions.",
+          "Authorized public bodies: where required by law."
+        ]
+      },
+      {
+        "title": "5. International Transfers",
+        "body": [
+          "Our infrastructure providers' servers may be located abroad (database region: [SUPABASE REGION]). Your data may therefore be transferred abroad in accordance with Article 9 of the KVKK."
+        ]
+      },
+      {
+        "title": "6. Retention",
+        "body": [
+          "Account data is kept while your account is open. When you delete your account, your profile, saved addresses, reviews and wallet history are deleted. Records of past orders (product and amount) are kept for accounting and legal obligations; the name, address and phone number in those orders are anonymized 30 days after your account is deleted. Records that the law requires us to keep longer are retained for that period. Model files you uploaded are unpublished when your account is deleted."
+        ]
+      },
+      {
+        "title": "7. Print Photos",
+        "body": [
+          "Print partners upload photos of the products they make. After administrator approval these photos are published publicly on the product page. Photos must not contain addresses, shipping labels or personal information; location (EXIF) data is removed on upload. When a print partner's account is deleted, published photos remain on the product page but are no longer linked to the account."
+        ]
+      },
+      {
+        "title": "8. Deleting Your Account",
+        "body": [
+          "You can delete your account at any time: in the mobile app under Profile > Delete account, or on the website using the link below. If you have an order in progress, a pending withdrawal or a wallet balance, these must be completed first; the system tells you what is needed. When a designer account is deleted, the models are unpublished and orders that have not shipped yet are cancelled and refunded to the buyers."
+        ],
+        "link": {
+          "href": "/account/delete",
+          "label": "I want to delete my account"
+        }
+      },
+      {
+        "title": "9. Security",
+        "body": [
+          "Your data is transmitted over encrypted connections (HTTPS), access is limited by role, and card details are not stored in our systems. No system is completely secure, however; in the event of a breach we will make the notifications required by law."
+        ]
+      },
+      {
+        "title": "10. Cookies",
+        "body": [
+          "Our platform uses cookies and local storage only for essential functions such as signing in and remembering your language and theme preferences; we do not use advertising or tracking cookies. See our Cookie Policy for details."
+        ]
+      },
+      {
+        "title": "11. Your Rights under the KVKK",
+        "body": [
+          "Under Article 11 of the KVKK you have the right to learn whether your personal data is processed; to request information if it has been processed; to learn the purpose of processing and whether it is used accordingly; to know the third parties to whom it is transferred in Turkey or abroad; to request correction if it is incomplete or inaccurate; to request deletion or destruction; to request that these actions be notified to third parties to whom the data was transferred; to object to a result against you arising from analysis of the data; and to claim compensation for damages caused by unlawful processing. You can submit requests through our contact page or the email address above; we respond within 30 days at the latest."
+        ]
+      },
+      {
+        "title": "12. Changes",
+        "body": [
+          "We may update this notice from time to time. We announce significant changes on the site and in the app; the current version is always on this page."
+        ]
+      }
+    ],
+    "contactTitle": "Questions?",
+    "contactText": "If you have any questions about our privacy policy,",
     "contactLink": "contact us"
   },
   "terms": {
@@ -601,16 +682,16 @@
   },
   "cookies": {
     "title": "Cookie Policy",
-    "lastUpdated": "Last Updated: June 2024",
-    "intro": "ShapeBazaar uses cookies to improve our platform and enhance user experience.",
+    "lastUpdated": "Last updated: October 2026",
+    "intro": "ShapeBazaar uses the cookies and local storage that are necessary for the platform to work.",
     "section1": "What is a Cookie?",
-    "section1Content": "Cookies are small text files stored by your browser. They are used to remember preferences and user choices.",
-    "section2": "Types of Cookies We Use",
-    "section2Content": "Essential cookies: For proper functionality. Analytics cookies: To understand traffic. Marketing cookies: To optimize ad delivery.",
+    "section1Content": "Cookies are small text files stored by your browser. They are used to remember your session and preferences.",
+    "section2": "Cookies We Use",
+    "section2Content": "We only use essential cookies and local storage: signing in (authentication), your language preference and your theme (light/dark) preference. We do not use advertising, marketing or tracking cookies, and we do not run third-party tools that analyze your visits.",
     "section3": "Managing Cookies",
-    "section3Content": "You can control cookies through your browser settings. However, this may affect platform functionality.",
-    "section4": "Third-Party Cookies",
-    "section4Content": "Services like Google Analytics and Stripe may also use cookies.",
+    "section3Content": "You can delete or block cookies in your browser settings; however, if you block session cookies you will not be able to sign in.",
+    "section4": "Third-Party Services",
+    "section4Content": "During payment, the payment provider's secure form opens and the provider may use its own cookies; if you sign in with Google, Google's own cookie and privacy rules apply.",
     "tipTitle": "Tip",
     "tipText": "You can manage cookies through most browser settings. Visit your browser's help page for more information."
   },
@@ -1007,5 +1088,40 @@
     "approvedChip": "Approved",
     "awaitingApprovalBanner": "Your photos are awaiting admin approval. You can enter shipping details once they are approved.",
     "adminPendingHint": "Printers cannot enter shipping details until at least {min} photos per item are approved."
+  },
+  "accountDelete": {
+    "title": "Delete Account",
+    "intro": "On this page you can permanently delete your ShapeBazaar account and the personal data associated with it.",
+    "whatTitle": "What will happen?",
+    "whatDeleted": "Your profile, saved addresses, reviews and wallet history are deleted.",
+    "whatKept": "Records of your past orders (product and amount) are kept for legal obligations; your name, address and phone number are anonymized after 30 days.",
+    "whatDesigner": "If you are a designer, your models are unpublished; orders that have not shipped yet are cancelled and refunded to the buyers.",
+    "whatPhotos": "If you are a print partner, your published print photos stay on the product page but are no longer linked to your account.",
+    "loggedOutDesc": "To delete your account, sign in first; then return to this page and confirm the deletion.",
+    "loginCta": "Sign in",
+    "inApp": "In the mobile app: Profile > Delete account.",
+    "checking": "Checking your account…",
+    "loadFailed": "Could not check your account status. Please try again.",
+    "retry": "Try again",
+    "blockedTitle": "Your account can't be deleted right now",
+    "blockedIntro": "You need to finish these first:",
+    "irreversible": "This cannot be undone.",
+    "willUnpublish": "{count} of your models will be unpublished.",
+    "willCancel": "{count} order(s) containing your models that have not shipped yet will be cancelled and the buyers refunded.",
+    "confirmPrompt": "Type {word} below to confirm.",
+    "confirmWord": "DELETE",
+    "deleteButton": "Permanently delete my account",
+    "deleting": "Deleting…",
+    "failed": "Could not delete the account. Please try again.",
+    "blockers": {
+      "ADMIN_ACCOUNT": "Administrator accounts can't be deleted here.",
+      "WALLET_BALANCE": "Your wallet has a balance of ₺{amount}. Create a withdrawal request from the Wallet tab in your dashboard to cash it out.",
+      "PENDING_WITHDRAWAL": "You have {count} pending withdrawal request(s). You can delete your account once they are paid out.",
+      "ACTIVE_BUYER_ORDERS": "You have {count} order(s) in progress. You can delete your account once they are delivered.",
+      "ACTIVE_PRINT_JOBS": "You have {count} print job(s) in progress. You can delete your account once they are finished.",
+      "AWAITING_DELIVERY_PAYOUT": "{count} job(s) you shipped are awaiting delivery confirmation. Your earnings are paid after delivery, then you can delete your account.",
+      "DESIGNER_SHIPPED_ORDERS": "{count} order(s) containing your models are in transit. Your earnings are paid after delivery, then you can delete your account.",
+      "NOT_FOUND": "Account not found."
+    }
   }
 }

@@ -125,6 +125,13 @@ Sorun: `profiles` tablosunda herkese açık okuma + tablo düzeyi SELECT yetkisi
 - [ ] 012 sonrası `security_audit.sql` sorgu 1'in yeni satırları true olmalı; sorgu 3'te telefon/bakiye/IBAN görünmemeli
 - [ ] Cihaz/web testi: dashboard (bakiye görünüyor mu), çekim talebi, tasarımcı sayfaları, giriş/kayıt, ödeme (telefon iyzico'ya gidiyor mu)
 
+## Faz 8.8 — Hukuki sayfalar + web'den hesap silme ✅ KOD TAMAM, DOLDURULACAK ALANLAR + HUKUKÇU ONAYI BEKLİYOR
+- [x] **`/[locale]/account/delete`** (herkese açık sayfa, giriş gerektirmez): Google Play "Data safety" formunun istediği hesap silme web bağlantısı. Girişli kullanıcı silmeyi buradan yapar (mobille aynı API/engeller/onay), girişsizse adımlar + giriş bağlantısı gösterilir. Web dashboard ayarlarından da bağlantı var. **Data safety formundaki URL: `https://www.shapebazaar.com/en/account/delete`**
+- [x] **Gizlilik Politikası yeniden yazıldı (12 bölüm, TR+EN; KVKK aydınlatma metni biçimi):** eski metin 5 başlıklı genel bir taslaktı (2024). Yeni metin gerçek veri akışını anlatır: toplanan veriler, hukuki sebepler, paylaşılan taraflar (yazıcı ortağı, tasarımcı, Supabase/Vercel/ödeme sağlayıcısı/Resend/Google), yurt dışı aktarım, saklama (hesap silinince 30 gün), baskı fotoğrafları, hesap silme, KVKK m.11 hakları.
+- [x] **Çerez Politikası düzeltildi:** eski metin Google Analytics, pazarlama çerezleri ve Stripe'tan söz ediyordu; kodda bunların HİÇBİRİ yok (ödeme iyzico, analitik yok) → yanlış beyandı. Artık sadece zorunlu çerez/yerel depolama (oturum, dil, tema) ve üçüncü taraf formları anlatılıyor.
+- [ ] **YAYINDAN ÖNCE doldurulacak alanlar** (gizlilik politikasında köşeli parantezli): `[ŞİRKET / İŞLETME ÜNVANI]`, `[ADRES]`, `[E-POSTA ADRESİ]` (TR: "[E-POSTA ADRESİ]"), `[ÖDEME SAĞLAYICISI]` (ödeme altyapısı değişince güncelle), `[SUPABASE BÖLGESİ]` (Supabase panelinde projenin bölgesi). Dosya: `apps/web/messages/tr.json` ve `en.json` → `privacy.sections`
+- [ ] **Hukukçu / muhasebeci onayı gerekenler:** (1) hesap silme sonrası 30 gün saklama süresi, mesafeli satış ve vergi mevzuatındaki saklama sürelerinden kısa olabilir; (2) yurt dışı aktarım ifadesi (KVKK m.9, güncel şartlar); (3) **Kullanım Koşulları sayfasına DOKUNULMADI:** iade/iptal maddeleri ("onaylanan siparişler iptal edilemez", "30 gün içinde kusur") ve kişiye özel üretilen ürünlerde cayma hakkı istisnası, mesafeli satış sözleşmesi/ön bilgilendirme formu hukukçu tarafından gözden geçirilmeli; (4) yazıcı fotoğraflarının kullanım lisansı (yazıcı ortağı koşulları)
+
 ## Faz 8.6 — Canlı politika temizliği (011) ✅ KOD TAMAM, UYGULAMA BEKLİYOR
 4 Ekim 2026 canlı policy dökümü, migration dosyalarında OLMAYAN tehlikeli politikaları gösterdi (DB panelden elle büyütülmüş): (1) `order_items` "System inserts order items" → alıcı ödenmiş siparişine sahte `model_price`'lı kalem ekleyip tasarımcı hesabıyla teslim sonrası cüzdanına para yazdırabilirdi; (2) `print_jobs` "System can insert print jobs" (WITH CHECK true) → anon dahil herkes havuza sahte iş ekleyebilirdi; (3) eski "Partners can view/update" politikaları 008'in sıkı politikalarının yanında OR'lanıyordu; (4) tasarımcı, devam eden siparişi olan modelini silebilirdi. `011_rls_cleanup.sql` hepsini kapatır (gerçek PostgreSQL'de öncesi/sonrası test edildi). Yazma noktalarının tamamı service-role kullandığı için kod değişmedi.
 - [ ] 011'i uygula, ardından `security_audit.sql` sorgu 2'yi tekrar çalıştır (order_items'ta INSERT, print_jobs'ta INSERT ve eski "Partners…" politikaları KALMAMALI)
@@ -165,7 +172,7 @@ RLS/fonksiyon denetiminde (migration dosyalarına göre) bulunan ve **010_securi
 - [x] **Hesap silme** (zorunlu) kodlandı: `009_account_deletion.sql`, `POST /api/account/delete`, `/api/cron/scrub-order-pii`, mobil `account/delete` ekranı. SQL gerçek PostgreSQL'de engel/etki/yetki/PII senaryolarıyla test edildi. **Deploy sırası: önce 009'u Supabase'de çalıştır, sonra web deploy.**
 - [ ] Hesap silme: cihazda uçtan uca test (temiz hesap, bakiyeli hesap, tasarımcı hesabı) ve web'den silme sayfası (Google Data safety)
 - [ ] Gerçek app icon/splash/adaptive-icon görselleri (şu an app.json'da yok)
-- [ ] Gizlilik politikası / kullanım koşulları / destek / hesap silme web sayfaları (URL)
+- [~] Gizlilik politikası ✅ (yeniden yazıldı), hesap silme sayfası ✅; kullanım koşulları hukukçu onayı bekliyor, destek = /contact. Bkz. Faz 8.8
 - [ ] İnceleme notu + demo hesabı + test ödeme açıklaması
 - [ ] EAS hesabı, `eas init`, `EXPO_PUBLIC_*` değişkenlerini EAS ortamına tanımlama
 - [ ] TestFlight + Google kapalı test (kişisel hesapsa 14 gün)

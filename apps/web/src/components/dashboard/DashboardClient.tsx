@@ -901,6 +901,13 @@ function SettingsTab({ user, profile, t, locale, router, onProfileUpdate }: {
           </a>
         </div>
       )}
+
+      {/* Hesabı sil — herkese açık /account/delete sayfasına gider */}
+      <div className="text-center pt-2">
+        <a href={`/${locale}/account/delete`} className="text-xs text-[var(--text-tertiary)] hover:text-red-500 transition-colors underline">
+          {t("deleteAccountLink")}
+        </a>
+      </div>
     </div>
   );
 }
