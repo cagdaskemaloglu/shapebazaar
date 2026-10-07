@@ -7,3 +7,4 @@ export * from "./queries/orders";
 export * from "./queries/printPhotos";
 export * from "./cart";
 export * from "./storage";
+export * from "./phone";

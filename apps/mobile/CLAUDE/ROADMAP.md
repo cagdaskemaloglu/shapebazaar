@@ -1,7 +1,7 @@
 # ShapeBazaar Mobile — Yol Haritası (v1: Sadece Alıcı)
 
 > Her faz, kendinden önceki fazın üzerine inşa edilecek şekilde sıralandı.
-> **Son güncelleme:** Güvenlik denetimi + çekim muhasebesi kodlandı (010). GitHub Actions migration iş akışı Supabase'e bağlanamıyor (token/proje eşleşmesi). Hesap silme (009) ve 008/010 migration'ları henüz uygulanmamış olabilir.
+> **Son güncelleme:** 010 canlıya uygulandı (denetim sorgusu hepsi true). Mobil profil fazı (6.8) ve 011 politika temizliği kodlandı. GitHub Actions migration iş akışı için `SUPABASE_ACCESS_TOKEN` ve `SUPABASE_DB_PASSWORD` secret'ları hâlâ güncellenmedi.
 
 ## Faz 0 — Monorepo Geçişi ✅ TAMAMLANDI
 📄 Ayrıntılı adımlar: `MONOREPO_MIGRATION.md`
@@ -107,6 +107,29 @@ Kararlar: yazıcı kargo bilgisini girebilmek için **her ürün için ≥2 (en 
 - [x] **Düzeltilen fiyat hataları:** (1) "Reçine" fiyat tablosunda yoktu (`Resin` anahtarı vardı) → reçine seçimi PLA fiyatıyla satılıyordu; tabloya `Reçine: 1400` eklendi. (2) Ağırlığı olmayan model web'de 50 g, mobilde 0 g ile fiyatlanıyordu; tek kural `resolveWeightGrams` (50 g) artık web, mobil, kart ve sunucuda aynı. Eski sepetlerdeki reçine/ağırlıksız kalemler tek seferlik `PRICE_CHANGED` alabilir.
 - [ ] Deploy sonrası test: normal ödeme (web + mobil), reçine seçili ödeme, fiyatı değiştirilmiş modelle eski sepetten ödeme (409 beklenir)
 
+## Faz 6.8 — Profil (mobil) ✅ KOD TAMAM, CİHAZDA TEST BEKLİYOR
+Neden: Faz 2'den kalma geçici ekran (hoş geldin + çıkış) bırakılmıştı, roadmap'te profil maddesi yoktu; v1 kapsamı "alıcı akışı" olduğu için tasarımcı/yazıcı/cüzdan araçları bilinçli olarak web'de. **Faz 8'den (mağaza) önce** yapıldı: Apple incelemecisi boş profil ekranı görmemeli ve hesap silme/gizlilik bağlantıları buradan erişilir olmalı.
+- [x] Profil ekranı: avatar (ya da baş harf), ad, @kullanıcı adı, e-posta, rol rozeti, hakkında; Siparişlerim kısayolu; **dil seçimi (TR/EN, kalıcı — AsyncStorage)**; Gizlilik politikası / Kullanım koşulları / İletişim (web sayfaları uygulama içi tarayıcıda); sürüm; Çıkış; Hesabı sil
+- [x] Profili düzenle: ad soyad, kullanıcı adı (3-24, harf/rakam/_ ; çakışmada "alınmış" hatası), şehir, hakkında. Sadece değişen alanlar gönderilir; rol/bakiye/partner onayı zaten sunucuda korunuyor (010)
+- [x] Tasarımcı / yazıcı ortağı / admin hesaplarında "Web panelini aç" kartı (model yükleme, baskı işleri, cüzdan web'de)
+- [x] Profil sorguları `*` değil açık kolon listesi (`useProfile`): ileride telefon/cüzdan herkese açık okumadan çıkarılınca bozulmasın
+- [ ] **Ertelenenler:** profil fotoğrafı yükleme (`expo-image-picker` gerekir: yeni native bağımlılık + iOS izin metni), kayıtlı adresler (CRUD + sepette seçme), yazıcı/tasarımcı araçlarının mobile taşınması (v2)
+- [ ] Cihazda test: profil görünümü, düzenleme (kullanıcı adı çakışması dahil), dil değiştirip uygulamayı kapatıp açınca kalıcılık, web bağlantıları
+
+## Faz 8.7 — Profil gizliliği (012) ✅ KOD TAMAM, UYGULAMA BEKLİYOR
+Sorun: `profiles` tablosunda herkese açık okuma + tablo düzeyi SELECT yetkisi → anon anahtarıyla (uygulamaya/siteye gömülü) tüm kullanıcıların **telefon numarası ve cüzdan bakiyesi** okunabiliyordu (`GET /rest/v1/profiles?select=full_name,phone,wallet_balance`). KVKK ve mağaza gizlilik beyanıyla çelişir.
+- [x] `012_profiles_privacy.sql`: SELECT yetkisi KOLON bazına indirildi; `phone`, `wallet_balance` (+ varsa `email`, `iban`, `tc_kimlik_no`, `tax_number`) anon/authenticated'dan alındı, diğer tüm kolonlar (canlıdaki ek kolonlar dahil, dinamik) açık kaldı. Kullanıcı kendi bilgisini `my_profile_private()` ile okur. UPDATE, RLS politikaları (role/is_partner_approved), SECURITY DEFINER fonksiyonlar ve sunucu etkilenmedi (gerçek PostgreSQL'de 22 senaryo)
+- [x] Kod: `dashboard/page.tsx` artık `select("*")` yerine açık kolon listesi + bakiye için `my_profile_private()`; `payment/init` telefonu service-role ile okuyor. Taranan tüm diğer okumalar hassas olmayan kolonlardı.
+- **Kural:** `profiles` üzerinde `.select("*")` / `.select()` ARTIK çalışmaz. profiles'a yeni kolon eklenirse istemci okuyacaksa: `GRANT SELECT (kolon) ON profiles TO anon, authenticated;`
+- [ ] **Deploy sırası: önce kodu (dashboard + payment/init) deploy et, SONRA 012'yi uygula.** Tersi olursa eski `select("*")` kod 012'den sonra dashboard'u bozar. (CI ile birlikte push edersen: migration saniyeler içinde biter, Vercel dakikalar sürer → bir süre dashboard hata verir; güvenli yol: önce deploy, sonra 012.)
+- [ ] 012 sonrası `security_audit.sql` sorgu 1'in yeni satırları true olmalı; sorgu 3'te telefon/bakiye/IBAN görünmemeli
+- [ ] Cihaz/web testi: dashboard (bakiye görünüyor mu), çekim talebi, tasarımcı sayfaları, giriş/kayıt, ödeme (telefon iyzico'ya gidiyor mu)
+
+## Faz 8.6 — Canlı politika temizliği (011) ✅ KOD TAMAM, UYGULAMA BEKLİYOR
+4 Ekim 2026 canlı policy dökümü, migration dosyalarında OLMAYAN tehlikeli politikaları gösterdi (DB panelden elle büyütülmüş): (1) `order_items` "System inserts order items" → alıcı ödenmiş siparişine sahte `model_price`'lı kalem ekleyip tasarımcı hesabıyla teslim sonrası cüzdanına para yazdırabilirdi; (2) `print_jobs` "System can insert print jobs" (WITH CHECK true) → anon dahil herkes havuza sahte iş ekleyebilirdi; (3) eski "Partners can view/update" politikaları 008'in sıkı politikalarının yanında OR'lanıyordu; (4) tasarımcı, devam eden siparişi olan modelini silebilirdi. `011_rls_cleanup.sql` hepsini kapatır (gerçek PostgreSQL'de öncesi/sonrası test edildi). Yazma noktalarının tamamı service-role kullandığı için kod değişmedi.
+- [ ] 011'i uygula, ardından `security_audit.sql` sorgu 2'yi tekrar çalıştır (order_items'ta INSERT, print_jobs'ta INSERT ve eski "Partners…" politikaları KALMAMALI)
+- [x] Telefon normalizasyonu: `05317168548` yazımı ödeme sağlayıcısına `+9005317168548` gidiyordu → `normalizeTrPhone` (14 senaryo testi) `payment/init`'te kullanılıyor
+
 ## Faz 8.5 — Güvenlik denetimi ve cüzdan muhasebesi ✅ KOD TAMAM, DEPLOY BEKLİYOR
 RLS/fonksiyon denetiminde (migration dosyalarına göre) bulunan ve **010_security_hardening.sql** ile kapatılan açıklar — saldırılar gerçek PostgreSQL'de 010 öncesi çalıştırılıp sonrası engellendiği gösterildi, tam ve sapmış şemada:
 - `increment_wallet` herkese açıktı → anon anahtarıyla herhangi bir hesaba sınırsız bakiye eklenebiliyordu (artık sadece service_role).
@@ -115,7 +138,7 @@ RLS/fonksiyon denetiminde (migration dosyalarına göre) bulunan ve **010_securi
 - `model_ratings` güncellemede `model_id` değiştirilebiliyordu (satın alma şartı atlanıyordu).
 - **Çekim akışı:** talep tarayıcıdan doğrudan insert ediliyordu (miktar/durum doğrulanmıyor) ve bakiye HİÇBİR adımda düşmüyordu → aynı bakiyeyle sınırsız talep, "ödendi" bakiyeyi azaltmıyor, hesap silme engeli hiç kalkmıyordu. Artık: `POST /api/wallet/withdraw` (IBAN mod-97 doğrulaması) → `request_withdrawal` bakiyeyi kilitleyip DÜŞER; `resolve_withdrawal` durum geçişlerini doğrular, reddedilince iade eder (eski, `balance_held=false` talepler için iade YOK: para yoktan var olmasın).
 - `admin/setup` sayfası `role: "admin"`'i kullanıcı client'ıyla yazıyordu (açık politikaya dayanıyordu) → service-role'e alındı. **İlk admin oluşturulduktan sonra `ADMIN_SETUP_KEY` ortam değişkenini sil.**
-- [ ] **Açık bulgu (karar bekliyor): `profiles_public_read USING (TRUE)`** → `phone` ve `wallet_balance` dahil tüm profil kolonları anon anahtarıyla HERKES tarafından okunabiliyor (KVKK). Çözüm özel kolonları ayrı tabloya/RPC'ye taşımak; çok sayıda okuma noktasını etkilediği için ayrı iş.
+- [x] ~~Açık bulgu: `profiles_public_read USING (TRUE)`~~ → **012 ile kapatıldı** (aşağıda, Faz 8.7). Eski not: → `phone` ve `wallet_balance` dahil tüm profil kolonları anon anahtarıyla HERKES tarafından okunabiliyor (KVKK). Çözüm özel kolonları ayrı tabloya/RPC'ye taşımak; çok sayıda okuma noktasını etkilediği için ayrı iş.
 - [ ] Canlıda doğrulama: `supabase/checks/security_audit.sql` (010 öncesi/sonrası)
 - [ ] Mevcut bekleyen/onaylı çekim talepleri varsa 010 dosyasının sonundaki opsiyonel bölümü oku
 

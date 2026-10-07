@@ -20,6 +20,7 @@ export default function RootLayout() {
           <Stack.Screen name="payment/success" options={{ gestureEnabled: false }} />
           <Stack.Screen name="payment/failed" options={{ gestureEnabled: false }} />
           <Stack.Screen name="account/delete" />
+          <Stack.Screen name="account/edit" />
         </Stack>
       </AuthProvider>
     </SafeAreaProvider>

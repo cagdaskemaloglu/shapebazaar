@@ -32,7 +32,21 @@ UNION ALL SELECT 'withdrawal_requests: kullanıcı doğrudan INSERT edemez',
        AND NOT EXISTS (SELECT 1 FROM pg_policies WHERE tablename = 'withdrawal_requests' AND policyname = 'withdrawals_own_insert')
 UNION ALL SELECT 'orders: kullanıcı INSERT/UPDATE politikası yok (007)',
        NOT EXISTS (SELECT 1 FROM pg_policies WHERE tablename = 'orders' AND cmd IN ('INSERT', 'UPDATE'))
-UNION ALL SELECT 'print_jobs: tablo var (008)', to_regclass('public.print_jobs') IS NOT NULL;
+UNION ALL SELECT 'print_jobs: tablo var (008)', to_regclass('public.print_jobs') IS NOT NULL
+UNION ALL SELECT 'order_items: kullanıcı INSERT politikası yok (011)',
+       NOT EXISTS (SELECT 1 FROM pg_policies WHERE tablename = 'order_items' AND cmd = 'INSERT')
+UNION ALL SELECT 'print_jobs: kullanıcı INSERT politikası yok (011)',
+       NOT EXISTS (SELECT 1 FROM pg_policies WHERE tablename = 'print_jobs' AND cmd = 'INSERT')
+UNION ALL SELECT 'profiles.phone: anon/authenticated OKUYAMAZ (012)',
+       NOT has_column_privilege('anon', 'public.profiles', 'phone', 'SELECT')
+       AND NOT has_column_privilege('authenticated', 'public.profiles', 'phone', 'SELECT')
+UNION ALL SELECT 'profiles.wallet_balance: anon/authenticated OKUYAMAZ (012)',
+       NOT has_column_privilege('anon', 'public.profiles', 'wallet_balance', 'SELECT')
+       AND NOT has_column_privilege('authenticated', 'public.profiles', 'wallet_balance', 'SELECT')
+UNION ALL SELECT 'my_profile_private(): authenticated çağırabilir, anon çağıramaz (012)',
+       CASE WHEN to_regprocedure('my_profile_private()') IS NULL THEN NULL
+            ELSE has_function_privilege('authenticated', 'my_profile_private()', 'EXECUTE')
+             AND NOT has_function_privilege('anon', 'my_profile_private()', 'EXECUTE') END;
 
 -- SORGU 2: Hassas tablolardaki TÜM politikalar (elle eklenmiş / beklenmedik politika var mı diye gözle)
 SELECT tablename, policyname, cmd, qual AS using_ifadesi, with_check
@@ -41,3 +55,10 @@ WHERE schemaname = 'public'
   AND tablename IN ('profiles', 'models', 'model_ratings', 'withdrawal_requests', 'wallet_transactions',
                     'orders', 'order_items', 'print_jobs', 'print_photos', 'addresses')
 ORDER BY tablename, cmd, policyname;
+
+-- SORGU 3: profiles'ta anon anahtarıyla HERKESİN okuyabildiği kolonlar (012 sonrası).
+-- Listede kişisel/hassas görünen bir kolon varsa (telefon, e-posta, IBAN, TC no…) 012'deki `deny` listesine ekle.
+SELECT column_name AS herkese_acik_kolon
+FROM information_schema.column_privileges
+WHERE table_schema = 'public' AND table_name = 'profiles' AND grantee = 'anon' AND privilege_type = 'SELECT'
+ORDER BY column_name;

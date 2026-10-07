@@ -64,7 +64,26 @@
     "loggedOutTitle": "You're not signed in",
     "loggedOutDesc": "Sign in to see your orders and manage your account.",
     "welcome": "Welcome",
-    "signOut": "Sign Out"
+    "signOut": "Sign Out",
+    "editProfile": "Edit profile",
+    "myOrders": "My orders",
+    "accountSection": "Account",
+    "appSection": "App",
+    "language": "Language",
+    "panelTitle": "Designer and print partner tools",
+    "panelDesc": "Uploading models, print jobs and wallet actions are done on the website.",
+    "panelOpen": "Open web dashboard",
+    "legalSection": "About",
+    "privacy": "Privacy policy",
+    "terms": "Terms of use",
+    "contact": "Contact & support",
+    "version": "Version {{v}}",
+    "roles": {
+      "buyer": "Buyer",
+      "designer": "Designer",
+      "printer_partner": "Print Partner",
+      "admin": "Admin"
+    }
   },
   "home": {
     "searchPlaceholder": "Search models…",
@@ -261,5 +280,18 @@
       "NOT_FOUND": "Account not found.",
       "UNKNOWN": "Your account can't be deleted right now."
     }
+  },
+  "profileEdit": {
+    "title": "Edit Profile",
+    "fullName": "Full name",
+    "username": "Username",
+    "usernameHint": "3-24 characters: letters, numbers and underscore.",
+    "city": "City",
+    "bio": "About",
+    "save": "Save",
+    "errNameRequired": "Full name must be 2-60 characters.",
+    "errUsernameInvalid": "Username must be 3-24 characters: letters, numbers and underscore only.",
+    "errUsernameTaken": "This username is taken.",
+    "errSaveFailed": "Could not save. Please try again."
   }
 }

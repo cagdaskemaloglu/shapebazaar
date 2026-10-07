@@ -64,7 +64,26 @@
     "loggedOutTitle": "Giriş yapmadın",
     "loggedOutDesc": "Siparişlerini görmek ve hesabını yönetmek için giriş yap.",
     "welcome": "Hoş geldin",
-    "signOut": "Çıkış Yap"
+    "signOut": "Çıkış Yap",
+    "editProfile": "Profili düzenle",
+    "myOrders": "Siparişlerim",
+    "accountSection": "Hesap",
+    "appSection": "Uygulama",
+    "language": "Dil",
+    "panelTitle": "Tasarımcı ve yazıcı araçları",
+    "panelDesc": "Model yükleme, baskı işleri ve cüzdan işlemleri web sitesinde yapılır.",
+    "panelOpen": "Web panelini aç",
+    "legalSection": "Hakkında",
+    "privacy": "Gizlilik politikası",
+    "terms": "Kullanım koşulları",
+    "contact": "İletişim ve destek",
+    "version": "Sürüm {{v}}",
+    "roles": {
+      "buyer": "Alıcı",
+      "designer": "Tasarımcı",
+      "printer_partner": "Yazıcı Ortağı",
+      "admin": "Yönetici"
+    }
   },
   "home": {
     "searchPlaceholder": "Model ara…",
@@ -261,5 +280,18 @@
       "NOT_FOUND": "Hesap bulunamadı.",
       "UNKNOWN": "Şu an hesabın silinemiyor."
     }
+  },
+  "profileEdit": {
+    "title": "Profili Düzenle",
+    "fullName": "Ad soyad",
+    "username": "Kullanıcı adı",
+    "usernameHint": "3-24 karakter: harf, rakam ve alt çizgi.",
+    "city": "Şehir",
+    "bio": "Hakkında",
+    "save": "Kaydet",
+    "errNameRequired": "Ad soyad 2-60 karakter olmalı.",
+    "errUsernameInvalid": "Kullanıcı adı 3-24 karakter olmalı; sadece harf, rakam ve alt çizgi.",
+    "errUsernameTaken": "Bu kullanıcı adı alınmış.",
+    "errSaveFailed": "Kaydedilemedi. Lütfen tekrar dene."
   }
 }

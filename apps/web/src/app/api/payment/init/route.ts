@@ -2,7 +2,7 @@ import { NextRequest, NextResponse } from "next/server";
 import { createRequestClient } from "@/lib/supabase/requestClient";
 import { createAdminClient } from "@/lib/supabase/admin";
 import { createCheckoutForm, SITE_URL } from "@/lib/iyzico";
-import { collectModelIds, priceCart, PRICE_TOLERANCE_TL, type ModelPricingRow } from "@shapebazaar/shared";
+import { collectModelIds, priceCart, PRICE_TOLERANCE_TL, normalizeTrPhone, type ModelPricingRow } from "@shapebazaar/shared";
 
 export async function POST(req: NextRequest) {
   try {
@@ -52,7 +52,8 @@ export async function POST(req: NextRequest) {
     const items = priced.items;
     const { subtotal, shipping, grandTotal, platformFee } = priced;
 
-    const { data: profile } = await supabase
+    // `phone` artık kullanıcı JWT'siyle okunamaz (012) → service-role (kullanıcı yukarıda doğrulandı)
+    const { data: profile } = await adminForPricing
       .from("profiles")
       .select("full_name, phone")
       .eq("id", user.id)
@@ -61,7 +62,8 @@ export async function POST(req: NextRequest) {
     const nameParts = (profile?.full_name ?? "Ad Soyad").split(" ");
     const firstName = nameParts[0] || "Ad";
     const lastName  = nameParts.slice(1).join(" ") || "Soyad";
-    const phone     = profile?.phone ?? address.phone ?? "+905000000000";
+    // `05XX…` yazımı eskiden "+9005XX…" oluyordu: önce profil, sonra sepetteki adres telefonu E.164'e çevrilir
+    const phone     = normalizeTrPhone(profile?.phone) ?? normalizeTrPhone(address.phone) ?? "+905000000000";
 
     const conversationId = `SB-${Date.now()}-${Math.random().toString(36).slice(2, 7).toUpperCase()}`;
     const now = new Date().toISOString().replace("T", " ").slice(0, 19);
